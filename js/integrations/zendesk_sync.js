@@ -5,7 +5,21 @@ var ZendeskSync = (function() {
   var TICKETS_KEY = 'skm6_zdtickets';
 
   // Public (non-sensitive) defaults — stored in localStorage
-  var DEFAULT_CFG = { subdomain: '', groupName: 'suporte n1', days: 30, scriptUrl: '', nameMap: {} };
+  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', days: 30, scriptUrl: '', nameMap: {
+    'Bruno Henrique Ferreira da Silva': 'Bruno',
+    'Henrique Rodrigues Costa Sérgio': 'Henrique Sergio',
+    'Mário Diniz':                    'Mario Diniz',
+    'Ana Claudia Corrêa':            'Ana Claudia',
+    'Diego Machado':                       'Diego',
+    'Karolyne Moreira':                    'Karolyne',
+    'Ismael Chagas Bessa':                 'Ismael',
+    'João Pedro Santana':            'João Pedro S.',
+    'Luan Pereira':                        'Luan',
+    'Mario Junior':                        'Mario',
+    'Mateus Rodrigues':                    'Mateus',
+    'Sergio Junior':                       'Sergio',
+    'Thales Silva':                        'Thales'
+  } };
   // Sensitive defaults — stored in sessionStorage only
   var DEFAULT_SEC = { email: '', apiToken: '', geminiKey: '' };
 
