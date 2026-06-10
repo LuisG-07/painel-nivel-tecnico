@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillMatrix Pro</title>
+
+<!--
+  Content Security Policy
+  ─────────────────────────────────────────────────────────────────────────────
+  'unsafe-inline' em script-src é necessário porque a UI gera HTML com onclick
+  inline via innerHTML. Os demais diretivos restringem efetivamente:
+    • connect-src  — impede que credentials vazem para domínios não autorizados
+    • object-src   — bloqueia plugins (Flash, etc.)
+    • base-uri     — impede injeção de <base> que redireciona URLs relativas
+    • frame-ancestors — previne clickjacking
+
+  SRI (Subresource Integrity): adicione integrity="sha512-..." nos recursos CDN
+  abaixo assim que obtiver os hashes em https://cdnjs.com e https://www.jsdelivr.com
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+  style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  font-src    https://cdn.jsdelivr.net;
+  img-src     'self' data: blob: https://*.zendesk.com;
+  connect-src https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
+  object-src  'none';
+  base-uri    'self';
+">
+<meta name="referrer" content="no-referrer">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="css/main.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-area">
+    <i class="ti ti-chart-bar" style="color:var(--blue);font-size:20px" aria-hidden="true"></i>
+    <div class="logo-text">Skill<span>Matrix</span> Pro</div>
+  </div>
+  <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral">Visão Geral</button>
+  <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução">Evolução</button>
+  <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento">Treinamento</button>
+  <div class="sep" aria-hidden="true"></div>
+  <div id="sectorTabsContainer" style="display:contents"></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-left:1px solid var(--border)">
+    <span id="zdBadge" title="" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05)" onclick="App.openManageModal()" aria-label="Status Zendesk">
+      <span class="zd-dot" style="width:7px;height:7px;border-radius:50%;display:inline-block;background:#888"></span>
+      <span class="zd-label">Zendesk</span>
+    </span>
+    <button onclick="App.exportHTML()" style="background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap" aria-label="Exportar HTML">
+      <i class="ti ti-download" aria-hidden="true"></i> Exportar HTML
+    </button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="page-visao"       class="page active"></div>
+  <div id="page-evolucao"    class="page"></div>
+  <div id="page-treinamento" class="page"></div>
+</div>
+
+<!-- Edit Analyst Modal -->
+<div id="editModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle"><i class="ti ti-pencil" aria-hidden="true"></i> Editar analista</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="dados">Dados</button>
+      <button class="modal-tab" data-tab="modulos">Módulos</button>
+      <button class="modal-tab" data-tab="anexos">Anexos</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="dados">
+      <span class="input-label" for="editName">Nome</span>
+      <input type="text" id="editName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="editSector">Setor</span>
+      <select id="editSector" class="form-input"></select>
+      <span class="input-label" for="editZendesk">Nota Zendesk (0–10)</span>
+      <input type="number" id="editZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
+      <span class="input-label" for="editComment">Comentário</span>
+      <textarea id="editComment" class="form-textarea" maxlength="500" placeholder="Observações sobre o analista (máx. 500 caracteres)"></textarea>
+      <div id="editCommentCounter" class="comment-counter">0/500</div>
+      <span class="input-label">Foto</span>
+      <img id="editPhotoPreview" class="photo-preview" src="" alt="Foto do analista" style="display:none">
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer">
+          <i class="ti ti-upload" aria-hidden="true"></i> Carregar
+          <input type="file" id="editPhotoInput" accept="image/*" style="display:none">
+        </label>
+        <button id="editPhotoRemove" class="btn-danger" style="padding:6px 12px;font-size:12px">
+          <i class="ti ti-trash" aria-hidden="true"></i> Remover foto
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="modulos">
+      <div style="max-height:360px;overflow-y:auto" id="editMods"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="anexos">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Imagens anexadas ao perfil do analista.</p>
+      <div class="attachment-grid" id="editAnexosList"></div>
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:10px">
+        <i class="ti ti-photo-plus" aria-hidden="true"></i> Adicionar imagem
+        <input type="file" id="editAnexoInput" accept="image/*" multiple style="display:none">
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('editModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="editSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Analyst Modal -->
+<div id="addModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="addModalTitle"><i class="ti ti-user-plus" aria-hidden="true"></i> Adicionar analista</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="dados">Dados</button>
+      <button class="modal-tab" data-tab="modulos">Módulos</button>
+      <button class="modal-tab" data-tab="anexos">Anexos</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="dados">
+      <span class="input-label" for="addName">Nome</span>
+      <input type="text" id="addName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="addSector">Setor</span>
+      <select id="addSector" class="form-input"></select>
+      <span class="input-label" for="addZendesk">Nota Zendesk (0–10)</span>
+      <input type="number" id="addZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
+      <span class="input-label" for="addComment">Comentário</span>
+      <textarea id="addComment" class="form-textarea" maxlength="500" placeholder="Observações (máx. 500 caracteres)"></textarea>
+      <span class="input-label">Foto</span>
+      <img id="addPhotoPreview" class="photo-preview" src="" alt="Foto do analista" style="display:none">
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px">
+        <i class="ti ti-upload" aria-hidden="true"></i> Carregar foto
+        <input type="file" id="addPhotoInput" accept="image/*" style="display:none">
+      </label>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="modulos">
+      <div style="max-height:360px;overflow-y:auto" id="addMods"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="anexos">
+      <div class="attachment-grid" id="addAnexosList"></div>
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:10px">
+        <i class="ti ti-photo-plus" aria-hidden="true"></i> Adicionar imagem
+        <input type="file" id="addAnexoInput" accept="image/*" multiple style="display:none">
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="addSaveBtn">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Training Modal -->
+<div id="trainModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="trainModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="trainModalTitle"><i class="ti ti-calendar-plus" aria-hidden="true"></i> Agendar Treinamento</div>
+    <span class="input-label" for="tDate">Data</span>
+    <input type="date" id="tDate" class="form-input">
+    <span class="input-label" for="tMod">Módulo / Tema</span>
+    <input type="text" id="tMod" class="form-input" placeholder="Ex: SendGrid">
+    <span class="input-label" for="tLeader">Líder técnico</span>
+    <input type="text" id="tLeader" class="form-input" placeholder="Nome do líder">
+    <span class="input-label" for="tObs">Observações</span>
+    <input type="text" id="tObs" class="form-input" placeholder="Opcional">
+    <span class="input-label">Participantes</span>
+    <div id="tAnalysts" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('trainModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="trainSaveBtn">Agendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Score Modal -->
+<div id="provaModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="provaModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="provaModalTitle">
+      <i class="ti ti-clipboard-check" aria-hidden="true"></i> Notas da prova — <span id="provaModTitle" style="color:var(--blue)"></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Escala de 0 a 10</p>
+    <div id="provaRows"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('provaModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="provaSaveBtn">Salvar notas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Modules & Sectors Modal -->
+<div id="manageModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manageModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos e Setores</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="modules" onclick="UIModals.switchModalTab('manageModal','modules')">Módulos</button>
+      <button class="modal-tab" data-tab="sectors" onclick="UIModals.switchModalTab('manageModal','sectors')">Setores</button>
+      <button class="modal-tab" data-tab="zendesk" onclick="UIModals.switchModalTab('manageModal','zendesk')">Zendesk</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="modules">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newModuleInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo módulo">
+        <button class="btn-primary" id="addModuleBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div style="max-height:300px;overflow-y:auto" id="modulesList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="sectors">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newSectorInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo setor">
+        <button class="btn-primary" id="addSectorBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div id="sectorsList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="zendesk">
+      <span class="input-label" for="zdSubdomain">Subdomínio do Zendesk</span>
+      <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
+      <span class="input-label" for="zdEmail">E-mail do administrador</span>
+      <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
+      <span class="input-label" for="zdApiToken">Token da API Zendesk</span>
+      <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
+      <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
+      <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
+      <span class="input-label" for="zdGroupName">Grupo no Zendesk</span>
+      <input type="text" id="zdGroupName" class="form-input" placeholder="suporte n1">
+      <span class="input-label" for="zdDays">Período (dias)</span>
+      <input type="number" id="zdDays" class="form-input" min="7" max="90" step="7" placeholder="30" style="width:100px">
+      <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
+      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>
+        <div id="zdNameMapRows"></div>
+        <button onclick="App.saveNameMapAndReimport()" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit">
+          <i class="ti ti-refresh"></i> Salvar e reimportar
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button id="zdImportBtn" class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="App.importFromZendesk()">
+          <i class="ti ti-cloud-download" aria-hidden="true"></i> Importar do Zendesk
+        </button>
+        <button class="btn-secondary" style="font-size:12px;padding:6px 12px;border-color:#FCD34D;color:#FCD34D" onclick="App.testZendeskSync()">
+          <i class="ti ti-flask" aria-hidden="true"></i> Dados de teste
+        </button>
+      </div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <span class="input-label" for="zdScriptUrl" style="color:var(--muted)">URL Apps Script (automação agendada — opcional)</span>
+        <input type="url" id="zdScriptUrl" class="form-input" style="opacity:.7" placeholder="https://script.google.com/macros/s/…/exec">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('manageModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="manageSaveBtn">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zendesk Tickets Modal -->
+<div id="zdTicketsModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="zdTicketsModalTitle">
+  <div class="modal" style="max-width:540px;width:100%">
+    <div class="modal-title" id="zdTicketsModalTitle">
+      <i class="ti ti-alert-triangle" style="color:#FCD34D" aria-hidden="true"></i>
+      Negativados — <span id="zdTicketsAnalystName"></span>
+    </div>
+    <div id="zdTicketsBody" style="max-height:440px;overflow-y:auto;padding-right:4px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Nota Zendesk</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span id="zdNewScore" style="font-size:24px;font-weight:700;color:var(--white)">—</span>
+          <span id="zdScoreLabel" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="document.getElementById('zdTicketsModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="zdTicketsSaveBtn">Salvar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS: load order matters — seed → store → domain → ui → main -->
+<script src="js/data/seed.js"></script>
+<script src="js/store/storage.js"></script>
+<script src="js/domain/scores.js"></script>
+<script src="js/ui/overview.js"></script>
+<script src="js/ui/evolution.js"></script>
+<script src="js/ui/training.js"></script>
+<script src="js/ui/modals.js"></script>
+<script src="js/integrations/zendesk_sync.js"></script>
+<script src="js/main.js"></script>
+<script>App.init();</script>
+
+</body>
+</html>

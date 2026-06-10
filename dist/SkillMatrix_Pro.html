@@ -1,0 +1,3026 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillMatrix Pro</title>
+
+<!--
+  Content Security Policy
+  ─────────────────────────────────────────────────────────────────────────────
+  'unsafe-inline' em script-src é necessário porque a UI gera HTML com onclick
+  inline via innerHTML. Os demais diretivos restringem efetivamente:
+    • connect-src  — impede que credentials vazem para domínios não autorizados
+    • object-src   — bloqueia plugins (Flash, etc.)
+    • base-uri     — impede injeção de <base> que redireciona URLs relativas
+    • frame-ancestors — previne clickjacking
+
+  SRI (Subresource Integrity): adicione integrity="sha512-..." nos recursos CDN
+  abaixo assim que obtiver os hashes em https://cdnjs.com e https://www.jsdelivr.com
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+  style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  font-src    https://cdn.jsdelivr.net;
+  img-src     'self' data: blob: https://*.zendesk.com;
+  connect-src https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
+  object-src  'none';
+  base-uri    'self';
+">
+<meta name="referrer" content="no-referrer">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#001636;--navy-dark:#00102C;--blue:#0268CD;--red:#CC0000;--white:#FFFFFF;--navy2:#00204A;--navy3:#001A3D;--muted:#8AADDB;--border:#0E3060;--card:#00204A;--card2:#001A3D}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--white);min-height:100vh}
+.topbar{background:var(--navy-dark);border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;position:sticky;top:0;z-index:50}
+.logo-area{padding:0 20px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);flex-shrink:0}
+.logo-text{font-size:15px;font-weight:600;color:var(--white)}.logo-text span{color:var(--blue)}
+.nav-tab{padding:14px 15px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;flex-shrink:0;transition:color .15s}
+.nav-tab.active{color:var(--white);border-bottom-color:var(--blue);font-weight:500}
+.nav-tab:hover:not(.active){color:var(--white)}
+.stab{padding:14px 15px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:6px;transition:color .15s}
+.stab:hover{color:var(--white)}
+.stab.ca{color:#60AAFF;border-bottom-color:#60AAFF;font-weight:500}
+.stab.ta{color:#4ADE80;border-bottom-color:#4ADE80;font-weight:500}
+.stab.na{color:#FCD34D;border-bottom-color:#FCD34D;font-weight:500}
+.sep{width:1px;background:var(--border);margin:8px 4px;flex-shrink:0}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.page{display:none}.page.active{display:block}
+.bc{background:rgba(2,104,205,.25);color:#60AAFF;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(96,170,255,.3)}
+.bt{background:rgba(74,222,128,.15);color:#4ADE80;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(74,222,128,.3)}
+.bn{background:rgba(252,211,77,.15);color:#FCD34D;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(252,211,77,.3)}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.stat-val{font-size:24px;font-weight:600;color:var(--white)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.hbox{background:linear-gradient(135deg,rgba(2,104,205,.2),rgba(0,22,54,.9));border:1px solid rgba(2,104,205,.4);border-radius:14px;padding:18px;margin-bottom:20px}
+.critic-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.ccard{background:rgba(204,0,0,.1);border:1.5px solid rgba(204,0,0,.4);border-radius:12px;padding:14px}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.acard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;transition:border-color .2s}
+.acard:hover{border-color:var(--blue)}
+.acard.bl-r{border-left:4px solid var(--red)}.acard.bl-a{border-left:4px solid #F59E0B}.acard.bl-g{border-left:4px solid #22C55E}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.av-r{background:rgba(204,0,0,.3);color:#FF8080}.av-a{background:rgba(245,158,11,.2);color:#FCD34D}.av-g{background:rgba(34,197,94,.2);color:#4ADE80}.av-b{background:rgba(2,104,205,.3);color:#60AAFF}
+.score-box{background:rgba(0,16,44,.7);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center;flex:1}
+.score-box-label{font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.score-box-val{font-size:15px;font-weight:600}
+.expand-section{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.expand-section.open{display:block}
+.bar-bg{height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-top:2px;margin-bottom:4px}
+.bar-fill{height:100%;border-radius:99px}
+.fill-r{background:var(--red)}.fill-a{background:#F59E0B}.fill-g{background:#22C55E}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-weight:500;font-size:11px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px;background:rgba(0,16,44,.5)}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--white)}
+.tbl tr:hover td{background:rgba(2,104,205,.08)}
+.evo-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.train-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.done-card{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:12px;margin-bottom:8px}
+.sectitle{font-size:14px;font-weight:500;color:var(--white);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.edit-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:3px 5px;border-radius:6px;font-family:inherit;transition:all .15s}
+.edit-btn:hover{background:rgba(2,104,205,.2);color:var(--white)}
+.tag-u{background:rgba(204,0,0,.3);color:#FF8080;font-size:10px;padding:1px 7px;border-radius:99px;border:1px solid rgba(204,0,0,.4)}
+.tag-r{background:rgba(245,158,11,.2);color:#FCD34D;font-size:10px;padding:1px 7px;border-radius:99px;border:1px solid rgba(245,158,11,.3)}
+.mod-detail-block{padding:8px 12px;background:rgba(0,16,44,.8);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:11px}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,10,30,.8);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+.modal{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(520px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--white);display:flex;align-items:center;gap:8px}
+.modal-title i{color:var(--blue)}
+.modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.modal-tab{padding:8px 16px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;font-family:inherit;transition:color .15s}
+.modal-tab.active{color:var(--white);border-bottom-color:var(--blue)}
+.modal-tab-panel{display:none}.modal-tab-panel.active{display:block}
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.8);color:var(--white);font-size:13px;margin-bottom:8px;font-family:inherit}
+.form-input:focus{outline:none;border-color:var(--blue)}
+.form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.8);color:var(--white);font-size:13px;font-family:inherit;resize:vertical;min-height:72px}
+.form-textarea:focus{outline:none;border-color:var(--blue)}
+.input-label{font-size:10px;color:var(--muted);margin-bottom:4px;margin-top:10px;text-transform:uppercase;letter-spacing:.5px;display:block}
+.score-btns{display:flex;gap:4px}
+.score-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:rgba(0,16,44,.6);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);font-family:inherit;transition:all .1s}
+.score-btn.s1,.score-btn.s2{background:rgba(204,0,0,.25);color:#FF8080;border-color:rgba(204,0,0,.4)}
+.score-btn.s3{background:rgba(245,158,11,.2);color:#FCD34D;border-color:rgba(245,158,11,.3)}
+.score-btn.s4,.score-btn.s5{background:rgba(34,197,94,.2);color:#4ADE80;border-color:rgba(34,197,94,.3)}
+.mod-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)}
+.btn-primary{background:var(--blue);color:var(--white);border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:background .15s}
+.btn-primary:hover{background:#0358B0}
+.btn-secondary{background:transparent;border:1px solid var(--border);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;transition:all .15s}
+.btn-secondary:hover{border-color:var(--blue);color:var(--white)}
+.btn-danger{background:transparent;border:1px solid rgba(204,0,0,.4);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;color:#FF8080;font-family:inherit;transition:all .15s}
+.btn-danger:hover{background:rgba(204,0,0,.2);color:#FF5555}
+.analyst-checkbox{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.analyst-checkbox label{font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--white);padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.5)}
+.prova-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)}
+.prova-input{width:65px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:rgba(0,16,44,.8);color:var(--white);font-size:12px;font-family:inherit;text-align:center}
+.prova-input:focus{outline:none;border-color:var(--blue)}
+.photo-preview{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:block;margin-bottom:8px}
+.attachment-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.attachment-item{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.attachment-item img{width:100%;height:100%;object-fit:cover}
+.attachment-remove{position:absolute;top:2px;right:2px;background:rgba(204,0,0,.8);border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer;padding:2px 4px;line-height:1}
+.comment-counter{font-size:10px;color:var(--muted);text-align:right;margin-top:2px}
+.char-warn{color:#FCD34D}
+.char-over{color:#FF5555}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo-area">
+    <i class="ti ti-chart-bar" style="color:var(--blue);font-size:20px" aria-hidden="true"></i>
+    <div class="logo-text">Skill<span>Matrix</span> Pro</div>
+  </div>
+  <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral">Visão Geral</button>
+  <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução">Evolução</button>
+  <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento">Treinamento</button>
+  <div class="sep" aria-hidden="true"></div>
+  <div id="sectorTabsContainer" style="display:contents"></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-left:1px solid var(--border)">
+    <span id="zdBadge" title="" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05)" onclick="App.openManageModal()" aria-label="Status Zendesk">
+      <span class="zd-dot" style="width:7px;height:7px;border-radius:50%;display:inline-block;background:#888"></span>
+      <span class="zd-label">Zendesk</span>
+    </span>
+    <button onclick="App.exportHTML()" style="background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap" aria-label="Exportar HTML">
+      <i class="ti ti-download" aria-hidden="true"></i> Exportar HTML
+    </button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="page-visao"       class="page active"></div>
+  <div id="page-evolucao"    class="page"></div>
+  <div id="page-treinamento" class="page"></div>
+</div>
+
+<!-- Edit Analyst Modal -->
+<div id="editModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle"><i class="ti ti-pencil" aria-hidden="true"></i> Editar analista</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="dados">Dados</button>
+      <button class="modal-tab" data-tab="modulos">Módulos</button>
+      <button class="modal-tab" data-tab="anexos">Anexos</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="dados">
+      <span class="input-label" for="editName">Nome</span>
+      <input type="text" id="editName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="editSector">Setor</span>
+      <select id="editSector" class="form-input"></select>
+      <span class="input-label" for="editZendesk">Nota Zendesk (0–10)</span>
+      <input type="number" id="editZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
+      <span class="input-label" for="editComment">Comentário</span>
+      <textarea id="editComment" class="form-textarea" maxlength="500" placeholder="Observações sobre o analista (máx. 500 caracteres)"></textarea>
+      <div id="editCommentCounter" class="comment-counter">0/500</div>
+      <span class="input-label">Foto</span>
+      <img id="editPhotoPreview" class="photo-preview" src="" alt="Foto do analista" style="display:none">
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer">
+          <i class="ti ti-upload" aria-hidden="true"></i> Carregar
+          <input type="file" id="editPhotoInput" accept="image/*" style="display:none">
+        </label>
+        <button id="editPhotoRemove" class="btn-danger" style="padding:6px 12px;font-size:12px">
+          <i class="ti ti-trash" aria-hidden="true"></i> Remover foto
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="modulos">
+      <div style="max-height:360px;overflow-y:auto" id="editMods"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="anexos">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Imagens anexadas ao perfil do analista.</p>
+      <div class="attachment-grid" id="editAnexosList"></div>
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:10px">
+        <i class="ti ti-photo-plus" aria-hidden="true"></i> Adicionar imagem
+        <input type="file" id="editAnexoInput" accept="image/*" multiple style="display:none">
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('editModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="editSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Analyst Modal -->
+<div id="addModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="addModalTitle"><i class="ti ti-user-plus" aria-hidden="true"></i> Adicionar analista</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="dados">Dados</button>
+      <button class="modal-tab" data-tab="modulos">Módulos</button>
+      <button class="modal-tab" data-tab="anexos">Anexos</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="dados">
+      <span class="input-label" for="addName">Nome</span>
+      <input type="text" id="addName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="addSector">Setor</span>
+      <select id="addSector" class="form-input"></select>
+      <span class="input-label" for="addZendesk">Nota Zendesk (0–10)</span>
+      <input type="number" id="addZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
+      <span class="input-label" for="addComment">Comentário</span>
+      <textarea id="addComment" class="form-textarea" maxlength="500" placeholder="Observações (máx. 500 caracteres)"></textarea>
+      <span class="input-label">Foto</span>
+      <img id="addPhotoPreview" class="photo-preview" src="" alt="Foto do analista" style="display:none">
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:4px">
+        <i class="ti ti-upload" aria-hidden="true"></i> Carregar foto
+        <input type="file" id="addPhotoInput" accept="image/*" style="display:none">
+      </label>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="modulos">
+      <div style="max-height:360px;overflow-y:auto" id="addMods"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="anexos">
+      <div class="attachment-grid" id="addAnexosList"></div>
+      <label class="btn-secondary" style="padding:6px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:10px">
+        <i class="ti ti-photo-plus" aria-hidden="true"></i> Adicionar imagem
+        <input type="file" id="addAnexoInput" accept="image/*" multiple style="display:none">
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('addModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="addSaveBtn">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Training Modal -->
+<div id="trainModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="trainModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="trainModalTitle"><i class="ti ti-calendar-plus" aria-hidden="true"></i> Agendar Treinamento</div>
+    <span class="input-label" for="tDate">Data</span>
+    <input type="date" id="tDate" class="form-input">
+    <span class="input-label" for="tMod">Módulo / Tema</span>
+    <input type="text" id="tMod" class="form-input" placeholder="Ex: SendGrid">
+    <span class="input-label" for="tLeader">Líder técnico</span>
+    <input type="text" id="tLeader" class="form-input" placeholder="Nome do líder">
+    <span class="input-label" for="tObs">Observações</span>
+    <input type="text" id="tObs" class="form-input" placeholder="Opcional">
+    <span class="input-label">Participantes</span>
+    <div id="tAnalysts" style="margin-top:6px;max-height:200px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('trainModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="trainSaveBtn">Agendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Exam Score Modal -->
+<div id="provaModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="provaModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="provaModalTitle">
+      <i class="ti ti-clipboard-check" aria-hidden="true"></i> Notas da prova — <span id="provaModTitle" style="color:var(--blue)"></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Escala de 0 a 10</p>
+    <div id="provaRows"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('provaModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="provaSaveBtn">Salvar notas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Modules & Sectors Modal -->
+<div id="manageModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manageModalTitle">
+  <div class="modal">
+    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos e Setores</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="modules" onclick="UIModals.switchModalTab('manageModal','modules')">Módulos</button>
+      <button class="modal-tab" data-tab="sectors" onclick="UIModals.switchModalTab('manageModal','sectors')">Setores</button>
+      <button class="modal-tab" data-tab="zendesk" onclick="UIModals.switchModalTab('manageModal','zendesk')">Zendesk</button>
+    </div>
+
+    <div class="modal-tab-panel active" data-panel="modules">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newModuleInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo módulo">
+        <button class="btn-primary" id="addModuleBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div style="max-height:300px;overflow-y:auto" id="modulesList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="sectors">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newSectorInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo setor">
+        <button class="btn-primary" id="addSectorBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div id="sectorsList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="zendesk">
+      <span class="input-label" for="zdSubdomain">Subdomínio do Zendesk</span>
+      <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
+      <span class="input-label" for="zdEmail">E-mail do administrador</span>
+      <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
+      <span class="input-label" for="zdApiToken">Token da API Zendesk</span>
+      <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
+      <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
+      <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
+      <span class="input-label" for="zdGroupName">Grupo no Zendesk</span>
+      <input type="text" id="zdGroupName" class="form-input" placeholder="suporte n1">
+      <span class="input-label" for="zdDays">Período (dias)</span>
+      <input type="number" id="zdDays" class="form-input" min="7" max="90" step="7" placeholder="30" style="width:100px">
+      <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
+      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>
+        <div id="zdNameMapRows"></div>
+        <button onclick="App.saveNameMapAndReimport()" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit">
+          <i class="ti ti-refresh"></i> Salvar e reimportar
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button id="zdImportBtn" class="btn-primary" style="font-size:12px;padding:6px 14px" onclick="App.importFromZendesk()">
+          <i class="ti ti-cloud-download" aria-hidden="true"></i> Importar do Zendesk
+        </button>
+        <button class="btn-secondary" style="font-size:12px;padding:6px 12px;border-color:#FCD34D;color:#FCD34D" onclick="App.testZendeskSync()">
+          <i class="ti ti-flask" aria-hidden="true"></i> Dados de teste
+        </button>
+      </div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <span class="input-label" for="zdScriptUrl" style="color:var(--muted)">URL Apps Script (automação agendada — opcional)</span>
+        <input type="url" id="zdScriptUrl" class="form-input" style="opacity:.7" placeholder="https://script.google.com/macros/s/…/exec">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn-secondary" onclick="document.getElementById('manageModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="manageSaveBtn">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zendesk Tickets Modal -->
+<div id="zdTicketsModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="zdTicketsModalTitle">
+  <div class="modal" style="max-width:540px;width:100%">
+    <div class="modal-title" id="zdTicketsModalTitle">
+      <i class="ti ti-alert-triangle" style="color:#FCD34D" aria-hidden="true"></i>
+      Negativados — <span id="zdTicketsAnalystName"></span>
+    </div>
+    <div id="zdTicketsBody" style="max-height:440px;overflow-y:auto;padding-right:4px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Nota Zendesk</div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span id="zdNewScore" style="font-size:24px;font-weight:700;color:var(--white)">—</span>
+          <span id="zdScoreLabel" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="document.getElementById('zdTicketsModal').style.display='none'">Cancelar</button>
+      <button class="btn-primary" id="zdTicketsSaveBtn">Salvar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS: load order matters — seed → store → domain → ui → main -->
+<script>
+// Default modules list — overridden by localStorage if present
+var SEED_MODULES = [
+  "Cadastro","Produtos","Serviços","Orçamento","OS","Vendas","Estoque","Boletos",
+  "DRE","Financeiro","NFS","NF´s","Contratos","Atendimento","Relatorios","Configurações",
+  "Layout e domínio personalizado","Assinatura Digital","Serasa","Tray","Mercado Pago",
+  "Mercado Livre","NuvemShop","SendGrid","Pipedrive","PagHiper","Pag Seguro","Expedição",
+  "Recursos Humanos","Banco Inter","Pesquisas","Cora","CRM","Loja Virtual","Hotmart",
+  "Shopee","Stone","API","Área do Cliente","Cobranças","Controle de Bens",
+  "Controle de Produção","CT-e","GerenciaNet","Iugu","Loja Integrada","MDF-e"
+];
+
+// Default sectors — overridden by localStorage if present
+var SEED_SECTORS = ["Chat","Telefone","Notas"];
+
+// Seed analyst data — used only when localStorage has no data
+var SEED_ANALYSTS = [
+  {"id":2,"name":"Bruno","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":4,"Layout e domínio personalizado":2,"Assinatura Digital":3,"Serasa":3,"Tray":3,"Mercado Pago":0,"Mercado Livre":4,"NuvemShop":4,"SendGrid":2,"Pipedrive":2,"PagHiper":4,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":3,"Loja Virtual":3,"Hotmart":2,"Shopee":4,"Stone":3,"API":1,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":3,"GerenciaNet":4,"Iugu":3,"Loja Integrada":4,"MDF-e":2}},
+  {"id":3,"name":"Gabriel Vaz","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":5,"Serviços":5,"Orçamento":5,"OS":5,"Vendas":5,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":5,"NFS":4,"NF´s":4,"Contratos":5,"Atendimento":5,"Relatorios":5,"Configurações":5,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":3,"Mercado Pago":0,"Mercado Livre":4,"NuvemShop":4,"SendGrid":4,"Pipedrive":3,"PagHiper":4,"Pag Seguro":4,"Expedição":4,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":4,"Loja Virtual":4,"Hotmart":3,"Shopee":4,"Stone":3,"API":3,"Área do Cliente":5,"Cobranças":5,"Controle de Bens":3,"Controle de Produção":4,"CT-e":3,"GerenciaNet":4,"Iugu":4,"Loja Integrada":4,"MDF-e":3}},
+  {"id":5,"name":"Henrique Sergio","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":4,"Orçamento":3,"OS":3,"Vendas":4,"Estoque":3,"Boletos":2,"DRE":2,"Financeiro":3,"NFS":3,"NF´s":3,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":2,"Mercado Pago":0,"Mercado Livre":2,"NuvemShop":3,"SendGrid":2,"Pipedrive":2,"PagHiper":3,"Pag Seguro":2,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":3,"Loja Virtual":3,"Hotmart":2,"Shopee":2,"Stone":2,"API":2,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":2,"GerenciaNet":3,"Iugu":2,"Loja Integrada":3,"MDF-e":2}},
+  {"id":6,"name":"Mario Diniz","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":3,"Boletos":3,"DRE":3,"Financeiro":3,"NFS":3,"NF´s":4,"Contratos":3,"Atendimento":4,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":3,"Serasa":3,"Tray":3,"Mercado Pago":0,"Mercado Livre":3,"NuvemShop":3,"SendGrid":2,"Pipedrive":2,"PagHiper":4,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":3,"Pesquisas":4,"Cora":4,"CRM":3,"Loja Virtual":4,"Hotmart":2,"Shopee":3,"Stone":3,"API":3,"Área do Cliente":3,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":4,"GerenciaNet":3,"Iugu":2,"Loja Integrada":3,"MDF-e":4}},
+  {"id":7,"name":"Jesse","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":5,"Serviços":5,"Orçamento":5,"OS":5,"Vendas":5,"Estoque":4,"Boletos":4,"DRE":4,"Financeiro":4,"NFS":4,"NF´s":4,"Contratos":4,"Atendimento":5,"Relatorios":4,"Configurações":5,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":4,"Tray":4,"Mercado Pago":0,"Mercado Livre":4,"NuvemShop":4,"SendGrid":3,"Pipedrive":3,"PagHiper":4,"Pag Seguro":4,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":4,"Loja Virtual":4,"Hotmart":4,"Shopee":4,"Stone":4,"API":4,"Área do Cliente":5,"Cobranças":5,"Controle de Bens":4,"Controle de Produção":4,"CT-e":4,"GerenciaNet":4,"Iugu":4,"Loja Integrada":4,"MDF-e":4}},
+  {"id":8,"name":"Ana Claudia","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":4,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":4,"Boletos":2,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":4,"Layout e domínio personalizado":2,"Assinatura Digital":3,"Serasa":3,"Tray":2,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":1,"Pipedrive":1,"PagHiper":3,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":3,"Cora":3,"CRM":3,"Loja Virtual":3,"Hotmart":1,"Shopee":3,"Stone":4,"API":2,"Área do Cliente":3,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":2,"GerenciaNet":3,"Iugu":2,"Loja Integrada":3,"MDF-e":2}},
+  {"id":9,"name":"Diego","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":4,"Serviços":4,"Orçamento":5,"OS":5,"Vendas":5,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":2,"NF´s":2,"Contratos":3,"Atendimento":4,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":2,"Tray":4,"Mercado Pago":3,"Mercado Livre":4,"NuvemShop":4,"SendGrid":1,"Pipedrive":1,"PagHiper":3,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":2,"Banco Inter":4,"Pesquisas":2,"Cora":4,"CRM":3,"Loja Virtual":4,"Hotmart":1,"Shopee":4,"Stone":4,"API":3,"Área do Cliente":3,"Cobranças":3,"Controle de Bens":2,"Controle de Produção":4,"CT-e":1,"GerenciaNet":3,"Iugu":3,"Loja Integrada":3,"MDF-e":1}},
+  {"id":10,"name":"Karolyne","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":4,"Serviços":5,"Orçamento":5,"OS":5,"Vendas":5,"Estoque":5,"Boletos":4,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":4,"Atendimento":4,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":2,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":2,"Pipedrive":1,"PagHiper":3,"Pag Seguro":4,"Expedição":3,"Recursos Humanos":4,"Banco Inter":4,"Pesquisas":3,"Cora":3,"CRM":3,"Loja Virtual":4,"Hotmart":1,"Shopee":3,"Stone":3,"API":3,"Área do Cliente":4,"Cobranças":5,"Controle de Bens":4,"Controle de Produção":3,"CT-e":3,"GerenciaNet":3,"Iugu":1,"Loja Integrada":3,"MDF-e":1}},
+  {"id":11,"name":"Ismael","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":4,"Serviços":4,"Orçamento":4,"OS":3,"Vendas":4,"Estoque":4,"Boletos":2,"DRE":3,"Financeiro":4,"NFS":1,"NF´s":1,"Contratos":3,"Atendimento":4,"Relatorios":4,"Configurações":5,"Layout e domínio personalizado":4,"Assinatura Digital":4,"Serasa":3,"Tray":3,"Mercado Pago":4,"Mercado Livre":3,"NuvemShop":4,"SendGrid":2,"Pipedrive":1,"PagHiper":3,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":4,"Banco Inter":4,"Pesquisas":3,"Cora":4,"CRM":3,"Loja Virtual":4,"Hotmart":1,"Shopee":3,"Stone":4,"API":3,"Área do Cliente":4,"Cobranças":5,"Controle de Bens":3,"Controle de Produção":3,"CT-e":1,"GerenciaNet":3,"Iugu":3,"Loja Integrada":4,"MDF-e":1}},
+  {"id":12,"name":"João Pedro S.","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":3,"Orçamento":4,"OS":3,"Vendas":4,"Estoque":3,"Boletos":2,"DRE":2,"Financeiro":3,"NFS":1,"NF´s":1,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":5,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":3,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":1,"Pipedrive":1,"PagHiper":3,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":3,"Pesquisas":3,"Cora":3,"CRM":3,"Loja Virtual":3,"Hotmart":1,"Shopee":3,"Stone":3,"API":3,"Área do Cliente":3,"Cobranças":3,"Controle de Bens":3,"Controle de Produção":3,"CT-e":1,"GerenciaNet":3,"Iugu":2,"Loja Integrada":3,"MDF-e":1}},
+  {"id":13,"name":"Luan","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":4,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":2,"NF´s":2,"Contratos":4,"Atendimento":4,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":3,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":2,"Pipedrive":1,"PagHiper":4,"Pag Seguro":3,"Expedição":4,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":3,"Cora":4,"CRM":3,"Loja Virtual":4,"Hotmart":1,"Shopee":3,"Stone":3,"API":4,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":4,"Controle de Produção":4,"CT-e":1,"GerenciaNet":3,"Iugu":3,"Loja Integrada":3,"MDF-e":1}},
+  {"id":14,"name":"Mario","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":4,"Serviços":5,"Orçamento":5,"OS":5,"Vendas":5,"Estoque":5,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":4,"Atendimento":4,"Relatorios":5,"Configurações":4,"Layout e domínio personalizado":4,"Assinatura Digital":3,"Serasa":4,"Tray":2,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":2,"Pipedrive":2,"PagHiper":4,"Pag Seguro":3,"Expedição":4,"Recursos Humanos":4,"Banco Inter":5,"Pesquisas":4,"Cora":4,"CRM":4,"Loja Virtual":3,"Hotmart":1,"Shopee":3,"Stone":2,"API":3,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":4,"Controle de Produção":4,"CT-e":2,"GerenciaNet":4,"Iugu":3,"Loja Integrada":3,"MDF-e":2}},
+  {"id":15,"name":"Mateus","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":4,"Serviços":4,"Orçamento":5,"OS":4,"Vendas":5,"Estoque":4,"Boletos":2,"DRE":3,"Financeiro":4,"NFS":1,"NF´s":1,"Contratos":4,"Atendimento":3,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":3,"Serasa":2,"Tray":3,"Mercado Pago":3,"Mercado Livre":4,"NuvemShop":4,"SendGrid":2,"Pipedrive":1,"PagHiper":3,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":5,"Pesquisas":3,"Cora":4,"CRM":3,"Loja Virtual":4,"Hotmart":1,"Shopee":3,"Stone":2,"API":5,"Área do Cliente":3,"Cobranças":4,"Controle de Bens":2,"Controle de Produção":3,"CT-e":1,"GerenciaNet":3,"Iugu":2,"Loja Integrada":4,"MDF-e":1}},
+  {"id":16,"name":"Tiago","sector":"Chat","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":5,"Produtos":3,"Serviços":3,"Orçamento":5,"OS":3,"Vendas":5,"Estoque":4,"Boletos":2,"DRE":3,"Financeiro":3,"NFS":1,"NF´s":1,"Contratos":4,"Atendimento":3,"Relatorios":4,"Configurações":4,"Layout e domínio personalizado":3,"Assinatura Digital":4,"Serasa":3,"Tray":3,"Mercado Pago":3,"Mercado Livre":3,"NuvemShop":3,"SendGrid":2,"Pipedrive":2,"PagHiper":3,"Pag Seguro":3,"Expedição":2,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":3,"Cora":3,"CRM":3,"Loja Virtual":3,"Hotmart":1,"Shopee":3,"Stone":3,"API":3,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":1,"GerenciaNet":3,"Iugu":2,"Loja Integrada":3,"MDF-e":1}},
+  {"id":1780507522215,"name":"Sergio","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":1,"Produtos":1,"Serviços":1,"Orçamento":1,"OS":1,"Vendas":1,"Estoque":1,"Boletos":1,"DRE":1,"Financeiro":1,"NFS":1,"NF´s":1,"Contratos":1,"Atendimento":1,"Relatorios":1,"Configurações":1,"Layout e domínio personalizado":1,"Assinatura Digital":1,"Serasa":1,"Tray":1,"Mercado Pago":1,"Mercado Livre":1,"NuvemShop":1,"SendGrid":1,"Pipedrive":1,"PagHiper":1,"Pag Seguro":1,"Expedição":1,"Recursos Humanos":1,"Banco Inter":1,"Pesquisas":1,"Cora":1,"CRM":1,"Loja Virtual":1,"Hotmart":1,"Shopee":1,"Stone":1,"API":1,"Área do Cliente":1,"Cobranças":1,"Controle de Bens":1,"Controle de Produção":1,"CT-e":1,"GerenciaNet":1,"Iugu":1,"Loja Integrada":1,"MDF-e":1}},
+  {"id":1780507594202,"name":"Thales","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":1,"Produtos":1,"Serviços":1,"Orçamento":1,"OS":1,"Vendas":1,"Estoque":1,"Boletos":1,"DRE":1,"Financeiro":1,"NFS":1,"NF´s":1,"Contratos":1,"Atendimento":1,"Relatorios":1,"Configurações":1,"Layout e domínio personalizado":1,"Assinatura Digital":1,"Serasa":1,"Tray":1,"Mercado Pago":1,"Mercado Livre":1,"NuvemShop":1,"SendGrid":1,"Pipedrive":1,"PagHiper":1,"Pag Seguro":1,"Expedição":1,"Recursos Humanos":1,"Banco Inter":1,"Pesquisas":1,"Cora":1,"CRM":1,"Loja Virtual":1,"Hotmart":1,"Shopee":1,"Stone":1,"API":1,"Área do Cliente":1,"Cobranças":1,"Controle de Bens":1,"Controle de Produção":1,"CT-e":1,"GerenciaNet":1,"Iugu":1,"Loja Integrada":1,"MDF-e":1}}
+];
+
+</script>
+<script>
+var Storage = (function() {
+  var KEYS = {
+    analysts:  'skm6_ana',
+    modules:   'skm6_mods',
+    trainings: 'skm6_train',
+    history:   'skm6_hist',
+    sectors:   'skm6_sec'
+  };
+
+  var STORAGE_WARN_BYTES = 4 * 1024 * 1024; // warn at 4 MB
+
+  function safeGet(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn('SkillMatrix: falha ao ler ' + key, e);
+      return fallback;
+    }
+  }
+
+  function safeSet(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      checkQuota();
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        alert('Atenção: armazenamento local está cheio. Exporte o HTML agora para não perder dados.');
+      } else {
+        console.error('SkillMatrix: falha ao salvar ' + key, e);
+      }
+    }
+  }
+
+  function checkQuota() {
+    try {
+      var total = 0;
+      for (var k in localStorage) {
+        if (Object.prototype.hasOwnProperty.call(localStorage, k)) {
+          total += (localStorage[k].length + k.length) * 2;
+        }
+      }
+      if (total > STORAGE_WARN_BYTES) {
+        console.warn('SkillMatrix: localStorage usando ' + Math.round(total / 1024) + ' KB');
+      }
+    } catch (e) { /* best-effort */ }
+  }
+
+  // Prototype pollution guard — never allow these as object keys from untrusted data
+  var DANGER_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+  function isSafeKey(k) {
+    if (typeof k !== 'string' || k.length === 0 || k.length > 100) return false;
+    if (DANGER_KEYS.indexOf(k) !== -1) return false;
+    // Reject strings containing control characters or HTML injection vectors
+    if (/<|>|"|'/.test(k)) return false;
+    for (var i = 0; i < k.length; i++) {
+      var code = k.charCodeAt(i);
+      if (code < 32) return false; // control characters including null
+    }
+    return true;
+  }
+
+  function clampScore(v) {
+    var n = parseInt(v, 10);
+    return (isFinite(n) && n >= 1 && n <= 5) ? n : 1;
+  }
+
+  function sanitizeScores(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    var result = Object.create(null);
+    Object.keys(raw).forEach(function(k) {
+      if (isSafeKey(k)) result[k] = clampScore(raw[k]);
+    });
+    return result;
+  }
+
+  function validateAnalyst(a) {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
+    if (typeof a.id !== 'number' || !isFinite(a.id) || a.id <= 0) return false;
+    if (typeof a.name !== 'string' || !a.name.trim() || a.name.length > 80) return false;
+    if (typeof a.sector !== 'string' || a.sector.length > 50) return false;
+    if (!a.scores || typeof a.scores !== 'object' || Array.isArray(a.scores)) return false;
+    return true;
+  }
+
+  function migrateAnalyst(raw) {
+    var zendesk = typeof raw.zendesk === 'number' && isFinite(raw.zendesk)
+      ? Math.min(10, Math.max(0, raw.zendesk)) : null;
+    var provaAvg = typeof raw.provaAvg === 'number' && isFinite(raw.provaAvg)
+      ? Math.min(10, Math.max(0, raw.provaAvg)) : null;
+    var photo = typeof raw.photo === 'string' && raw.photo.startsWith('data:image/')
+      ? raw.photo : null;
+    var anexos = Array.isArray(raw.anexos)
+      ? raw.anexos.filter(function(s) { return typeof s === 'string' && s.startsWith('data:image/'); })
+      : [];
+    return {
+      id:       raw.id,
+      name:     (raw.name || '').trim().slice(0, 80),
+      sector:   (raw.sector || 'Chat').slice(0, 50),
+      zendesk:  zendesk,
+      provaAvg: provaAvg,
+      photo:    photo,
+      comment:  typeof raw.comment === 'string' ? raw.comment.slice(0, 500) : '',
+      anexos:   anexos,
+      scores:   sanitizeScores(raw.scores)
+    };
+  }
+
+  function loadAnalysts() {
+    var raw = safeGet(KEYS.analysts, null);
+    if (!Array.isArray(raw)) return null;
+    var valid = [];
+    raw.forEach(function(a) {
+      if (validateAnalyst(a)) valid.push(migrateAnalyst(a));
+      else console.warn('SkillMatrix: analista inválido ignorado', a);
+    });
+    return valid.length ? valid : null;
+  }
+
+  function loadModules() {
+    var raw = safeGet(KEYS.modules, null);
+    if (!Array.isArray(raw)) return null;
+    var valid = raw.filter(function(m) { return typeof m === 'string' && m.trim(); });
+    return valid.length ? valid : null;
+  }
+
+  function loadSectors() {
+    var raw = safeGet(KEYS.sectors, null);
+    if (!Array.isArray(raw)) return null;
+    var valid = raw.filter(function(s) { return typeof s === 'string' && s.trim(); });
+    return valid.length ? valid : null;
+  }
+
+  function sanitizeTraining(t) {
+    if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
+    if (typeof t.module !== 'string' || !t.module.trim()) return null;
+    var provas = Object.create(null);
+    if (t.provas && typeof t.provas === 'object' && !Array.isArray(t.provas)) {
+      Object.keys(t.provas).forEach(function(k) {
+        if (isSafeKey(k)) {
+          var v = parseFloat(t.provas[k]);
+          if (isFinite(v)) provas[k] = Math.min(10, Math.max(0, v));
+        }
+      });
+    }
+    return {
+      date:     typeof t.date   === 'string' ? t.date.slice(0, 20)   : '',
+      module:   t.module.trim().slice(0, 100),
+      leader:   typeof t.leader === 'string' ? t.leader.slice(0, 80) : '',
+      obs:      typeof t.obs    === 'string' ? t.obs.slice(0, 500)   : '',
+      status:   t.status === 'done' ? 'done' : 'pending',
+      analysts: Array.isArray(t.analysts)
+        ? t.analysts.filter(function(n) { return typeof n === 'string'; }).map(function(n) { return n.slice(0, 80); })
+        : [],
+      provas:   provas
+    };
+  }
+
+  function loadTrainings() {
+    var raw = safeGet(KEYS.trainings, []);
+    if (!Array.isArray(raw)) return [];
+    var result = [];
+    raw.forEach(function(t) {
+      var s = sanitizeTraining(t);
+      if (s) result.push(s);
+    });
+    return result;
+  }
+
+  function loadHistory() {
+    var raw = safeGet(KEYS.history, {});
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    var result = Object.create(null);
+    Object.keys(raw).forEach(function(k) {
+      if (DANGER_KEYS.indexOf(k) !== -1) return;
+      var entries = raw[k];
+      if (!Array.isArray(entries)) return;
+      result[k] = entries.filter(function(e) {
+        return e && typeof e === 'object' && typeof e.date === 'string' && typeof e.avg === 'number' && isFinite(e.avg);
+      }).map(function(e) {
+        return { date: e.date.slice(0, 20), avg: Math.min(10, Math.max(0, e.avg)) };
+      });
+    });
+    return result;
+  }
+
+  function saveAll(state) {
+    safeSet(KEYS.analysts,  state.analysts);
+    safeSet(KEYS.modules,   state.modules);
+    safeSet(KEYS.sectors,   state.sectors);
+    safeSet(KEYS.trainings, state.trainings);
+    safeSet(KEYS.history,   state.history);
+  }
+
+  function estimateSizeKB() {
+    try {
+      var total = 0;
+      Object.keys(KEYS).forEach(function(k) {
+        var v = localStorage.getItem(KEYS[k]);
+        if (v) total += v.length * 2;
+      });
+      return Math.round(total / 1024);
+    } catch (e) { return 0; }
+  }
+
+  return {
+    loadAnalysts:   loadAnalysts,
+    loadModules:    loadModules,
+    loadSectors:    loadSectors,
+    loadTrainings:  loadTrainings,
+    loadHistory:    loadHistory,
+    saveAll:        saveAll,
+    estimateSizeKB: estimateSizeKB,
+    migrateAnalyst: migrateAnalyst
+  };
+})();
+
+</script>
+<script>
+var Domain = (function() {
+
+  function techAverage(scores) {
+    var values = Object.values(scores).filter(function(v) { return v > 0; });
+    if (!values.length) return 0;
+    return values.reduce(function(a, b) { return a + b; }, 0) / values.length;
+  }
+
+  // Returns technical score on 0–10 scale
+  function techScore(scores) {
+    return techAverage(scores) * 2;
+  }
+
+  // Returns unified score: mean of all available scores
+  function unifiedScore(analyst) {
+    var parts = [techScore(analyst.scores)];
+    if (analyst.provaAvg != null) parts.push(analyst.provaAvg);
+    if (analyst.zendesk   != null) parts.push(analyst.zendesk);
+    return parts.reduce(function(a, b) { return a + b; }, 0) / parts.length;
+  }
+
+  function scoreColor(score) {
+    if (score >= 7) return '#4ADE80';
+    if (score >= 5) return '#FCD34D';
+    return '#FF5555';
+  }
+
+  function scoreBorderClass(score) {
+    if (score >= 7) return 'bl-g';
+    if (score >= 5) return 'bl-a';
+    return 'bl-r';
+  }
+
+  function scoreAvatarClass(score) {
+    if (score >= 7) return 'av-g';
+    if (score >= 5) return 'av-a';
+    return 'av-r';
+  }
+
+  function scoreBarClass(moduleScore) {
+    if (moduleScore >= 4) return 'fill-g';
+    if (moduleScore >= 3) return 'fill-a';
+    return 'fill-r';
+  }
+
+  function scoreStatusLabel(avg) {
+    if (avg >= 4) return 'Bom';
+    if (avg >= 3) return 'Regular';
+    return 'Crítico';
+  }
+
+  function nameInitials(fullName) {
+    return fullName.split(' ')
+      .map(function(w) { return w[0] || ''; })
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  function sectorBadgeClass(sector) {
+    if (sector === 'Chat')     return 'bc';
+    if (sector === 'Telefone') return 'bt';
+    if (sector === 'Notas')    return 'bn';
+    return 'bc';
+  }
+
+  // Escapes a string for safe insertion into HTML text nodes / attributes
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Recalculates provaAvg for a single analyst across all trainings
+  function recalcProvaAvg(analystName, trainings) {
+    var scores = [];
+    trainings.forEach(function(t) {
+      if (t.provas && t.provas[analystName] != null) {
+        scores.push(t.provas[analystName]);
+      }
+    });
+    return scores.length
+      ? scores.reduce(function(a, b) { return a + b; }, 0) / scores.length
+      : null;
+  }
+
+  // Recalculates provaAvg for all analysts in place
+  function applyTrainingScores(analysts, trainings) {
+    analysts.forEach(function(analyst) {
+      analyst.provaAvg = recalcProvaAvg(analyst.name, trainings);
+    });
+  }
+
+  // Builds sorted module-average array from a list of analysts
+  function moduleAverages(modules, analysts) {
+    return modules.map(function(mod) {
+      var values = analysts
+        .map(function(a) { return a.scores[mod] || 0; })
+        .filter(function(v) { return v > 0; });
+      var avg = values.length
+        ? values.reduce(function(a, b) { return a + b; }, 0) / values.length
+        : 0;
+      return { name: mod, avg: avg };
+    }).sort(function(a, b) { return a.avg - b.avg; });
+  }
+
+  return {
+    techScore:       techScore,
+    unifiedScore:    unifiedScore,
+    scoreColor:      scoreColor,
+    scoreBorderClass: scoreBorderClass,
+    scoreAvatarClass: scoreAvatarClass,
+    scoreBarClass:   scoreBarClass,
+    scoreStatusLabel: scoreStatusLabel,
+    nameInitials:    nameInitials,
+    sectorBadgeClass: sectorBadgeClass,
+    escapeHtml:      escapeHtml,
+    recalcProvaAvg:  recalcProvaAvg,
+    applyTrainingScores: applyTrainingScores,
+    moduleAverages:  moduleAverages
+  };
+})();
+
+</script>
+<script>
+var UIOverview = (function() {
+  var D = Domain;
+  var esc = Domain.escapeHtml;
+
+  function sectorBadge(sector) {
+    var cls = D.sectorBadgeClass(sector);
+    return '<span class="' + cls + '">' + esc(sector) + '</span>';
+  }
+
+  function avatarHtml(analyst, sizeClass) {
+    var score = D.unifiedScore(analyst);
+    var cls = sizeClass || D.scoreAvatarClass(score);
+    if (analyst.photo) {
+      return '<div class="avatar ' + cls + '"><img src="' + esc(analyst.photo) + '" alt="' + esc(analyst.name) + '"></div>';
+    }
+    return '<div class="avatar ' + cls + '">' + esc(D.nameInitials(analyst.name)) + '</div>';
+  }
+
+  function scoreBoxes(analyst, fontSize) {
+    var fs = fontSize ? 'font-size:' + fontSize + ';' : '';
+    var tech = D.techScore(analyst.scores);
+    var provaColor = analyst.provaAvg != null ? D.scoreColor(analyst.provaAvg) : 'var(--muted)';
+    var zColor     = analyst.zendesk  != null ? D.scoreColor(analyst.zendesk)  : 'var(--muted)';
+    return (
+      '<div class="score-box"><div class="score-box-label">Técnica</div>' +
+        '<div class="score-box-val" style="' + fs + 'color:' + D.scoreColor(tech) + '">' + tech.toFixed(1) + '</div></div>' +
+      '<div class="score-box"><div class="score-box-label">Prova</div>' +
+        '<div class="score-box-val" style="' + fs + 'color:' + provaColor + '">' +
+          (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</div></div>' +
+      '<div class="score-box" style="cursor:pointer" onclick="App.openZendeskTickets(' + analyst.id + ')" title="Ver atendimentos negativados">' +
+        '<div class="score-box-label">Zendesk <i class="ti ti-chevron-down" style="font-size:8px;vertical-align:middle;opacity:.5"></i></div>' +
+        '<div class="score-box-val" style="' + fs + 'color:' + zColor + '">' +
+          (analyst.zendesk != null ? analyst.zendesk.toFixed(1) : '—') +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function criticCard(analyst, modules) {
+    var u = D.unifiedScore(analyst);
+    var worst = modules.slice()
+      .map(function(m) { return { name: m, score: analyst.scores[m] || 0 }; })
+      .sort(function(a, b) { return a.score - b.score; })
+      .slice(0, 3);
+    return (
+      '<div class="ccard">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+          avatarHtml(analyst, 'av-r') +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + '</div>' +
+            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+          '</div>' +
+          '<div style="margin-left:auto;text-align:right">' +
+            '<div style="font-size:22px;font-weight:700;color:#FF5555">' + u.toFixed(1) + '</div>' +
+            '<div style="font-size:10px;color:var(--muted)">unificada</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
+        worst.map(function(x, i) {
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(204,0,0,.2);font-size:12px;color:var(--white)">' +
+            '<span>' +
+              '<span style="background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-right:4px">' + (i + 1) + '</span>' +
+              esc(x.name) +
+            '</span>' +
+            '<span style="color:#FF5555;font-weight:500">Nota ' + x.score + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>'
+    );
+  }
+
+  function analystCard(analyst, modules) {
+    var u = D.unifiedScore(analyst);
+    var uColor = D.scoreColor(u);
+    var borderCls = D.scoreBorderClass(u);
+    var avatarCls = D.scoreAvatarClass(u);
+
+    var moduleBars = modules.map(function(m) {
+      var sv = analyst.scores[m] || 0;
+      return '<div style="margin-bottom:4px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">' +
+          '<span>' + esc(m) + '</span><span>' + sv + '/5</span>' +
+        '</div>' +
+        '<div class="bar-bg"><div class="bar-fill ' + D.scoreBarClass(sv) + '" style="width:' + (sv * 20) + '%"></div></div>' +
+      '</div>';
+    }).join('');
+
+    var urgentModules = modules.filter(function(m) {
+      var s = analyst.scores[m] || 0; return s > 0 && s <= 2;
+    });
+    var recommendedModules = modules.filter(function(m) {
+      return (analyst.scores[m] || 0) === 3;
+    });
+
+    var trainingPlan = urgentModules.map(function(m) {
+      return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--white)"><span>' + esc(m) + '</span><span class="tag-u">Urgente</span></div>';
+    }).join('') + recommendedModules.map(function(m) {
+      return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--white)"><span>' + esc(m) + '</span><span class="tag-r">Recomendado</span></div>';
+    }).join('');
+
+    var commentHtml = analyst.comment
+      ? '<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">' + esc(analyst.comment) + '</div>'
+      : '';
+
+    var attachmentHtml = '';
+    if (analyst.anexos && analyst.anexos.length) {
+      attachmentHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' +
+        analyst.anexos.map(function(src) {
+          return '<img src="' + esc(src) + '" style="width:56px;height:56px;border-radius:6px;object-fit:cover;border:1px solid var(--border)" alt="Anexo">';
+        }).join('') +
+      '</div>';
+    }
+
+    var avatar = analyst.photo
+      ? '<div class="avatar ' + avatarCls + '"><img src="' + esc(analyst.photo) + '" alt="' + esc(analyst.name) + '"></div>'
+      : '<div class="avatar ' + avatarCls + '">' + esc(D.nameInitials(analyst.name)) + '</div>';
+
+    return (
+      '<div class="acard ' + borderCls + '">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+          avatar +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(analyst.name) + '</div>' +
+            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:5px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
+        '<div style="border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;justify-content:space-between">' +
+          '<div>' +
+            '<div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Nota Unificada</div>' +
+            '<div style="font-size:24px;font-weight:700;color:' + uColor + '">' + u.toFixed(1) + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:4px">' +
+            '<button class="edit-btn" onclick="App.openEditModal(' + analyst.id + ')" title="Editar" aria-label="Editar ' + esc(analyst.name) + '"><i class="ti ti-pencil"></i></button>' +
+            '<button class="edit-btn" onclick="App.removeAnalyst(' + analyst.id + ')" style="color:#FF5555" title="Remover" aria-label="Remover ' + esc(analyst.name) + '"><i class="ti ti-trash"></i></button>' +
+            '<button class="edit-btn" onclick="App.toggleExpand(' + analyst.id + ')" title="Detalhes" aria-label="Detalhes ' + esc(analyst.name) + '"><i class="ti ti-chevron-down"></i></button>' +
+          '</div>' +
+        '</div>' +
+        commentHtml +
+        '<div class="expand-section" id="exp-' + analyst.id + '">' +
+          '<div style="font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Módulos técnicos</div>' +
+          moduleBars +
+          (trainingPlan ? '<div style="margin-top:10px;font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Treinamentos necessários</div>' + trainingPlan : '') +
+          attachmentHtml +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function render(state) {
+    var filtered = state.currentSector === 'all'
+      ? state.analysts
+      : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
+
+    var sorted = filtered.slice().sort(function(a, b) {
+      return D.unifiedScore(a) - D.unifiedScore(b);
+    });
+
+    var best = filtered.slice().sort(function(a, b) {
+      return D.unifiedScore(b) - D.unifiedScore(a);
+    })[0];
+
+    var modAvgs = D.moduleAverages(state.modules, filtered);
+    var avgTech = filtered.length
+      ? (filtered.reduce(function(s, a) { return s + D.techScore(a.scores); }, 0) / filtered.length).toFixed(1)
+      : '—';
+    var criticalCount = filtered.filter(function(a) { return D.unifiedScore(a) < 5; }).length;
+    var mostCriticalModule = modAvgs[0] ? modAvgs[0].name.slice(0, 12) : '—';
+
+    var sectorLabel = state.currentSector === 'all' ? 'Todos os Analistas' : state.currentSector;
+
+    var h = '';
+
+    // --- Sector filter tabs ---
+    var sectorDot = function(s) {
+      var cls = D.sectorBadgeClass(s);
+      return cls === 'bc' ? '#60AAFF' : cls === 'bt' ? '#4ADE80' : '#FCD34D';
+    };
+    var allSectors = [{ key: 'all', label: 'Todos', color: '#8AADDB' }].concat(
+      state.sectors.map(function(s) { return { key: s, label: s, color: sectorDot(s) }; })
+    );
+    h += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
+    allSectors.forEach(function(tab) {
+      var active = state.currentSector === tab.key;
+      var count  = tab.key === 'all'
+        ? state.analysts.length
+        : state.analysts.filter(function(a) { return a.sector === tab.key; }).length;
+      h += '<button onclick="App.setSector(\'' + esc(tab.key) + '\',this)" style="' +
+        'padding:8px 18px;border-radius:22px;cursor:pointer;font-size:13px;font-family:inherit;' +
+        'font-weight:' + (active ? '600' : '400') + ';' +
+        'border:1.5px solid ' + (active ? tab.color : 'var(--border)') + ';' +
+        'background:' + (active ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.03)') + ';' +
+        'color:' + (active ? tab.color : 'var(--muted)') + ';' +
+        'display:inline-flex;align-items:center;gap:7px;transition:all .15s">' +
+        (tab.key !== 'all'
+          ? '<span style="width:9px;height:9px;border-radius:50%;background:' + tab.color + ';flex-shrink:0"></span>'
+          : '') +
+        esc(tab.label) +
+        '<span style="font-size:11px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.08);color:' +
+          (active ? tab.color : 'var(--muted)') + '">' + count + '</span>' +
+      '</button>';
+    });
+    h += '</div>';
+
+    // Header
+    h += '<div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
+      '<div>' +
+        '<div style="font-size:20px;font-weight:600;color:var(--white)">Nível Técnico — ' + esc(sectorLabel) + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:4px">' + filtered.length + ' analistas · ' + state.modules.length + ' módulos · nota unificada 0–10</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<button class="btn-secondary" style="font-size:12px" onclick="App.openAddAnalystModal()"><i class="ti ti-user-plus"></i> Adicionar Analista</button>' +
+        '<button class="btn-secondary" style="font-size:12px" onclick="App.openManageModal()"><i class="ti ti-settings"></i> Gerenciar</button>' +
+      '</div>' +
+    '</div>';
+
+    // KPI strip
+    h += '<div class="stat-strip">' +
+      '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">' + filtered.length + '</div><div class="stat-lbl">Analistas</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#4ADE80">' + avgTech + '</div><div class="stat-lbl">Média técnica</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:var(--red)">' + criticalCount + '</div><div class="stat-lbl">Críticos (&lt;5)</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#FCD34D;font-size:16px;margin-top:4px">' + esc(mostCriticalModule) + '</div><div class="stat-lbl">Módulo mais crítico</div></div>' +
+    '</div>';
+
+    // Highlight card (best analyst — always from all analysts, not filtered)
+    if (best) {
+      var us = D.unifiedScore(best);
+      var tech = D.techScore(best.scores);
+      var bestAvatar = best.photo
+        ? '<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid var(--blue)"><img src="' + esc(best.photo) + '" style="width:100%;height:100%;object-fit:cover" alt=""></div>'
+        : '<div style="width:44px;height:44px;border-radius:50%;background:rgba(2,104,205,.3);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--white)">' + esc(D.nameInitials(best.name)) + '</div>';
+      h += '<div class="hbox">' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          bestAvatar +
+          '<div>' +
+            '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">🏆 Destaque — Maior nota unificada</div>' +
+            '<div style="font-size:20px;font-weight:600;color:var(--white);margin-top:2px">' + esc(best.name) + '</div>' +
+            '<div style="margin-top:4px">' + sectorBadge(best.sector) + '</div>' +
+          '</div>' +
+          '<div style="margin-left:auto;text-align:right">' +
+            '<div style="font-size:30px;font-weight:700;color:' + D.scoreColor(us) + '">' + us.toFixed(1) + '</div>' +
+            '<div style="font-size:10px;color:var(--muted)">nota unificada</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:14px">' + scoreBoxes(best) + '</div>' +
+      '</div>';
+    }
+
+    // Critical highlight
+    h += '<div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-circle"></i> Destaque Crítico</div>' +
+      '<div class="critic-grid">';
+    sorted.slice(0, 2).forEach(function(a) {
+      h += criticCard(a, state.modules);
+    });
+    h += '</div>';
+
+    // All analysts grid
+    h += '<div class="sectitle"><i class="ti ti-users"></i> Todos os Analistas</div>';
+    h += '<div class="cards-grid">';
+    sorted.forEach(function(a) {
+      h += analystCard(a, state.modules);
+    });
+    h += '</div>';
+
+    // Module ranking table
+    h += '<div style="margin-top:28px"><div class="sectitle"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
+      '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
+    modAvgs.forEach(function(x, i) {
+      var statusBg   = x.avg < 3 ? 'rgba(204,0,0,.25)'      : x.avg < 4 ? 'rgba(245,158,11,.2)'   : 'rgba(34,197,94,.15)';
+      var statusColor = x.avg < 3 ? '#FF8080'                : x.avg < 4 ? '#FCD34D'               : '#4ADE80';
+      var statusBorder = x.avg < 3 ? 'rgba(204,0,0,.3)'     : x.avg < 4 ? 'rgba(245,158,11,.3)'   : 'rgba(34,197,94,.3)';
+      h += '<tr>' +
+        '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
+        '<td>' + esc(x.name) + '</td>' +
+        '<td style="color:' + (x.avg >= 4 ? '#4ADE80' : x.avg >= 3 ? '#FCD34D' : '#FF5555') + ';font-weight:600">' + x.avg.toFixed(2) + '</td>' +
+        '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;padding:2px 10px;border-radius:99px;border:1px solid ' + statusBorder + '">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
+      '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    document.getElementById('page-visao').innerHTML = h;
+  }
+
+  return { render: render };
+})();
+
+</script>
+<script>
+var UIEvolution = (function() {
+  var D = Domain;
+  var esc = Domain.escapeHtml;
+  var chartInstances = {};
+
+  var CHART_COLORS = [
+    '#0268CD','#22C55E','#F59E0B','#CC0000','#8B5CF6','#EC4899',
+    '#06B6D4','#84CC16','#F97316','#6366F1','#14B8A6','#D97706',
+    '#FF5555','#7C3AED','#059669','#60AAFF'
+  ];
+
+  function destroyAll() {
+    Object.keys(chartInstances).forEach(function(k) {
+      try { chartInstances[k].destroy(); } catch (e) {}
+    });
+    chartInstances = {};
+  }
+
+  function sectorBadge(sector) {
+    var cls = D.sectorBadgeClass(sector);
+    return '<span class="' + cls + '">' + esc(sector) + '</span>';
+  }
+
+  function render(state) {
+    destroyAll();
+
+    var list = state.currentSector === 'all'
+      ? state.analysts
+      : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
+
+    var sectorLabel = state.currentSector === 'all' ? 'Todos' : state.currentSector;
+
+    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Evolução por Analista — ' + esc(sectorLabel) + '</div>';
+
+    list.forEach(function(analyst, idx) {
+      var u = D.unifiedScore(analyst);
+      var tech = D.techScore(analyst.scores);
+      var provaColor = analyst.provaAvg != null ? D.scoreColor(analyst.provaAvg) : 'var(--muted)';
+      var zColor     = analyst.zendesk  != null ? D.scoreColor(analyst.zendesk)  : 'var(--muted)';
+      var avatarHtml = analyst.photo
+        ? '<div class="avatar ' + D.scoreAvatarClass(u) + '"><img src="' + esc(analyst.photo) + '" alt=""></div>'
+        : '<div class="avatar ' + D.scoreAvatarClass(u) + '">' + esc(D.nameInitials(analyst.name)) + '</div>';
+
+      h += '<div class="evo-card">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+          avatarHtml +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + ' ' + sectorBadge(analyst.sector) + '</div>' +
+            '<div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap">' +
+              '<span style="font-size:12px;color:var(--muted)">Técnica: <b style="color:' + D.scoreColor(tech) + '">' + tech.toFixed(1) + '</b></span>' +
+              '<span style="font-size:12px;color:var(--muted)">Prova: <b style="color:' + provaColor + '">' + (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</b></span>' +
+              '<span style="font-size:12px;color:var(--muted)">Zendesk: <b style="color:' + zColor + '">' + (analyst.zendesk != null ? analyst.zendesk.toFixed(1) : '—') + '</b></span>' +
+              '<span style="font-size:12px;font-weight:600;color:' + D.scoreColor(u) + '">Unificada: ' + u.toFixed(1) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="position:relative;height:180px"><canvas id="evo-' + analyst.id + '"></canvas></div>' +
+      '</div>';
+    });
+
+    document.getElementById('page-evolucao').innerHTML = h;
+
+    Chart.defaults.color = '#8AADDB';
+
+    list.forEach(function(analyst, idx) {
+      var ctx = document.getElementById('evo-' + analyst.id);
+      if (!ctx) return;
+
+      var colorIdx = state.analysts.indexOf(analyst) % CHART_COLORS.length;
+      var color = CHART_COLORS[colorIdx];
+      var scores = state.modules.map(function(m) { return analyst.scores[m] || 0; });
+      var pointColors = scores.map(function(s) {
+        return s <= 2 ? '#CC0000' : s === 3 ? '#F59E0B' : '#22C55E';
+      });
+
+      chartInstances['e' + analyst.id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: state.modules,
+          datasets: [{
+            label: 'Técnica',
+            data: scores,
+            borderColor: color,
+            backgroundColor: 'transparent',
+            pointBackgroundColor: pointColors,
+            pointRadius: 3,
+            tension: 0.3,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              ticks: { color: '#8AADDB', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
+              grid: { color: 'rgba(14,48,96,.4)' }
+            },
+            y: {
+              min: 0, max: 5,
+              ticks: { stepSize: 1, color: '#8AADDB', font: { size: 10 } },
+              grid: { color: 'rgba(14,48,96,.4)' }
+            }
+          }
+        }
+      });
+    });
+  }
+
+  return { render: render, destroyAll: destroyAll };
+})();
+
+</script>
+<script>
+var UITraining = (function() {
+  var D = Domain;
+  var esc = Domain.escapeHtml;
+
+  function sectorBadge(sector) {
+    var cls = D.sectorBadgeClass(sector);
+    return '<span class="' + cls + '">' + esc(sector) + '</span>';
+  }
+
+  function render(state) {
+    var filtered = state.currentSector === 'all'
+      ? state.analysts
+      : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
+
+    var modAvgs = D.moduleAverages(state.modules, filtered);
+
+    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Painel de Treinamentos</div>';
+
+    // Critical vs mastered modules
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">';
+
+    // Most critical
+    h += '<div><div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-triangle"></i> Módulos mais críticos</div>';
+    modAvgs.slice(0, 5).forEach(function(x) {
+      var safeId = 'md_' + x.name.replace(/[^a-z0-9]/gi, '_');
+      var needTraining = filtered.filter(function(a) {
+        var s = a.scores[x.name] || 0;
+        return s > 0 && s <= 3;
+      }).sort(function(a, b) {
+        return (a.scores[x.name] || 0) - (b.scores[x.name] || 0);
+      });
+
+      h += '<div onclick="App.toggleModuleDetail(\'' + safeId + '\')" style="cursor:pointer;padding:9px 12px;border:1px solid rgba(204,0,0,.3);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:rgba(204,0,0,.1);color:var(--white);transition:border-color .15s">' +
+        '<span>' + esc(x.name) + '</span>' +
+        '<span style="color:#FF5555;font-weight:500">' + x.avg.toFixed(2) + ' <i class="ti ti-chevron-down" style="font-size:11px"></i></span>' +
+      '</div>' +
+      '<div id="' + safeId + '" style="display:none;" class="mod-detail-block">' +
+        '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Precisam de treinamento</div>' +
+        needTraining.map(function(a) {
+          var s = a.scores[x.name] || 0;
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);color:var(--white);font-size:12px">' +
+            '<span>' + esc(a.name) + ' ' + sectorBadge(a.sector) + '</span>' +
+            '<span class="' + (s <= 2 ? 'tag-u' : 'tag-r') + '">' + (s <= 2 ? 'Urgente' : 'Recomendado') + ' (' + s + ')</span>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    });
+    h += '</div>';
+
+    // Most mastered
+    h += '<div><div class="sectitle" style="color:#4ADE80"><i class="ti ti-star"></i> Módulos dominados</div>';
+    modAvgs.slice(-5).reverse().forEach(function(x) {
+      h += '<div style="padding:9px 12px;border:1px solid rgba(34,197,94,.25);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;background:rgba(34,197,94,.08);color:var(--white)">' +
+        '<span>' + esc(x.name) + '</span>' +
+        '<span style="color:#4ADE80;font-weight:500">' + x.avg.toFixed(2) + '</span>' +
+      '</div>';
+    });
+    h += '</div></div>';
+
+    // Training schedule header
+    var pending = state.trainings.filter(function(t) { return t.status !== 'done'; });
+    var done    = state.trainings.filter(function(t) { return t.status === 'done'; });
+
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+      '<div class="sectitle" style="margin:0"><i class="ti ti-calendar-plus"></i> Agenda de Treinamentos</div>' +
+      '<button class="btn-primary" style="font-size:12px" onclick="App.openTrainingModal()"><i class="ti ti-plus"></i> Agendar</button>' +
+    '</div>';
+
+    if (pending.length) {
+      pending.forEach(function(t) {
+        var idx = state.trainings.indexOf(t);
+        var provaEntries = t.provas ? Object.entries(t.provas) : [];
+        h += '<div class="train-card">' +
+          '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px">' +
+            '<div>' +
+              '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(t.module) + '</div>' +
+              '<div style="font-size:12px;color:var(--muted);margin-top:4px">📅 ' + esc(t.date) + ' · 👤 Líder: ' + esc(t.leader) + '</div>' +
+              (t.obs ? '<div style="font-size:12px;color:var(--muted)">' + esc(t.obs) + '</div>' : '') +
+              '<div style="font-size:12px;color:var(--muted);margin-top:3px">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
+              (provaEntries.length
+                ? '<div style="font-size:12px;color:#60AAFF;margin-top:5px"><i class="ti ti-clipboard-check"></i> ' +
+                    provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1]; }).join(' · ') +
+                  '</div>'
+                : '') +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
+              '<button class="btn-secondary" style="font-size:11px;padding:5px 10px;border-color:var(--blue);color:#60AAFF" onclick="App.openProvaModal(' + idx + ')"><i class="ti ti-clipboard-check"></i> Nota prova</button>' +
+              '<button class="btn-primary" style="font-size:11px;padding:5px 10px;background:#15803D;border-color:#15803D" onclick="App.finishTraining(' + idx + ')"><i class="ti ti-check"></i> Finalizar</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+    } else {
+      h += '<div style="font-size:13px;color:var(--muted);padding:20px;text-align:center;border:1px dashed var(--border);border-radius:10px">Nenhum treinamento agendado.</div>';
+    }
+
+    if (done.length) {
+      h += '<div class="sectitle" style="margin-top:20px;color:#4ADE80"><i class="ti ti-checks"></i> Finalizados</div>';
+      done.forEach(function(t) {
+        var provaEntries = t.provas ? Object.entries(t.provas) : [];
+        h += '<div class="done-card">' +
+          '<div style="font-size:13px;font-weight:500;color:#4ADE80">✅ ' + esc(t.module) + '</div>' +
+          '<div style="font-size:12px;color:#4ADE80;margin-top:3px">' + esc(t.date) + ' · ' + esc(t.leader) + '</div>' +
+          '<div style="font-size:12px;color:#4ADE80">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
+          (provaEntries.length
+            ? '<div style="font-size:12px;color:#60AAFF;margin-top:4px">Notas: ' +
+                provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1] + '/10'; }).join(' · ') +
+              '</div>'
+            : '') +
+        '</div>';
+      });
+    }
+
+    document.getElementById('page-treinamento').innerHTML = h;
+  }
+
+  return { render: render };
+})();
+
+</script>
+<script>
+var UIModals = (function() {
+  var D = Domain;
+  var esc = Domain.escapeHtml;
+
+  // --- Edit Analyst Modal ---
+
+  function openEdit(analyst, modules, sectors, onSave) {
+    var modal = document.getElementById('editModal');
+    var pendingPhoto = analyst.photo || null;
+    var pendingAnexos = (analyst.anexos || []).slice();
+
+    // Populate Dados tab
+    document.getElementById('editName').value = analyst.name;
+    var secSel = document.getElementById('editSector');
+    secSel.innerHTML = sectors.map(function(s) {
+      return '<option' + (analyst.sector === s ? ' selected' : '') + '>' + esc(s) + '</option>';
+    }).join('');
+    document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
+    document.getElementById('editComment').value = analyst.comment || '';
+    updateCommentCounter();
+
+    // Photo preview
+    var preview = document.getElementById('editPhotoPreview');
+    preview.src = pendingPhoto || '';
+    preview.style.display = pendingPhoto ? 'block' : 'none';
+    document.getElementById('editPhotoInput').value = '';
+
+    // Modules tab
+    document.getElementById('editMods').innerHTML = modules.map(function(m) {
+      var s = analyst.scores[m] || 0;
+      return '<div class="mod-row">' +
+        '<span style="flex:1">' + esc(m) + '</span>' +
+        '<div class="score-btns">' +
+          [1,2,3,4,5].map(function(n) {
+            return '<button class="score-btn' + (s === n ? ' s' + n : '') + '" ' +
+              'onclick="UIModals._setScore(this,' + n + ')" data-mod="' + esc(m) + '">' + n + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Anexos tab
+    renderAnexosList(pendingAnexos, 'editAnexosList', function(updated) {
+      pendingAnexos = updated;
+    });
+
+    // Switch to first tab
+    switchModalTab('editModal', 'dados');
+
+    modal.dataset.analystId = analyst.id;
+    modal.style.display = 'flex';
+
+    // Photo file input handler
+    document.getElementById('editPhotoInput').onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('Selecione uma imagem válida.'); return; }
+      readFileAsBase64(file, function(b64) {
+        pendingPhoto = b64;
+        preview.src = b64;
+        preview.style.display = 'block';
+      });
+    };
+
+    document.getElementById('editPhotoRemove').onclick = function() {
+      pendingPhoto = null;
+      preview.src = '';
+      preview.style.display = 'none';
+      document.getElementById('editPhotoInput').value = '';
+    };
+
+    document.getElementById('editAnexoInput').onchange = function(e) {
+      var files = Array.from(e.target.files);
+      var remaining = files;
+      function processNext() {
+        if (!remaining.length) {
+          renderAnexosList(pendingAnexos, 'editAnexosList', function(updated) { pendingAnexos = updated; });
+          e.target.value = '';
+          return;
+        }
+        var f = remaining.shift();
+        if (!f.type.startsWith('image/')) { processNext(); return; }
+        readFileAsBase64(f, function(b64) {
+          pendingAnexos.push(b64);
+          processNext();
+        });
+      }
+      processNext();
+    };
+
+    document.getElementById('editSaveBtn').onclick = function() {
+      var name = document.getElementById('editName').value.trim();
+      if (!name) { alert('O nome não pode ser vazio.'); return; }
+      var sector = document.getElementById('editSector').value;
+      var zv = parseFloat(document.getElementById('editZendesk').value);
+      var comment = document.getElementById('editComment').value.slice(0, 500);
+
+      var scores = {};
+      modules.forEach(function(m) { scores[m] = analyst.scores[m] || 1; });
+      document.querySelectorAll('#editMods .mod-row').forEach(function(row) {
+        var active = row.querySelector('.score-btn[class*=" s"]') || row.querySelector('.score-btn.s1') || row.querySelector('.score-btn.s2') || row.querySelector('.score-btn.s3') || row.querySelector('.score-btn.s4') || row.querySelector('.score-btn.s5');
+        if (active) {
+          var mod = active.dataset.mod;
+          var val = parseInt(active.textContent, 10);
+          if (mod) scores[mod] = val;
+        }
+      });
+
+      onSave({
+        id:       analyst.id,
+        name:     name,
+        sector:   sector,
+        zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
+        comment:  comment,
+        photo:    pendingPhoto,
+        anexos:   pendingAnexos,
+        scores:   scores
+      });
+      modal.style.display = 'none';
+    };
+  }
+
+  // --- Add Analyst Modal ---
+
+  function openAdd(modules, sectors, onSave) {
+    var modal = document.getElementById('addModal');
+    var pendingPhoto = null;
+    var pendingAnexos = [];
+    var newScores = {};
+
+    document.getElementById('addName').value = '';
+    var secSel = document.getElementById('addSector');
+    secSel.innerHTML = sectors.map(function(s) {
+      return '<option>' + esc(s) + '</option>';
+    }).join('');
+    document.getElementById('addZendesk').value = '';
+    document.getElementById('addComment').value = '';
+    document.getElementById('addPhotoPreview').style.display = 'none';
+    document.getElementById('addPhotoInput').value = '';
+
+    document.getElementById('addMods').innerHTML = modules.map(function(m) {
+      return '<div class="mod-row">' +
+        '<span style="flex:1">' + esc(m) + '</span>' +
+        '<div class="score-btns">' +
+          [1,2,3,4,5].map(function(n) {
+            return '<button class="score-btn" onclick="UIModals._setScore(this,' + n + ')" data-mod="' + esc(m) + '">' + n + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    renderAnexosList(pendingAnexos, 'addAnexosList', function(updated) { pendingAnexos = updated; });
+    switchModalTab('addModal', 'dados');
+    modal.style.display = 'flex';
+
+    document.getElementById('addPhotoInput').onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      readFileAsBase64(file, function(b64) {
+        pendingPhoto = b64;
+        var preview = document.getElementById('addPhotoPreview');
+        preview.src = b64;
+        preview.style.display = 'block';
+      });
+    };
+
+    document.getElementById('addAnexoInput').onchange = function(e) {
+      var files = Array.from(e.target.files);
+      var remaining = files;
+      function processNext() {
+        if (!remaining.length) {
+          renderAnexosList(pendingAnexos, 'addAnexosList', function(updated) { pendingAnexos = updated; });
+          e.target.value = '';
+          return;
+        }
+        var f = remaining.shift();
+        if (!f.type.startsWith('image/')) { processNext(); return; }
+        readFileAsBase64(f, function(b64) { pendingAnexos.push(b64); processNext(); });
+      }
+      processNext();
+    };
+
+    document.getElementById('addSaveBtn').onclick = function() {
+      var name = document.getElementById('addName').value.trim();
+      if (!name) { alert('Digite o nome do analista.'); return; }
+      var sector = document.getElementById('addSector').value;
+      var zv = parseFloat(document.getElementById('addZendesk').value);
+      var comment = document.getElementById('addComment').value.slice(0, 500);
+
+      var scores = {};
+      modules.forEach(function(m) { scores[m] = 1; });
+      document.querySelectorAll('#addMods .mod-row').forEach(function(row) {
+        var btns = row.querySelectorAll('.score-btn');
+        btns.forEach(function(b) {
+          if (b.className.indexOf(' s') !== -1 || b.className.match(/\bs[1-5]\b/)) {
+            var mod = b.dataset.mod;
+            var val = parseInt(b.textContent, 10);
+            if (mod && val >= 1) scores[mod] = val;
+          }
+        });
+      });
+
+      onSave({
+        id:       Date.now(),
+        name:     name,
+        sector:   sector,
+        zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
+        provaAvg: null,
+        comment:  comment,
+        photo:    pendingPhoto,
+        anexos:   pendingAnexos,
+        scores:   scores
+      });
+      modal.style.display = 'none';
+    };
+  }
+
+  // --- Training Modal ---
+
+  function openTraining(analysts, onSave) {
+    var modal = document.getElementById('trainModal');
+    document.getElementById('tDate').value = '';
+    document.getElementById('tMod').value = '';
+    document.getElementById('tLeader').value = '';
+    document.getElementById('tObs').value = '';
+    document.getElementById('tAnalysts').innerHTML = analysts.map(function(a) {
+      return '<div class="prova-row">' +
+        '<input type="checkbox" id="cb-' + a.id + '" value="' + esc(a.name) + '">' +
+        '<label for="cb-' + a.id + '" style="flex:1;cursor:pointer">' + esc(a.name) + ' <span class="' + D.sectorBadgeClass(a.sector) + '">' + esc(a.sector) + '</span></label>' +
+      '</div>';
+    }).join('');
+    modal.style.display = 'flex';
+
+    document.getElementById('trainSaveBtn').onclick = function() {
+      var date = document.getElementById('tDate').value;
+      var mod  = document.getElementById('tMod').value.trim();
+      var lead = document.getElementById('tLeader').value.trim();
+      if (!mod || !lead) { alert('Preencha módulo e líder.'); return; }
+      var selected = Array.from(document.querySelectorAll('#tAnalysts input[type=checkbox]:checked'))
+        .map(function(i) { return i.value; });
+      onSave({
+        date: date, module: mod, leader: lead,
+        obs: document.getElementById('tObs').value,
+        analysts: selected, provas: {}, status: 'pending'
+      });
+      modal.style.display = 'none';
+    };
+  }
+
+  // --- Prova Modal ---
+
+  function openProva(training, trainingIndex, onSave) {
+    var modal = document.getElementById('provaModal');
+    document.getElementById('provaModTitle').textContent = training.module;
+    document.getElementById('provaRows').innerHTML = (training.analysts || []).map(function(name) {
+      var cur = training.provas && training.provas[name] != null ? training.provas[name] : '';
+      var safeId = 'prova-' + name.replace(/\s/g, '_');
+      return '<div class="prova-row">' +
+        '<span style="flex:1">' + esc(name) + '</span>' +
+        '<input type="number" class="prova-input" id="' + safeId + '" min="0" max="10" step="0.5" value="' + cur + '" placeholder="0–10">' +
+      '</div>';
+    }).join('');
+    modal.style.display = 'flex';
+
+    document.getElementById('provaSaveBtn').onclick = function() {
+      var provas = {};
+      (training.analysts || []).forEach(function(name) {
+        var safeId = 'prova-' + name.replace(/\s/g, '_');
+        var el = document.getElementById(safeId);
+        if (el && el.value !== '') {
+          var v = Math.min(10, Math.max(0, parseFloat(el.value)));
+          if (!isNaN(v)) provas[name] = v;
+        }
+      });
+      onSave(trainingIndex, provas);
+      modal.style.display = 'none';
+    };
+  }
+
+  // --- Manage Modal (modules + sectors) ---
+
+  function openManage(modules, sectors, zendeskCfg, onSave) {
+    var modal = document.getElementById('manageModal');
+    var pendingModules = modules.slice();
+    var pendingSectors = sectors.slice();
+
+    renderManageModules(pendingModules);
+    renderManageSectors(pendingSectors);
+
+    // Populate Zendesk tab
+    var zdCfg = zendeskCfg || {};
+    var zdSubEl   = document.getElementById('zdSubdomain');
+    var zdEmailEl = document.getElementById('zdEmail');
+    var zdTokEl   = document.getElementById('zdApiToken');
+    var zdGemEl   = document.getElementById('zdGeminiKey');
+    var zdUrlEl   = document.getElementById('zdScriptUrl');
+    var zdGrpEl   = document.getElementById('zdGroupName');
+    var zdDaysEl  = document.getElementById('zdDays');
+    var zdProgEl  = document.getElementById('zdImportProgress');
+    if (zdSubEl)   zdSubEl.value   = zdCfg.subdomain  || '';
+    if (zdEmailEl) zdEmailEl.value = zdCfg.email      || '';
+    if (zdTokEl)   zdTokEl.value   = zdCfg.apiToken   || '';
+    if (zdGemEl)   zdGemEl.value   = zdCfg.geminiKey  || '';
+    if (zdUrlEl)   zdUrlEl.value   = zdCfg.scriptUrl  || '';
+    if (zdGrpEl)   zdGrpEl.value   = zdCfg.groupName  || 'suporte n1';
+    if (zdDaysEl)  zdDaysEl.value  = zdCfg.days        || 30;
+    if (zdProgEl)  zdProgEl.textContent = '';
+
+    switchManageTab('modules');
+    modal.style.display = 'flex';
+
+    document.getElementById('addModuleBtn').onclick = function() {
+      var val = document.getElementById('newModuleInput').value.trim();
+      if (!val) return;
+      if (pendingModules.indexOf(val) !== -1) { alert('Módulo já existe.'); return; }
+      pendingModules.push(val);
+      document.getElementById('newModuleInput').value = '';
+      renderManageModules(pendingModules);
+    };
+
+    document.getElementById('addSectorBtn').onclick = function() {
+      var val = document.getElementById('newSectorInput').value.trim();
+      if (!val) return;
+      if (pendingSectors.indexOf(val) !== -1) { alert('Setor já existe.'); return; }
+      pendingSectors.push(val);
+      document.getElementById('newSectorInput').value = '';
+      renderManageSectors(pendingSectors);
+    };
+
+    document.getElementById('manageSaveBtn').onclick = function() {
+      if (!pendingModules.length) { alert('Deve existir pelo menos um módulo.'); return; }
+      if (!pendingSectors.length) { alert('Deve existir pelo menos um setor.'); return; }
+      var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+      onSave({
+        modules:    pendingModules,
+        sectors:    pendingSectors,
+        zendeskCfg: {
+          subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, ''),
+          email:     g('zdEmail'),
+          apiToken:  g('zdApiToken'),
+          geminiKey: g('zdGeminiKey'),
+          scriptUrl: g('zdScriptUrl'),
+          groupName: g('zdGroupName') || 'suporte n1',
+          days:      parseInt(g('zdDays')) || 30
+        }
+      });
+      modal.style.display = 'none';
+    };
+
+    // Renderiza tabela de mapeamento nome Zendesk → analista SkillMatrix
+    UIModals.renderNameMap = function(analystNames) {
+      var found     = ZendeskSync.getFoundNames();
+      var nameMap   = ZendeskSync.getConfig().nameMap || {};
+      var container = document.getElementById('zdNameMapContainer');
+      var rows      = document.getElementById('zdNameMapRows');
+      if (!container || !rows || !found.length) return;
+
+      var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit;width:100%';
+      rows.innerHTML = found.map(function(zdName) {
+        var current = nameMap[zdName] || '';
+        var options = '<option value="">— não vincular —</option>' +
+          analystNames.map(function(n) {
+            return '<option value="' + D.escapeHtml(n) + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
+          }).join('');
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+          '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
+          '<span style="font-size:11px;color:var(--muted)">→</span>' +
+          '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + inputStyle + ';flex:1">' + options + '</select>' +
+        '</div>';
+      }).join('');
+
+      container.style.display = 'block';
+    };
+
+    document.getElementById('zdTestBtn') && (document.getElementById('zdTestBtn').onclick = function() {
+      var urlEl = document.getElementById('zdScriptUrl');
+      var resEl = document.getElementById('zdTestResult');
+      if (!urlEl || !urlEl.value.trim()) { alert('Informe a URL do Apps Script.'); return; }
+      var btn = document.getElementById('zdTestBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…';
+      if (resEl) { resEl.textContent = ''; resEl.style.color = 'var(--muted)'; }
+      fetch(urlEl.value.trim(), { redirect: 'follow' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.error) throw new Error(data.error);
+          var count = Object.keys(data.agents || {}).length;
+          if (resEl) {
+            resEl.textContent = '✓ Conectado — ' + count + ' analistas na planilha';
+            resEl.style.color = '#4ADE80';
+          }
+        })
+        .catch(function(err) {
+          if (resEl) {
+            resEl.textContent = '✗ ' + err.message;
+            resEl.style.color = '#FF5555';
+          }
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar conexão';
+        });
+    });
+
+    function renderManageModules(list) {
+      document.getElementById('modulesList').innerHTML = list.map(function(m, i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
+          '<span>' + esc(m) + '</span>' +
+          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'modules\')" title="Remover"><i class="ti ti-x"></i></button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderManageSectors(list) {
+      document.getElementById('sectorsList').innerHTML = list.map(function(s, i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
+          '<span>' + esc(s) + '</span>' +
+          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'sectors\')" title="Remover"><i class="ti ti-x"></i></button>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Expose for inline onclick callbacks in the manage modal
+    UIModals._removeListItem = function(idx, type) {
+      if (type === 'modules') {
+        pendingModules.splice(idx, 1);
+        renderManageModules(pendingModules);
+      } else {
+        pendingSectors.splice(idx, 1);
+        renderManageSectors(pendingSectors);
+      }
+    };
+  }
+
+  // --- Shared helpers ---
+
+  function switchModalTab(modalId, tabName) {
+    var modal = document.getElementById(modalId);
+    modal.querySelectorAll('.modal-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.tab === tabName);
+    });
+    modal.querySelectorAll('.modal-tab-panel').forEach(function(p) {
+      p.classList.toggle('active', p.dataset.panel === tabName);
+    });
+  }
+
+  function switchManageTab(tabName) {
+    switchModalTab('manageModal', tabName);
+  }
+
+  function renderAnexosList(list, containerId, onChange) {
+    var container = document.getElementById(containerId);
+    container.innerHTML = list.map(function(src, i) {
+      return '<div class="attachment-item">' +
+        '<img src="' + esc(src) + '" alt="Anexo ' + (i + 1) + '">' +
+        '<button class="attachment-remove" onclick="UIModals._removeAnexo(\'' + containerId + '\',' + i + ')" aria-label="Remover anexo">×</button>' +
+      '</div>';
+    }).join('');
+    // Store reference for removal
+    container._list = list;
+    container._onChange = onChange;
+  }
+
+  function readFileAsBase64(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) { callback(e.target.result); };
+    reader.readAsDataURL(file);
+  }
+
+  function updateCommentCounter() {
+    var textarea = document.getElementById('editComment');
+    if (!textarea) return;
+    var counter = document.getElementById('editCommentCounter');
+    if (!counter) return;
+    var len = textarea.value.length;
+    counter.textContent = len + '/500';
+    counter.className = 'comment-counter' + (len > 480 ? ' char-warn' : '') + (len >= 500 ? ' char-over' : '');
+  }
+
+  function closeOnEsc(e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.modal-overlay').forEach(function(m) {
+      if (m.style.display !== 'none') m.style.display = 'none';
+    });
+  }
+
+  function closeOnOverlayClick(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+    }
+  }
+
+  function init() {
+    document.addEventListener('keydown', closeOnEsc);
+    document.querySelectorAll('.modal-overlay').forEach(function(m) {
+      m.addEventListener('click', closeOnOverlayClick);
+    });
+    var editComment = document.getElementById('editComment');
+    if (editComment) editComment.addEventListener('input', updateCommentCounter);
+
+    // Tab switching in edit modal
+    document.querySelectorAll('.modal-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var modalEl = tab.closest('.modal-overlay');
+        if (modalEl) switchModalTab(modalEl.id, tab.dataset.tab);
+      });
+    });
+  }
+
+  function setScore(btn, val) {
+    var row = btn.closest('.mod-row');
+    row.querySelectorAll('.score-btn').forEach(function(b, i) {
+      b.className = 'score-btn' + (i + 1 === val ? ' s' + (i + 1) : '');
+    });
+  }
+
+  function removeAnexo(containerId, idx) {
+    var container = document.getElementById(containerId);
+    if (!container || !container._list) return;
+    container._list.splice(idx, 1);
+    renderAnexosList(container._list, containerId, container._onChange);
+    if (container._onChange) container._onChange(container._list);
+  }
+
+  // --- Zendesk Tickets Modal ---
+
+  function openZendeskTickets(analyst, ticketData, onSave) {
+    var modal = document.getElementById('zdTicketsModal');
+    if (!modal) return;
+
+    var zdSubdomain = (ZendeskSync.getConfig().subdomain || '').trim();
+
+    document.getElementById('zdTicketsAnalystName').textContent = analyst.name;
+
+    var body      = document.getElementById('zdTicketsBody');
+    var scoreEl   = document.getElementById('zdNewScore');
+    var scoreLbl  = document.getElementById('zdScoreLabel');
+
+    // Working copy — mutated in-place on toggle
+    var pending = ticketData
+      ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
+      : null;
+
+    // Filtro de data — padrão: mês atual
+    function toInputVal(d) {
+      var m   = String(d.getMonth() + 1).padStart(2, '0');
+      var day = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+    var _now   = new Date();
+    var filterFrom = new Date(_now.getFullYear(), _now.getMonth(), 1);
+    var filterTo   = new Date(_now.getFullYear(), _now.getMonth() + 1, 0);
+    var _defaultFrom = toInputVal(filterFrom);
+    var _defaultTo   = toInputVal(filterTo);
+
+    // Converte 'dd/mm/yyyy' ou 'dd/mm' → inteiro YYYYMMDD para comparação
+    function dateToInt(d) {
+      return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    }
+    function parseTicketDate(str) {
+      if (!str) return null;
+      var p = str.split('/');
+      if (p.length === 3) return new Date(+p[2], +p[1] - 1, +p[0]);
+      if (p.length === 2) return new Date(2026, +p[1] - 1, +p[0]);
+      return null;
+    }
+    function ticketVisible(ticket) {
+      if (!filterFrom && !filterTo) return true;
+      var d = parseTicketDate(ticket.date);
+      if (!d) return true;
+      var n = dateToInt(d);
+      if (filterFrom && n < dateToInt(filterFrom)) return false;
+      if (filterTo   && n > dateToInt(filterTo))   return false;
+      return true;
+    }
+
+    function updateScoreDisplay() {
+      if (!pending) return;
+      var newScore = ZendeskSync.recalcScore(pending.good_count, pending.bad_tickets);
+      var orig     = ZendeskSync.recalcScore(pending.good_count, pending.bad_tickets.map(function(t) {
+        return Object.assign({}, t, { consider: true });
+      }));
+      if (scoreEl) {
+        scoreEl.textContent = newScore !== null ? newScore.toFixed(1) : '—';
+        scoreEl.style.color = newScore === null ? 'var(--muted)'
+          : newScore >= 7 ? '#4ADE80' : newScore >= 5 ? '#FCD34D' : '#FF5555';
+      }
+      if (scoreLbl && orig !== null && newScore !== null) {
+        var diff = parseFloat((newScore - orig).toFixed(1));
+        scoreLbl.textContent = diff > 0 ? '(+' + diff + ' excluindo comportamentais)'
+          : diff < 0 ? '(' + diff + ')' : '';
+        scoreLbl.style.color = diff > 0 ? '#4ADE80' : diff < 0 ? '#FF5555' : 'var(--muted)';
+      }
+    }
+
+    // Atualiza apenas a lista de tickets (sem sobrescrever o filtro de data)
+    function renderList() {
+      var listEl = document.getElementById('zdTicketList');
+      if (!listEl) return;
+
+      if (!pending) {
+        listEl.innerHTML =
+          '<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">' +
+            '<i class="ti ti-cloud-off" style="font-size:28px;display:block;margin-bottom:8px"></i>' +
+            'Dados de tickets não disponíveis.' +
+          '</div>';
+        if (scoreEl) scoreEl.textContent = analyst.zendesk != null ? analyst.zendesk.toFixed(1) : '—';
+        return;
+      }
+
+      var visible  = pending.bad_tickets.filter(ticketVisible);
+      var good     = pending.good_count;
+      var consBad  = pending.bad_tickets.filter(function(t) { return t.consider; }).length;
+      var total    = good + pending.bad_tickets.length;
+      var filtered = visible.length < pending.bad_tickets.length;
+
+      listEl.innerHTML =
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
+          good + ' positivos · ' + consBad + '/' + pending.bad_tickets.length + ' considerados · total: ' + total +
+          (filtered ? ' <span style="color:#FCD34D">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
+        '</div>' +
+        (visible.length === 0
+          ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket nesse período.</div>'
+          : visible.map(function(ticket) {
+              var idx        = pending.bad_tickets.indexOf(ticket);
+              var isConsider = ticket.consider;
+              var borderCol  = isConsider ? 'rgba(255,85,85,.4)' : 'var(--border)';
+              var tagBg      = isConsider ? 'rgba(255,85,85,.15)' : 'rgba(255,255,255,.05)';
+              var tagColor   = isConsider ? '#FF8080' : 'var(--muted)';
+              return (
+                '<div style="border:1px solid ' + borderCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;background:rgba(0,0,0,.15)">' +
+                  '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">' +
+                    '<div style="flex:1;min-width:0">' +
+                      (zdSubdomain
+                        ? '<a href="https://' + esc(zdSubdomain) + '.zendesk.com/agent/tickets/' + esc(String(ticket.id)) + '" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:var(--blue);text-decoration:none" title="Abrir ticket no Zendesk">#' + esc(String(ticket.id)) + ' <i class="ti ti-external-link" style="font-size:9px"></i></a>'
+                        : '<span style="font-size:10px;color:var(--muted)">#' + esc(String(ticket.id)) + '</span>') +
+                      '<span style="font-size:10px;color:var(--muted)"> · ' + esc(ticket.date) + '</span>' +
+                      (ticket.category ? ' <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:' + tagBg + ';color:' + tagColor + '">' + esc(ticket.category) + '</span>' : '') +
+                    '</div>' +
+                    '<button style="flex-shrink:0;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid ' + (isConsider ? '#FF5555' : 'var(--border)') + ';background:' + (isConsider ? 'rgba(255,85,85,.2)' : 'rgba(255,255,255,.05)') + ';color:' + (isConsider ? '#FF8080' : 'var(--muted)') + ';cursor:pointer;white-space:nowrap;font-family:inherit" ' +
+                      'onclick="UIModals._zdToggle(' + idx + ')">' +
+                      (isConsider ? '<i class="ti ti-x" style="font-size:9px"></i> Técnico' : '<i class="ti ti-check" style="font-size:9px"></i> Comportamental') +
+                    '</button>' +
+                  '</div>' +
+                  '<div style="font-size:11px;color:var(--muted);line-height:1.5">' +
+                    (ticket.comment ? '"' + esc(ticket.comment.substring(0, 220)) + '"' : '<em>Sem comentário do cliente</em>') +
+                  '</div>' +
+                '</div>'
+              );
+            }).join(''));
+
+      updateScoreDisplay();
+    }
+
+    // Monta o corpo do modal uma única vez (filtro + container da lista)
+    function setupBody() {
+      var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;color-scheme:dark';
+      body.innerHTML =
+        '<div style="background:rgba(252,211,77,.07);border:1px solid rgba(252,211,77,.25);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:11px;color:#FCD34D;line-height:1.5">' +
+          '<i class="ti ti-info-circle"></i> <strong>Marque apenas questões técnicas</strong> para compor a nota. Comportamentais ficam com a supervisão.' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
+          '<i class="ti ti-calendar-search" style="color:var(--muted);font-size:14px"></i>' +
+          '<span style="font-size:11px;color:var(--muted)">De</span>' +
+          '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
+          '<span style="font-size:11px;color:var(--muted)">até</span>' +
+          '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
+          '<button onclick="UIModals._zdClearFilter()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
+        '</div>' +
+        '<div id="zdTicketList"></div>';
+    }
+
+    UIModals._zdToggle = function(idx) {
+      if (!pending) return;
+      pending.bad_tickets[idx].consider = !pending.bad_tickets[idx].consider;
+      renderList();
+    };
+
+    UIModals._zdApplyFilter = function() {
+      var fromEl = document.getElementById('zdDateFrom');
+      var toEl   = document.getElementById('zdDateTo');
+      filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
+      filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
+      renderList();
+    };
+
+    UIModals._zdClearFilter = function() {
+      filterFrom = null; filterTo = null;
+      var f = document.getElementById('zdDateFrom');
+      var t = document.getElementById('zdDateTo');
+      if (f) f.value = '';
+      if (t) t.value = '';
+      renderList();
+    };
+
+    setupBody();
+    renderList();
+    modal.style.display = 'flex';
+
+    document.getElementById('zdTicketsSaveBtn').onclick = function() {
+      if (!pending) { modal.style.display = 'none'; return; }
+      var newScore = ZendeskSync.recalcScore(pending.good_count, pending.bad_tickets);
+      onSave(newScore, pending);
+      modal.style.display = 'none';
+    };
+  }
+
+  return {
+    openEdit:            openEdit,
+    openAdd:             openAdd,
+    openTraining:        openTraining,
+    openProva:           openProva,
+    openManage:          openManage,
+    openZendeskTickets:  openZendeskTickets,
+    init:                init,
+    switchModalTab:      switchModalTab,
+    _setScore:           setScore,
+    _removeAnexo:        removeAnexo,
+    _removeListItem:     function() {},
+    _zdToggle:           function() {}
+  };
+})();
+
+</script>
+<script>
+var ZendeskSync = (function() {
+  var CFG_KEY     = 'skm6_zdcfg';
+  var SEC_KEY     = 'skm6_zdcfg_sec'; // sessionStorage — cleared on tab/browser close
+  var STATUS_KEY  = 'skm6_zdstatus';
+  var TICKETS_KEY = 'skm6_zdtickets';
+
+  // Public (non-sensitive) defaults — stored in localStorage
+  var DEFAULT_CFG = { subdomain: '', groupName: 'suporte n1', days: 30, scriptUrl: '', nameMap: {} };
+  // Sensitive defaults — stored in sessionStorage only
+  var DEFAULT_SEC = { email: '', apiToken: '', geminiKey: '' };
+
+  var FOUND_KEY = 'skm6_zdfound';
+
+  // ---------------------------------------------------------------------------
+  // Input validators
+  // ---------------------------------------------------------------------------
+  function isValidSubdomain(s) {
+    // Zendesk subdomains: 1-63 alphanumeric + hyphens, no leading/trailing hyphens
+    return typeof s === 'string' && /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(s);
+  }
+
+  function isAllowedScriptUrl(url) {
+    try {
+      var p = new URL(url);
+      return p.protocol === 'https:' && p.hostname === 'script.google.com';
+    } catch (e) { return false; }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Config: public fields in localStorage, credentials in sessionStorage
+  // ---------------------------------------------------------------------------
+  function _getSensitive() {
+    try { return Object.assign({}, DEFAULT_SEC, JSON.parse(sessionStorage.getItem(SEC_KEY)) || {}); }
+    catch (e) { return Object.assign({}, DEFAULT_SEC); }
+  }
+
+  function _saveSensitive(s) {
+    sessionStorage.setItem(SEC_KEY, JSON.stringify({
+      email:     typeof s.email     === 'string' ? s.email.slice(0, 256)     : '',
+      apiToken:  typeof s.apiToken  === 'string' ? s.apiToken.slice(0, 512)  : '',
+      geminiKey: typeof s.geminiKey === 'string' ? s.geminiKey.slice(0, 256) : ''
+    }));
+  }
+
+  function getConfig() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
+      // Migrate: if old storage still has plaintext credentials, move them to sessionStorage
+      if (stored.email || stored.apiToken || stored.geminiKey) {
+        _saveSensitive({ email: stored.email || '', apiToken: stored.apiToken || '', geminiKey: stored.geminiKey || '' });
+        delete stored.email; delete stored.apiToken; delete stored.geminiKey;
+        localStorage.setItem(CFG_KEY, JSON.stringify(Object.assign({}, DEFAULT_CFG, stored)));
+      }
+      return Object.assign({}, DEFAULT_CFG, stored, _getSensitive());
+    }
+    catch (e) { return Object.assign({}, DEFAULT_CFG, _getSensitive()); }
+  }
+
+  function saveConfig(c) {
+    var pub = {
+      subdomain: typeof c.subdomain === 'string' ? c.subdomain.slice(0, 63)  : '',
+      groupName: typeof c.groupName === 'string' ? c.groupName.slice(0, 100) : 'suporte n1',
+      days:      typeof c.days      === 'number' ? Math.min(Math.max(c.days, 1), 365) : 30,
+      scriptUrl: typeof c.scriptUrl === 'string' && isAllowedScriptUrl(c.scriptUrl) ? c.scriptUrl : '',
+      nameMap:   (c.nameMap && typeof c.nameMap === 'object' && !Array.isArray(c.nameMap)) ? c.nameMap : {}
+    };
+    localStorage.setItem(CFG_KEY, JSON.stringify(pub));
+    _saveSensitive({ email: c.email, apiToken: c.apiToken, geminiKey: c.geminiKey });
+  }
+
+  function getStatus() {
+    try { return JSON.parse(localStorage.getItem(STATUS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveStatus(s) { localStorage.setItem(STATUS_KEY, JSON.stringify(s)); }
+
+  function getTickets(analystId) {
+    try {
+      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
+      return all[analystId] || null;
+    } catch (e) { return null; }
+  }
+  function saveTickets(analystId, data) {
+    try {
+      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
+      all[analystId] = data;
+      localStorage.setItem(TICKETS_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+
+  // Nota 0-10 contando apenas tickets com consider:true como negativos
+  function recalcScore(goodCount, badTickets) {
+    var consideredBad = badTickets.filter(function(t) { return t.consider; }).length;
+    var total = goodCount + consideredBad;
+    return total > 0 ? parseFloat(((goodCount / total) * 10).toFixed(1)) : null;
+  }
+
+  function getFoundNames() {
+    try { return JSON.parse(localStorage.getItem(FOUND_KEY)) || []; }
+    catch(e) { return []; }
+  }
+  function saveFoundNames(names) {
+    localStorage.setItem(FOUND_KEY, JSON.stringify(names));
+  }
+
+  // Processa resposta da API (Apps Script doGet) e atualiza analysts in-place
+  function applyAgentData(analysts, agentMap) {
+    var updated  = 0;
+    var nameMap  = getConfig().nameMap || {};
+    var found    = Object.keys(agentMap);
+    saveFoundNames(found);
+
+    analysts.forEach(function(analyst) {
+      var key = analyst.name.trim().toLowerCase();
+      Object.keys(agentMap).forEach(function(agentName) {
+        // Tenta: mapeamento manual → correspondência exata → sem match
+        var mapped  = nameMap[agentName];
+        var matches = mapped
+          ? mapped.trim().toLowerCase() === key
+          : agentName.trim().toLowerCase() === key;
+        if (!matches) return;
+        var data = agentMap[agentName];
+        var score = data.score;
+        if (score === null || score === undefined || isNaN(parseFloat(score))) return;
+
+        var existing    = getTickets(analyst.id);
+        var existingMap = {};
+        if (existing && existing.bad_tickets) {
+          existing.bad_tickets.forEach(function(t) { existingMap[t.id] = t.consider; });
+        }
+
+        var bad_tickets = (data.bad_tickets || []).map(function(t) {
+          var prev = existingMap[t.id];
+          return {
+            id:       t.id,
+            date:     t.date || '',
+            category: t.category || '',
+            comment:  t.comment || '',
+            consider: prev !== undefined ? prev : true
+          };
+        });
+
+        var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets });
+        analyst.zendesk = recalcScore(goodCount, bad_tickets);
+        updated++;
+      });
+    });
+    return updated;
+  }
+
+  function sync(analysts, callback) {
+    var c = getConfig();
+    if (!c.scriptUrl) { callback && callback(0, null, 'not-configured'); return; }
+    if (!isAllowedScriptUrl(c.scriptUrl)) {
+      callback && callback(0, 'URL inválida: deve ser do Google Apps Script (script.google.com).', 'error');
+      return;
+    }
+
+    fetch(c.scriptUrl, { redirect: 'follow' })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data) {
+        if (data.error) throw new Error(data.error);
+        var updated = applyAgentData(analysts, data.agents || {});
+        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
+        callback && callback(updated, null, 'ok');
+      })
+      .catch(function(err) {
+        saveStatus({ ok: false, at: new Date().toISOString(), error: err.message });
+        callback && callback(0, err.message, 'error');
+      });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dados de teste com tickets realistas (técnicos e comportamentais misturados)
+  // ---------------------------------------------------------------------------
+  var MOCK_AGENTS = {
+    'Bruno':          { score: 4.2, good_count: 7,  bad_tickets: [
+      { id: 10001, date: '08/06/2026', category: 'Problema não resolvido',        comment: 'Abri ticket há 3 dias sobre erro no Mercado Pago e o problema ainda não foi resolvido.' },
+      { id: 10002, date: '07/06/2026', category: 'Falta de conhecimento técnico', comment: 'O analista não soube configurar a integração com o PagHiper, precisou escalar para outro colega.' },
+      { id: 10003, date: '05/06/2026', category: 'Comunicação inadequada',        comment: 'Resposta demorada e sem clareza, tive que perguntar a mesma coisa três vezes.' },
+      { id: 10004, date: '04/06/2026', category: 'Procedimento incorreto',        comment: 'Configurou o SendGrid de forma errada, meus e-mails ficaram na caixa de spam por dois dias.' },
+      { id: 10005, date: '03/06/2026', category: 'Demora no atendimento',         comment: 'Mais de 50 minutos esperando retorno para uma dúvida simples de cadastro.' },
+      { id: 10006, date: '02/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não conseguiu orientar sobre emissão de NF-e, informações passadas estavam erradas.' },
+      { id: 10007, date: '01/06/2026', category: 'Comunicação inadequada',        comment: 'Tom agressivo e impaciente durante a ligação.' },
+      { id: 10008, date: '31/05/2026', category: 'Problema não resolvido',        comment: 'Problema de sincronização com o Mercado Livre continua mesmo após 2 atendimentos.' }
+    ]},
+    'Ana Claudia':    { score: 3.1, good_count: 4,  bad_tickets: [
+      { id: 11001, date: '08/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não soube explicar como configurar boletos no sistema, me passou informações contraditórias.' },
+      { id: 11002, date: '07/06/2026', category: 'Problema não resolvido',        comment: 'Questão de contratos ainda pendente depois de 4 atendimentos diferentes.' },
+      { id: 11003, date: '06/06/2026', category: 'Comunicação inadequada',        comment: 'A analista ficou impaciente quando não entendi a instrução e foi indelicada.' },
+      { id: 11004, date: '05/06/2026', category: 'Procedimento incorreto',        comment: 'Seguindo o procedimento orientado o sistema deu erro, precisei ligar novamente.' },
+      { id: 11005, date: '04/06/2026', category: 'Demora no atendimento',         comment: 'Chat abandonado sem resposta por mais de 30 minutos.' },
+      { id: 11006, date: '03/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não sabia como reverter uma NF emitida com erro, pediu para eu ligar depois.' },
+      { id: 11007, date: '02/06/2026', category: 'Comunicação inadequada',        comment: 'Atendimento feito com aparente pressa, sem disposição para ajudar.' },
+      { id: 11008, date: '31/05/2026', category: 'Problema não resolvido',        comment: 'Integração com a Shopee ainda com erro após tentativas de suporte.' },
+      { id: 11009, date: '30/05/2026', category: 'Procedimento incorreto',        comment: 'Orientação errada sobre emissão de CT-e causou retrabalho.' }
+    ]},
+    'Tiago':          { score: 3.3, good_count: 4,  bad_tickets: [
+      { id: 12001, date: '08/06/2026', category: 'Falta de conhecimento técnico', comment: 'O analista não conseguiu resolver dúvida básica sobre DRE, teve que escalar.' },
+      { id: 12002, date: '07/06/2026', category: 'Problema não resolvido',        comment: 'Erro no financeiro persiste mesmo após procedimento indicado.' },
+      { id: 12003, date: '06/06/2026', category: 'Comunicação inadequada',        comment: 'Respostas muito curtas e sem empatia, senti que estava atrapalhando.' },
+      { id: 12004, date: '05/06/2026', category: 'Procedimento incorreto',        comment: 'Seguiu o procedimento errado para configuração do Pag Seguro.' },
+      { id: 12005, date: '04/06/2026', category: 'Demora no atendimento',         comment: 'Ticket aberto há 2 dias sem resposta no chat.' },
+      { id: 12006, date: '03/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não sabia sobre funcionalidade de expedição que existe no sistema há anos.' },
+      { id: 12007, date: '01/06/2026', category: 'Comunicação inadequada',        comment: 'Tom agressivo e pouca disposição para ouvir o problema.' },
+      { id: 12008, date: '30/05/2026', category: 'Problema não resolvido',        comment: 'Configuração do estoque com divergência, problema segue em aberto.' }
+    ]},
+    'Mario':          { score: 4.0, good_count: 4,  bad_tickets: [
+      { id: 13001, date: '08/06/2026', category: 'Problema não resolvido',        comment: 'Dúvida sobre relatórios não foi resolvida, fui transferido duas vezes.' },
+      { id: 13002, date: '07/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não soube configurar integração com Stone, precisou consultar documentação básica ao vivo.' },
+      { id: 13003, date: '06/06/2026', category: 'Demora no atendimento',         comment: 'Aguardei 45 minutos para ser atendido no chat.' },
+      { id: 13004, date: '05/06/2026', category: 'Comunicação inadequada',        comment: 'O atendente demonstrou irritação quando pedi para repetir a explicação.' },
+      { id: 13005, date: '04/06/2026', category: 'Procedimento incorreto',        comment: 'Configuração errada da assinatura digital gerou erro no contrato.' },
+      { id: 13006, date: '02/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não sabia como emitir MDF-e pelo sistema.' }
+    ]},
+    'Ismael':         { score: 2.5, good_count: 3,  bad_tickets: [
+      { id: 14001, date: '08/06/2026', category: 'Falta de conhecimento técnico', comment: 'Analista não soube configurar Mercado Pago, ligou para perguntar a outro colega na minha frente.' },
+      { id: 14002, date: '08/06/2026', category: 'Problema não resolvido',        comment: 'Três tickets abertos para o mesmo problema, nenhum resolvido.' },
+      { id: 14003, date: '07/06/2026', category: 'Comunicação inadequada',        comment: 'Atendente foi grosseiro e impaciente durante o atendimento por telefone.' },
+      { id: 14004, date: '07/06/2026', category: 'Procedimento incorreto',        comment: 'Configuração do Stone feita de forma errada, precisou desfazer tudo.' },
+      { id: 14005, date: '06/06/2026', category: 'Demora no atendimento',         comment: 'Mais de 1 hora aguardando retorno para dúvida simples.' },
+      { id: 14006, date: '05/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não sabia sobre funcionalidade de Cobranças básica do sistema.' },
+      { id: 14007, date: '04/06/2026', category: 'Problema não resolvido',        comment: 'Erro na emissão de NF persiste mesmo após 4 atendimentos.' },
+      { id: 14008, date: '03/06/2026', category: 'Comunicação inadequada',        comment: 'Tom agressivo e sem disposição para resolver o problema.' },
+      { id: 14009, date: '02/06/2026', category: 'Falta de conhecimento técnico', comment: 'Orientações sobre API estavam completamente erradas.' },
+      { id: 14010, date: '01/06/2026', category: 'Procedimento incorreto',        comment: 'Procedimento indicado causou perda de dados de cadastro.' },
+      { id: 14011, date: '31/05/2026', category: 'Demora no atendimento',         comment: 'Chat ignorado por mais de 2 horas.' },
+      { id: 14012, date: '30/05/2026', category: 'Problema não resolvido',        comment: 'Integração com Hotmart ainda sem funcionar depois de 1 semana.' }
+    ]},
+    'Gabriel Vaz':    { score: 8.5, good_count: 14, bad_tickets: [
+      { id: 15001, date: '06/06/2026', category: 'Demora no atendimento',         comment: 'Tempo de espera maior que o usual neste dia.' },
+      { id: 15002, date: '02/06/2026', category: 'Comunicação inadequada',        comment: 'Explicação foi um pouco confusa sobre o processo de configuração.' }
+    ]},
+    'Jesse':          { score: 8.9, good_count: 9,  bad_tickets: [
+      { id: 16001, date: '05/06/2026', category: 'Demora no atendimento',         comment: 'Atendimento demorou um pouco mais do que o esperado.' }
+    ]},
+    'Luan':           { score: 9.2, good_count: 11, bad_tickets: [
+      { id: 17001, date: '04/06/2026', category: 'Comunicação inadequada',        comment: 'Explicação poderia ter sido mais detalhada.' }
+    ]},
+    'Diego':          { score: 7.3, good_count: 8,  bad_tickets: [
+      { id: 18001, date: '07/06/2026', category: 'Problema não resolvido',        comment: 'Configuração do Tray ficou com erro, precisou de segundo atendimento.' },
+      { id: 18002, date: '04/06/2026', category: 'Falta de conhecimento técnico', comment: 'Dificuldade com emissão de CT-e.' },
+      { id: 18003, date: '01/06/2026', category: 'Demora no atendimento',         comment: 'Atendimento demorou para iniciar.' }
+    ]},
+    'Karolyne':       { score: 5.0, good_count: 5,  bad_tickets: [
+      { id: 19001, date: '07/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não soube orientar sobre o módulo de Pesquisas.' },
+      { id: 19002, date: '05/06/2026', category: 'Problema não resolvido',        comment: 'Questão sobre Pipedrive não solucionada.' },
+      { id: 19003, date: '03/06/2026', category: 'Comunicação inadequada',        comment: 'Atendimento um pouco mecânico, sem personalização.' },
+      { id: 19004, date: '01/06/2026', category: 'Demora no atendimento',         comment: 'Aguardei bastante no chat antes de ser atendida.' },
+      { id: 19005, date: '30/05/2026', category: 'Procedimento incorreto',        comment: 'Orientação sobre Serasa estava desatualizada.' }
+    ]},
+    'Henrique Sergio':{ score: 5.5, good_count: 5,  bad_tickets: [
+      { id: 20001, date: '06/06/2026', category: 'Problema não resolvido',        comment: 'Integração com NuvemShop continua com falha.' },
+      { id: 20002, date: '04/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não sabia sobre módulo de Controle de Produção.' },
+      { id: 20003, date: '02/06/2026', category: 'Comunicação inadequada',        comment: 'Poucas palavras e explicações rasas.' },
+      { id: 20004, date: '31/05/2026', category: 'Demora no atendimento',         comment: 'Demorou para retornar ao chat.' }
+    ]},
+    'João Pedro S.':  { score: 6.7, good_count: 6,  bad_tickets: [
+      { id: 21001, date: '07/06/2026', category: 'Falta de conhecimento técnico', comment: 'Não soube configurar o GerenciaNet corretamente.' },
+      { id: 21002, date: '05/06/2026', category: 'Problema não resolvido',        comment: 'Erro na configuração de Cobranças segue pendente.' },
+      { id: 21003, date: '02/06/2026', category: 'Comunicação inadequada',        comment: 'Respostas curtas e sem contexto.' }
+    ]},
+    'Mateus':         { score: 7.8, good_count: 9,  bad_tickets: [
+      { id: 22001, date: '06/06/2026', category: 'Demora no atendimento',         comment: 'Aguardei mais do habitual no suporte via chat.' },
+      { id: 22002, date: '03/06/2026', category: 'Problema não resolvido',        comment: 'Questão sobre CT-e precisou de segundo atendimento.' }
+    ]},
+    'Mario Diniz':    { score: 6.0, good_count: 5,  bad_tickets: [
+      { id: 23001, date: '07/06/2026', category: 'Falta de conhecimento técnico', comment: 'Dificuldade com módulo de Loja Virtual.' },
+      { id: 23002, date: '05/06/2026', category: 'Comunicação inadequada',        comment: 'Pouca clareza nas orientações passadas.' },
+      { id: 23003, date: '03/06/2026', category: 'Demora no atendimento',         comment: 'Suporte demorou para responder.' }
+    ]},
+    'Sergio':         { score: 4.8, good_count: 5,  bad_tickets: [
+      { id: 24001, date: '08/06/2026', category: 'Falta de conhecimento técnico', comment: 'Módulo de Produtos com configuração incorreta após orientação.' },
+      { id: 24002, date: '06/06/2026', category: 'Problema não resolvido',        comment: 'Erro em OS segue sem solução.' },
+      { id: 24003, date: '04/06/2026', category: 'Comunicação inadequada',        comment: 'Atendimento sem empatia.' },
+      { id: 24004, date: '02/06/2026', category: 'Demora no atendimento',         comment: 'Demorou mais de 40 minutos para responder.' },
+      { id: 24005, date: '31/05/2026', category: 'Procedimento incorreto',        comment: 'Procedimento de cadastro orientado estava errado.' }
+    ]},
+    'Thales':         { score: 6.4, good_count: 6,  bad_tickets: [
+      { id: 25001, date: '07/06/2026', category: 'Problema não resolvido',        comment: 'Configuração de Assinatura Digital com falha.' },
+      { id: 25002, date: '04/06/2026', category: 'Falta de conhecimento técnico', comment: 'Dificuldade com módulo de Relatorios.' },
+      { id: 25003, date: '02/06/2026', category: 'Comunicação inadequada',        comment: 'Pouca disposição para explicar o processo.' }
+    ]}
+  };
+
+  function runTest(analysts, callback) {
+    var updated = 0;
+    analysts.forEach(function(analyst) {
+      var key = analyst.name.trim().toLowerCase();
+      Object.keys(MOCK_AGENTS).forEach(function(agentName) {
+        if (agentName.trim().toLowerCase() !== key) return;
+        var data        = MOCK_AGENTS[agentName];
+        var existing    = getTickets(analyst.id);
+        var existingMap = {};
+        if (existing && existing.bad_tickets) {
+          existing.bad_tickets.forEach(function(t) { existingMap[t.id] = t.consider; });
+        }
+        var bad_tickets = data.bad_tickets.map(function(t) {
+          return {
+            id:       t.id,
+            date:     t.date,
+            category: t.category,
+            comment:  t.comment,
+            consider: existingMap[t.id] !== undefined ? existingMap[t.id] : true
+          };
+        });
+        saveTickets(analyst.id, { good_count: data.good_count, bad_tickets: bad_tickets });
+        analyst.zendesk = recalcScore(data.good_count, bad_tickets);
+        updated++;
+      });
+    });
+    saveStatus({ ok: true, at: new Date().toISOString(), updated: updated, test: true });
+    callback && callback(updated, null, 'ok');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Importação direta do Zendesk via browser (sem Apps Script)
+  // ---------------------------------------------------------------------------
+  function importDirect(analysts, onProgress, callback) {
+    var cfg = getConfig();
+    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
+      callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
+      return;
+    }
+    if (!isValidSubdomain(cfg.subdomain)) {
+      callback(0, 'Subdomínio inválido: use apenas letras, números e hífens (ex: minhaempresa).');
+      return;
+    }
+
+    var base      = 'https://' + cfg.subdomain + '.zendesk.com';
+    var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
+    var headers   = { 'Authorization': auth };
+    var startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
+    var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
+
+    // Quando rodando em localhost, usa proxy local para evitar bloqueio CORS do Zendesk
+    var isLocal   = typeof window !== 'undefined' &&
+                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    // Include subdomain in proxy path so the server knows where to route the request
+    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+
+    function toUrl(path) {
+      if (path.startsWith('http')) {
+        // next_page URLs are absolute — replace the Zendesk origin with the proxy origin
+        return proxyBase ? path.replace(base, proxyBase) : path;
+      }
+      return (proxyBase || base) + path;
+    }
+
+    function zdFetch(path) {
+      return fetch(toUrl(path), { headers: headers })
+        .then(function(r) {
+          if (!r.ok) {
+            var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
+                     : r.status === 401 ? 'verifique e-mail e token da API.'
+                     : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
+                     : 'erro inesperado.';
+            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint);
+          }
+          return r.json();
+        });
+    }
+
+    onProgress('Conectando ao Zendesk...');
+
+    // 1. Encontra o grupo
+    zdFetch('/api/v2/groups.json?per_page=100')
+      .then(function(data) {
+        var group = (data.groups || []).filter(function(g) {
+          return g.name.trim().toLowerCase() === groupName;
+        })[0];
+        if (!group) throw new Error('Grupo "' + cfg.groupName + '" não encontrado.');
+        onProgress('Grupo "' + group.name + '" encontrado. Buscando avaliações...');
+        return group.id;
+      })
+
+      // 2. Busca todas as avaliações paginando
+      .then(function(groupId) {
+        var all = [];
+        function fetchPage(url) {
+          return zdFetch(url).then(function(data) {
+            var batch = (data.satisfaction_ratings || []).filter(function(r) {
+              return r.group_id == groupId;
+            });
+            all = all.concat(batch);
+            onProgress('Avaliações encontradas: ' + all.length + '...');
+            if (data.next_page && all.length < 2000) return fetchPage(data.next_page);
+            return all;
+          });
+        }
+        return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime);
+      })
+
+      // 3. Resolve nomes e fotos dos agentes
+      .then(function(ratings) {
+        var idSet = {};
+        ratings.forEach(function(r) { if (r.assignee_id) idSet[r.assignee_id] = true; });
+        var ids = Object.keys(idSet).join(',');
+        if (!ids) return { ratings: ratings, userMap: {}, photoMap: {} };
+        return zdFetch('/api/v2/users/show_many.json?ids=' + ids).then(function(data) {
+          var userMap  = {};
+          var photoMap = {};
+          (data.users || []).forEach(function(u) {
+            userMap[u.id] = u.name;
+            // Prefere thumbnail 128px; fallback para content_url
+            if (u.photo) {
+              var thumb = u.photo.thumbnails && u.photo.thumbnails.find(function(t) { return t.width >= 128; });
+              photoMap[u.id] = (thumb && thumb.content_url) || u.photo.content_url || null;
+            }
+          });
+          onProgress('Nomes resolvidos. Buscando fotos...');
+          return { ratings: ratings, userMap: userMap, photoMap: photoMap };
+        });
+      })
+
+      // 4. Agrupa por agente (captura photoUrl)
+      .then(function(result) {
+        var agentMap = {};
+        result.ratings.forEach(function(r) {
+          var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], photoUrl: result.photoMap[r.assignee_id] || null };
+          if (r.score === 'good') {
+            agentMap[name].good++;
+          } else if (r.score === 'bad') {
+            agentMap[name].bad++;
+            var d = new Date(r.created_at);
+            agentMap[name].raw.push({
+              id:      r.ticket_id,
+              date:    d.getDate().toString().padStart(2,'0') + '/' +
+                       (d.getMonth()+1).toString().padStart(2,'0') + '/' +
+                       d.getFullYear(),
+              comment: r.comment || '',
+              category: ''
+            });
+          }
+        });
+
+        var badAll = [];
+        Object.keys(agentMap).forEach(function(n) {
+          agentMap[n].raw.forEach(function(t) { badAll.push(t); });
+        });
+
+        // 5. Categoriza com Gemini se chave configurada
+        var catPromise = (cfg.geminiKey && badAll.length)
+          ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
+          : Promise.resolve({});
+
+        return catPromise.then(function(cats) { return { agentMap: agentMap, cats: cats }; });
+      })
+
+      // 5.5 Baixa fotos dos agentes como base64
+      .then(function(result) {
+        var names    = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
+        var total    = names.length;
+        if (!total) return result;
+        onProgress('Baixando fotos (' + total + ' agentes)...');
+
+        var fetches = names.map(function(name) {
+          var url = result.agentMap[name].photoUrl;
+          return fetch(url, { headers: headers })
+            .then(function(r) { return r.ok ? r.blob() : null; })
+            .then(function(blob) {
+              if (!blob) return;
+              return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload  = function(e) { result.agentMap[name].photo = e.target.result; resolve(); };
+                reader.onerror = function()  { resolve(); };
+                reader.readAsDataURL(blob);
+              });
+            })
+            .catch(function() {});
+        });
+
+        return Promise.all(fetches).then(function() { return result; });
+      })
+
+      // 6. Aplica no estado
+      .then(function(result) {
+        var agentMap = result.agentMap;
+        var cats     = result.cats;
+        var finalMap = {};
+        Object.keys(agentMap).forEach(function(name) {
+          var a = agentMap[name];
+          finalMap[name] = {
+            score:       a.good + a.bad > 0 ? parseFloat(((a.good / (a.good + a.bad)) * 10).toFixed(1)) : null,
+            good_count:  a.good,
+            bad_count:   a.bad,
+            total:       a.good + a.bad,
+            photo:       a.photo || null,
+            bad_tickets: a.raw.map(function(t) {
+              return { id: t.id, date: t.date, comment: t.comment, category: cats[t.id] || '' };
+            })
+          };
+        });
+
+        // Aplica scores e tickets
+        var updated = applyAgentData(analysts, finalMap);
+
+        // Aplica fotos: só preenche se o analista ainda não tiver foto
+        var nameMap = getConfig().nameMap || {};
+        analysts.forEach(function(analyst) {
+          var key = analyst.name.trim().toLowerCase();
+          if (analyst.photo) return; // não sobrescreve foto existente
+          Object.keys(finalMap).forEach(function(zdName) {
+            var mapped  = nameMap[zdName];
+            var matches = mapped
+              ? mapped.trim().toLowerCase() === key
+              : zdName.trim().toLowerCase() === key;
+            if (matches && finalMap[zdName].photo) {
+              analyst.photo = finalMap[zdName].photo;
+            }
+          });
+        });
+
+        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
+        onProgress('✓ ' + updated + ' analistas atualizados com dados reais!');
+        callback(updated, null);
+      })
+
+      .catch(function(err) {
+        onProgress('✗ ' + err.message);
+        callback(0, err.message);
+      });
+  }
+
+  function categorizeGemini(key, tickets, onProgress) {
+    var cats  = {};
+    var BATCH = 5;
+    var LABELS = ['Demora no atendimento','Problema não resolvido','Falta de conhecimento técnico','Comunicação inadequada','Procedimento incorreto','Outros'];
+
+    function next(i) {
+      if (i >= tickets.length) return Promise.resolve(cats);
+      var slice  = tickets.slice(i, i + BATCH);
+      var done   = Math.min(i + BATCH, tickets.length);
+      onProgress('Categorizando com Gemini... (' + done + '/' + tickets.length + ')');
+
+      var prompt = 'Classifique cada feedback negativo em uma categoria.\nCategorias: ' + LABELS.join(' | ') +
+        '\nResponda SOMENTE com JSON array de strings.\n\n';
+      slice.forEach(function(t, j) {
+        prompt += (j + 1) + '. ' + (t.comment || '(sem comentário)').substring(0, 200) + '\n';
+      });
+
+      return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + key, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 200, temperature: 0 } })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var text  = data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text.trim() : '[]';
+        var match = text.match(/\[[\s\S]*\]/);
+        var arr   = match ? JSON.parse(match[0]) : [];
+        slice.forEach(function(t, j) { cats[t.id] = arr[j] || 'Outros'; });
+        return new Promise(function(res) { setTimeout(res, 4000); }); // 15 RPM free tier
+      })
+      .catch(function() { slice.forEach(function(t) { cats[t.id] = ''; }); })
+      .then(function() { return next(i + BATCH); });
+    }
+
+    return next(0);
+  }
+
+  return {
+    sync:           sync,
+    importDirect:   importDirect,
+    runTest:        runTest,
+    recalcScore:    recalcScore,
+    getTickets:     getTickets,
+    saveTickets:    saveTickets,
+    getConfig:      getConfig,
+    saveConfig:     saveConfig,
+    getStatus:      getStatus,
+    getFoundNames:  getFoundNames
+  };
+})();
+
+</script>
+<script>
+var App = (function() {
+  // --- State ---
+  var state = {
+    analysts:      [],
+    modules:       [],
+    sectors:       [],
+    trainings:     [],
+    history:       {},
+    currentPage:   'visao',
+    currentSector: 'all'
+  };
+
+  // --- Persistence ---
+  function persist() {
+    Storage.saveAll(state);
+  }
+
+  function recordHistory(analystId, techScore) {
+    if (!state.history[analystId]) state.history[analystId] = [];
+    state.history[analystId].push({
+      date: new Date().toLocaleDateString('pt-BR'),
+      avg: parseFloat(techScore.toFixed(2))
+    });
+  }
+
+  // --- Navigation ---
+  function switchPage(page, btn) {
+    state.currentPage = page;
+    document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('page-' + page).classList.add('active');
+    if (btn) btn.classList.add('active');
+    render();
+  }
+
+  function setSector(sector, btn) {
+    state.currentSector = sector;
+    document.querySelectorAll('.stab').forEach(function(el) { el.classList.remove('ca','ta','na'); });
+    if (btn && btn.classList.contains('stab')) {
+      var sectorClasses = { 'Chat': 'ca', 'Telefone': 'ta', 'Notas': 'na', 'all': 'ca' };
+      var cls = sectorClasses[sector] || 'ca';
+      btn.classList.add(cls);
+    }
+    render();
+  }
+
+  // --- Render ---
+  function render() {
+    if (state.currentPage === 'visao')       UIOverview.render(state);
+    else if (state.currentPage === 'evolucao') UIEvolution.render(state);
+    else if (state.currentPage === 'treinamento') UITraining.render(state);
+  }
+
+  // --- Analyst operations ---
+  function openEditModal(id) {
+    var analyst = state.analysts.find(function(a) { return a.id === id; });
+    if (!analyst) return;
+    UIModals.openEdit(analyst, state.modules, state.sectors, function(updated) {
+      var idx = state.analysts.findIndex(function(a) { return a.id === id; });
+      if (idx === -1) return;
+      recordHistory(id, Domain.techScore(updated.scores));
+      state.analysts[idx] = updated;
+      persist();
+      render();
+    });
+  }
+
+  function openAddAnalystModal() {
+    UIModals.openAdd(state.modules, state.sectors, function(newAnalyst) {
+      state.analysts.push(newAnalyst);
+      persist();
+      render();
+    });
+  }
+
+  function removeAnalyst(id) {
+    if (!confirm('Remover este analista? Esta ação não pode ser desfeita.')) return;
+    state.analysts = state.analysts.filter(function(a) { return a.id !== id; });
+    persist();
+    render();
+  }
+
+  function toggleExpand(id) {
+    var el = document.getElementById('exp-' + id);
+    if (el) el.classList.toggle('open');
+  }
+
+  // --- Training operations ---
+  function openTrainingModal() {
+    UIModals.openTraining(state.analysts, function(newTraining) {
+      state.trainings.push(newTraining);
+      persist();
+      render();
+    });
+  }
+
+  function openProvaModal(idx) {
+    var training = state.trainings[idx];
+    if (!training) return;
+    UIModals.openProva(training, idx, function(trainingIndex, provas) {
+      state.trainings[trainingIndex].provas = provas;
+      Domain.applyTrainingScores(state.analysts, state.trainings);
+      persist();
+      render();
+    });
+  }
+
+  function finishTraining(idx) {
+    if (!state.trainings[idx]) return;
+    state.trainings[idx].status = 'done';
+    Domain.applyTrainingScores(state.analysts, state.trainings);
+    persist();
+    render();
+  }
+
+  // --- Module detail toggle (training page) ---
+  function toggleModuleDetail(safeId) {
+    var el = document.getElementById(safeId);
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // --- Manage modal (modules + sectors) ---
+  function openManageModal() {
+    UIModals.openManage(state.modules, state.sectors, ZendeskSync.getConfig(), function(updated) {
+      state.modules  = updated.modules;
+      state.sectors  = updated.sectors;
+      if (updated.zendeskCfg) ZendeskSync.saveConfig(updated.zendeskCfg);
+      state.analysts.forEach(function(a) {
+        state.modules.forEach(function(m) {
+          if (!(m in a.scores)) a.scores[m] = 1;
+        });
+      });
+      persist();
+      renderSectorTabs();
+      render();
+    });
+  }
+
+  function renderSectorTabs() {
+    var container = document.getElementById('sectorTabsContainer');
+    if (!container) return;
+    var html = '<button class="stab" id="tab-all" onclick="App.setSector(\'all\',this)">Todos</button>';
+    state.sectors.forEach(function(s) {
+      var cls = Domain.sectorBadgeClass(s);
+      var dotColor = cls === 'bc' ? '#60AAFF' : cls === 'bt' ? '#4ADE80' : '#FCD34D';
+      html += '<button class="stab" id="tab-' + Domain.escapeHtml(s) + '" onclick="App.setSector(\'' + Domain.escapeHtml(s) + '\',this)">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';display:inline-block"></span>' +
+        Domain.escapeHtml(s) +
+      '</button>';
+    });
+    container.innerHTML = html;
+    // Re-apply active state
+    state.currentSector = 'all';
+    var allBtn = document.getElementById('tab-all');
+    if (allBtn) allBtn.classList.add('ca');
+  }
+
+  // --- Export HTML ---
+  function exportHTML() {
+    // Read the current page source template (the shell index.html loaded this JS)
+    // We regenerate the inline snapshot by capturing current state into the seed
+    var analystData = JSON.stringify(state.analysts);
+    var moduleData  = JSON.stringify(state.modules);
+    var sectorData  = JSON.stringify(state.sectors);
+    var trainData   = JSON.stringify(state.trainings);
+    var histData    = JSON.stringify(state.history);
+
+    // Build a self-contained export by injecting data into the current document
+    var html = document.documentElement.outerHTML;
+
+    // Replace seed data placeholders
+    var timestamp = new Date().toLocaleString('pt-BR');
+
+    // Replace the SEED_ANALYSTS, SEED_MODULES, SEED_SECTORS arrays in seed.js block
+    html = html.replace(
+      /var SEED_ANALYSTS\s*=\s*\[[\s\S]*?\];/,
+      'var SEED_ANALYSTS = ' + analystData + ';'
+    );
+    html = html.replace(
+      /var SEED_MODULES\s*=\s*\[[\s\S]*?\];/,
+      'var SEED_MODULES = ' + moduleData + ';'
+    );
+    html = html.replace(
+      /var SEED_SECTORS\s*=\s*\[[\s\S]*?\];/,
+      'var SEED_SECTORS = ' + sectorData + ';'
+    );
+
+    // Inject trainings and history as additional seeds
+    html = html.replace(
+      /\/\/ __EXPORT_TRAININGS__[\s\S]*?\/\/ __END_EXPORT_TRAININGS__/,
+      '// __EXPORT_TRAININGS__\nvar SEED_TRAININGS = ' + trainData + ';\nvar SEED_HISTORY = ' + histData + ';\n// __END_EXPORT_TRAININGS__'
+    );
+
+    // Mark export timestamp
+    html = html.replace(
+      /\/\/ __EXPORT_DATE__[^\n]*/,
+      '// __EXPORT_DATE__ ' + timestamp
+    );
+
+    // Force exported file to load from seeds (skip localStorage)
+    html = html.replace(
+      '__EXPORT_MODE__ = false',
+      '__EXPORT_MODE__ = true'
+    );
+
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'SkillMatrix_Pro_' + new Date().toISOString().slice(0, 10) + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    var btn = document.querySelector('[onclick="App.exportHTML()"]');
+    if (btn) {
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="ti ti-check"></i> Baixando...';
+      btn.style.background = '#15803D';
+      setTimeout(function() { btn.innerHTML = orig; btn.style.background = 'var(--blue)'; }, 2000);
+    }
+  }
+
+  // --- Init ---
+  function init() {
+    var __EXPORT_MODE__ = false;
+    // __EXPORT_DATE__
+
+    // __EXPORT_TRAININGS__
+    var SEED_TRAININGS = [];
+    var SEED_HISTORY = {};
+    // __END_EXPORT_TRAININGS__
+
+    if (__EXPORT_MODE__) {
+      // Exported file: load seeds directly, reset localStorage
+      localStorage.removeItem('skm6_ana');
+      localStorage.removeItem('skm6_mods');
+      localStorage.removeItem('skm6_sec');
+      localStorage.removeItem('skm6_train');
+      localStorage.removeItem('skm6_hist');
+      state.analysts  = SEED_ANALYSTS.map(Storage.migrateAnalyst);
+      state.modules   = SEED_MODULES.slice();
+      state.sectors   = SEED_SECTORS.slice();
+      state.trainings = SEED_TRAININGS.slice();
+      state.history   = SEED_HISTORY;
+    } else {
+      state.analysts  = Storage.loadAnalysts()  || SEED_ANALYSTS.map(Storage.migrateAnalyst);
+      state.modules   = Storage.loadModules()   || SEED_MODULES.slice();
+      state.sectors   = Storage.loadSectors()   || SEED_SECTORS.slice();
+      state.trainings = Storage.loadTrainings();
+      state.history   = Storage.loadHistory();
+    }
+
+    Domain.applyTrainingScores(state.analysts, state.trainings);
+
+    UIModals.init();
+    renderSectorTabs();
+    render();
+
+    // Zendesk CSAT sync — async, non-blocking
+    updateZendeskBadge('loading');
+    ZendeskSync.sync(state.analysts, function(count, err, status) {
+      if (status === 'ok') {
+        if (count > 0) { persist(); render(); }
+        updateZendeskBadge('ok');
+      } else if (status === 'error') {
+        updateZendeskBadge('error', err);
+      } else {
+        updateZendeskBadge('off');
+      }
+    });
+  }
+
+  function updateZendeskBadge(syncState, msg) {
+    var el = document.getElementById('zdBadge');
+    if (!el) return;
+    if (syncState === 'off') { el.style.display = 'none'; return; }
+    el.style.display = 'inline-flex';
+    var dot    = el.querySelector('.zd-dot');
+    var lbl    = el.querySelector('.zd-label');
+    var colors = { ok: '#4ADE80', error: '#FF5555', loading: '#FCD34D' };
+    if (dot) dot.style.background = colors[syncState] || '#888';
+    if (lbl) lbl.textContent = syncState === 'loading' ? 'Sincronizando…' : 'Zendesk';
+    if (syncState === 'ok') {
+      var st = ZendeskSync.getStatus();
+      el.title = (st.updated || 0) + ' analistas atualizados — ' +
+        (st.at ? new Date(st.at).toLocaleString('pt-BR') : '');
+    } else if (msg) {
+      el.title = 'Erro: ' + msg;
+    }
+  }
+
+  function openZendeskTickets(analystId) {
+    var analyst = state.analysts.find(function(a) { return a.id === analystId; });
+    if (!analyst) return;
+
+    function showModal() {
+      UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), function(newScore, updatedData) {
+        analyst.zendesk = newScore;
+        ZendeskSync.saveTickets(analystId, updatedData);
+        persist();
+        render();
+      });
+    }
+
+    // Se não há dados e nenhuma URL real configurada, carrega os dados de teste automaticamente
+    var noTickets = !ZendeskSync.getTickets(analystId);
+    var noUrl     = !ZendeskSync.getConfig().scriptUrl;
+    if (noTickets && noUrl) {
+      ZendeskSync.runTest(state.analysts, function(count) {
+        if (count > 0) { persist(); render(); }
+        updateZendeskBadge('ok');
+        showModal();
+      });
+    } else {
+      showModal();
+    }
+  }
+
+  function importFromZendesk() {
+    // Salva o que estiver nos campos antes de importar
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var cfg = ZendeskSync.getConfig();
+    ZendeskSync.saveConfig(Object.assign({}, cfg, {
+      subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain,
+      email:     g('zdEmail')    || cfg.email,
+      apiToken:  g('zdApiToken') || cfg.apiToken,
+      geminiKey: g('zdGeminiKey')|| cfg.geminiKey,
+      groupName: g('zdGroupName')|| cfg.groupName,
+      days:      parseInt(g('zdDays')) || cfg.days
+    }));
+
+    var btn     = document.getElementById('zdImportBtn');
+    var progEl  = document.getElementById('zdImportProgress');
+    if (btn)    { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Importando...'; }
+    if (progEl) progEl.style.color = 'var(--muted)';
+
+    ZendeskSync.importDirect(state.analysts,
+      function(msg) {
+        if (progEl) progEl.textContent = msg;
+      },
+      function(count, err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-cloud-download"></i> Importar do Zendesk'; }
+        if (err) {
+          if (progEl) { progEl.textContent = '✗ ' + err; progEl.style.color = '#FF5555'; }
+          return;
+        }
+        if (progEl) progEl.style.color = '#4ADE80';
+        if (count > 0) {
+          persist();
+          render();
+          updateZendeskBadge('ok');
+          // Mostra tabela de mapeamento para vincular nomes não reconhecidos
+          var analystNames = state.analysts.map(function(a) { return a.name; });
+          UIModals.renderNameMap && UIModals.renderNameMap(analystNames);
+          if (count < state.analysts.length) {
+            // Alguns analistas não foram vinculados — mantém modal aberto para mapear
+            if (progEl) {
+              progEl.textContent = '✓ ' + count + ' vinculados. Nomes abaixo não foram reconhecidos — vincule-os manualmente.';
+              progEl.style.color = '#FCD34D';
+            }
+          } else {
+            document.getElementById('manageModal') && (document.getElementById('manageModal').style.display = 'none');
+          }
+        } else {
+          var analystNames = state.analysts.map(function(a) { return a.name; });
+          UIModals.renderNameMap && UIModals.renderNameMap(analystNames);
+        }
+      }
+    );
+  }
+
+  function saveNameMapAndReimport() {
+    // Lê os selects do mapeamento e salva no config
+    var selects = document.querySelectorAll('#zdNameMapRows select[data-zdname]');
+    var nameMap = {};
+    selects.forEach(function(sel) {
+      var zdName    = sel.getAttribute('data-zdname');
+      var skName    = sel.value;
+      if (zdName && skName) nameMap[zdName] = skName;
+    });
+    var cfg = ZendeskSync.getConfig();
+    ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nameMap }));
+    // Limpa notas/tickets anteriores para reimportar limpo
+    state.analysts.forEach(function(a) { a.zendesk = null; });
+    localStorage.removeItem('skm6_zdtickets');
+    importFromZendesk();
+  }
+
+  function testZendeskSync() {
+    document.getElementById('manageModal') && (document.getElementById('manageModal').style.display = 'none');
+    ZendeskSync.runTest(state.analysts, function(count, err, status) {
+      if (count > 0) { persist(); render(); }
+      updateZendeskBadge('ok');
+    });
+  }
+
+  // Public API
+  return {
+    init:               init,
+    switchPage:         switchPage,
+    setSector:          setSector,
+    openEditModal:      openEditModal,
+    openAddAnalystModal: openAddAnalystModal,
+    removeAnalyst:      removeAnalyst,
+    toggleExpand:       toggleExpand,
+    openTrainingModal:  openTrainingModal,
+    openProvaModal:     openProvaModal,
+    finishTraining:     finishTraining,
+    toggleModuleDetail: toggleModuleDetail,
+    openManageModal:    openManageModal,
+    openZendeskTickets: openZendeskTickets,
+    importFromZendesk:      importFromZendesk,
+    saveNameMapAndReimport: saveNameMapAndReimport,
+    testZendeskSync:        testZendeskSync,
+    exportHTML:         exportHTML
+  };
+})();
+
+</script>
+<script>App.init();</script>
+
+</body>
+</html>
