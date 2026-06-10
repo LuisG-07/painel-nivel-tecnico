@@ -351,14 +351,18 @@ var ZendeskSync = (function() {
     function zdFetch(path) {
       return fetch(toUrl(path), { headers: headers })
         .then(function(r) {
-          if (!r.ok) {
-            var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
-                     : r.status === 401 ? 'verifique e-mail e token da API.'
-                     : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
-                     : 'erro inesperado.';
-            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint);
-          }
-          return r.json();
+          return r.text().then(function(body) {
+            if (!r.ok) {
+              var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
+                       : r.status === 401 ? 'verifique e-mail e token da API.'
+                       : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
+                       : 'erro inesperado.';
+              var detail = '';
+              try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
+              throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
+            }
+            return JSON.parse(body);
+          });
         });
     }
 
@@ -375,21 +379,20 @@ var ZendeskSync = (function() {
         return group.id;
       })
 
-      // 2. Busca todas as avaliações paginando
+      // 2. Busca avaliações filtrando por group_id na própria API
+      //    (evita paginação de todos os grupos e o limite de 100 páginas offset)
       .then(function(groupId) {
         var all = [];
         function fetchPage(url) {
           return zdFetch(url).then(function(data) {
-            var batch = (data.satisfaction_ratings || []).filter(function(r) {
-              return r.group_id == groupId;
-            });
+            var batch = data.satisfaction_ratings || [];
             all = all.concat(batch);
             onProgress('Avaliações encontradas: ' + all.length + '...');
-            if (data.next_page && all.length < 2000) return fetchPage(data.next_page);
+            if (data.next_page && all.length < 5000) return fetchPage(data.next_page);
             return all;
           });
         }
-        return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime);
+        return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&group_id=' + groupId);
       })
 
       // 3. Resolve nomes e fotos dos agentes

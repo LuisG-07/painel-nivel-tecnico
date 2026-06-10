@@ -1,5 +1,5 @@
 # SkillMatrix Pro — servidor local com proxy Zendesk
-# Uso: clique com botao direito → Executar com PowerShell
+# Uso: clique com botao direito -> Executar com PowerShell
 
 $port = 8080
 $root = $PSScriptRoot
@@ -17,7 +17,7 @@ catch {
 $url = "http://localhost:$port/index.html"
 Write-Host ""
 Write-Host "  SkillMatrix Pro: $url" -ForegroundColor Green
-Write-Host "  Proxy Zendesk ativo em /zdproxy/" -ForegroundColor Cyan
+Write-Host "  Proxy Zendesk ativo em /zdproxy/{subdomain}/..." -ForegroundColor Cyan
 Write-Host "  Pressione Ctrl+C para parar." -ForegroundColor Gray
 Write-Host ""
 
@@ -49,48 +49,70 @@ while ($listener.IsListening) {
 
         # --- Proxy Zendesk ---
         # URL format: /zdproxy/{subdomain}/api/v2/...
+        # Uses RawUrl to preserve exact query-string encoding (cursor tokens, page params, etc.)
         if ($localPath.StartsWith('zdproxy/')) {
-            $rest      = $localPath.Substring('zdproxy/'.Length)   # "{subdomain}/api/v2/..."
-            $slashIdx  = $rest.IndexOf('/')
-            if ($slashIdx -lt 1) {
+            $rawUrl = $req.RawUrl
+
+            if ($rawUrl -match '^/zdproxy/([^/?]+)(/.+)$') {
+                $subdomain   = $Matches[1]
+                $apiAndQuery = $Matches[2]
+            } else {
                 $resp.StatusCode = 400
                 $resp.OutputStream.Close()
                 continue
             }
-            $subdomain = $rest.Substring(0, $slashIdx)
-            $apiPath   = $rest.Substring($slashIdx)                # "/api/v2/..."
-            $query     = if ($req.Url.Query) { $req.Url.Query } else { '' }
 
-            # Validate subdomain — alphanumeric + hyphens only
             if ($subdomain -notmatch '^[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]?$') {
                 $resp.StatusCode = 400
                 $resp.OutputStream.Close()
                 continue
             }
 
-            $zdUrl = 'https://' + $subdomain + '.zendesk.com' + $apiPath + $query
+            $zdUrl = 'https://' + $subdomain + '.zendesk.com' + $apiAndQuery
 
             try {
-                $wc = [System.Net.WebClient]::new()
-                $wc.Headers.Add('Authorization', $req.Headers['Authorization'])
-                $wc.Headers.Add('Content-Type', 'application/json')
-                $bytes = $wc.DownloadData($zdUrl)
+                $wreq = [System.Net.HttpWebRequest]::Create($zdUrl)
+                $wreq.Method  = 'GET'
+                $wreq.Headers.Add('Authorization', $req.Headers['Authorization'])
+                $wreq.Accept  = 'application/json'
+                $wreq.AutomaticDecompression = [System.Net.DecompressionMethods]::GZip -bor [System.Net.DecompressionMethods]::Deflate
+                $wres   = $wreq.GetResponse()
+                $stream = $wres.GetResponseStream()
+                $ms     = [System.IO.MemoryStream]::new()
+                $stream.CopyTo($ms)
+                $stream.Close()
+                $wres.Close()
+                $bytes = $ms.ToArray()
                 $resp.ContentType     = 'application/json; charset=utf-8'
                 $resp.ContentLength64 = $bytes.Length
                 $resp.OutputStream.Write($bytes, 0, $bytes.Length)
             } catch [System.Net.WebException] {
-                $statusCode = [int]$_.Exception.Response.StatusCode
-                $resp.StatusCode = $statusCode
-                $errMsg  = [System.Text.Encoding]::UTF8.GetBytes('{"error":"Zendesk HTTP ' + $statusCode + '"}')
-                $resp.ContentType = 'application/json'
-                $resp.ContentLength64 = $errMsg.Length
-                $resp.OutputStream.Write($errMsg, 0, $errMsg.Length)
+                $wexResp    = $_.Exception.Response
+                $statusCode = 502
+                if ($wexResp) { $statusCode = [int]$wexResp.StatusCode }
+
+                $errBody = '{"error":"Zendesk HTTP ' + $statusCode + '"}'
+                if ($wexResp) {
+                    try {
+                        $es      = $wexResp.GetResponseStream()
+                        $sr      = [System.IO.StreamReader]::new($es)
+                        $rawBody = $sr.ReadToEnd()
+                        $sr.Close()
+                        if ($rawBody) { $errBody = $rawBody }
+                    } catch {}
+                }
+
+                $errBytes = [System.Text.Encoding]::UTF8.GetBytes($errBody)
+                $resp.StatusCode      = $statusCode
+                $resp.ContentType     = 'application/json'
+                $resp.ContentLength64 = $errBytes.Length
+                $resp.OutputStream.Write($errBytes, 0, $errBytes.Length)
             }
             $resp.OutputStream.Close()
             continue
         }
 
-        # --- Arquivos estáticos ---
+        # --- Arquivos estaticos ---
         if ($localPath -eq '') { $localPath = 'index.html' }
         $filePath = Join-Path $root $localPath
 
