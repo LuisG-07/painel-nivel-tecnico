@@ -1,8 +1,9 @@
 var ZendeskSync = (function() {
   var CFG_KEY     = 'skm6_zdcfg';
-  var SEC_KEY     = 'skm6_zdcfg_sec'; // sessionStorage — cleared on tab/browser close
+  var SEC_KEY     = 'skm6_zdcfg_sec';
   var STATUS_KEY  = 'skm6_zdstatus';
   var TICKETS_KEY = 'skm6_zdtickets';
+  var AGENTS_KEY  = 'skm6_zdagents'; // foto + score de todos os agentes do Zendesk
 
   // Public (non-sensitive) defaults — stored in localStorage
   var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', days: 30, scriptUrl: '', nameMap: {
@@ -81,6 +82,16 @@ var ZendeskSync = (function() {
     catch (e) { return {}; }
   }
   function saveStatus(s) { localStorage.setItem(STATUS_KEY, JSON.stringify(s)); }
+
+  function getAgentData(zdName) {
+    try {
+      var all = JSON.parse(localStorage.getItem(AGENTS_KEY)) || {};
+      return all[zdName] || null;
+    } catch (e) { return null; }
+  }
+  function saveAgents(agentStore) {
+    try { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentStore)); } catch(e) {}
+  }
 
   function getTickets(analystId) {
     try {
@@ -524,6 +535,13 @@ var ZendeskSync = (function() {
           };
         });
 
+        // Persiste dados de todos os agentes (foto + score) para cadastro posterior
+        var agentStore = {};
+        Object.keys(finalMap).forEach(function(name) {
+          agentStore[name] = { photo: finalMap[name].photo || null, score: finalMap[name].score };
+        });
+        saveAgents(agentStore);
+
         // Aplica scores e tickets
         var updated = applyAgentData(analysts, finalMap);
 
@@ -598,6 +616,7 @@ var ZendeskSync = (function() {
     recalcScore:    recalcScore,
     getTickets:     getTickets,
     saveTickets:    saveTickets,
+    getAgentData:   getAgentData,
     getConfig:      getConfig,
     saveConfig:     saveConfig,
     getStatus:      getStatus,

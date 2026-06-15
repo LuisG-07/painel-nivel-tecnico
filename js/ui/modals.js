@@ -358,7 +358,9 @@ var UIModals = (function() {
       var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit;width:100%';
       rows.innerHTML = found.map(function(zdName) {
         var current = nameMap[zdName] || '';
+        var isNew = current === '__NEW__';
         var options = '<option value="">— não vincular —</option>' +
+          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
           analystNames.map(function(n) {
             return '<option value="' + D.escapeHtml(n) + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
           }).join('');

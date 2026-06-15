@@ -372,17 +372,50 @@ var App = (function() {
   }
 
   function saveNameMapAndReimport() {
-    // Lê os selects do mapeamento e salva no config
-    var selects = document.querySelectorAll('#zdNameMapRows select[data-zdname]');
-    var nameMap = {};
+    var selects  = document.querySelectorAll('#zdNameMapRows select[data-zdname]');
+    var nameMap  = {};
+    var toCreate = [];
+
     selects.forEach(function(sel) {
-      var zdName    = sel.getAttribute('data-zdname');
-      var skName    = sel.value;
-      if (zdName && skName) nameMap[zdName] = skName;
+      var zdName = sel.getAttribute('data-zdname');
+      var val    = sel.value;
+      if (!zdName) return;
+      if (val === '__NEW__') {
+        toCreate.push(zdName);
+      } else if (val) {
+        nameMap[zdName] = val;
+      }
     });
+
+    // Cria novos analistas para cada seleção "Cadastrar"
+    toCreate.forEach(function(zdName) {
+      // Evita duplicata
+      var existing = state.analysts.find(function(a) {
+        return a.name.trim().toLowerCase() === zdName.trim().toLowerCase();
+      });
+      if (existing) { nameMap[zdName] = existing.name; return; }
+
+      var agentData  = ZendeskSync.getAgentData(zdName);
+      var newScores  = {};
+      state.modules.forEach(function(m) { newScores[m] = 1; });
+
+      var newAnalyst = {
+        id:       Date.now() + Math.floor(Math.random() * 9999),
+        name:     zdName,
+        sector:   state.sectors[0] || 'Chat',
+        zendesk:  agentData ? agentData.score : null,
+        provaAvg: null,
+        photo:    agentData && agentData.photo ? agentData.photo : null,
+        comment:  '',
+        anexos:   [],
+        scores:   newScores
+      };
+      state.analysts.push(newAnalyst);
+      nameMap[zdName] = zdName; // vincula pelo mesmo nome
+    });
+
     var cfg = ZendeskSync.getConfig();
     ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nameMap }));
-    // Limpa notas/tickets anteriores para reimportar limpo
     state.analysts.forEach(function(a) { a.zendesk = null; });
     localStorage.removeItem('skm6_zdtickets');
     importFromZendesk();
