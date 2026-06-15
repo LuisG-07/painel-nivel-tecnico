@@ -294,28 +294,12 @@ var App = (function() {
   function openZendeskTickets(analystId) {
     var analyst = state.analysts.find(function(a) { return a.id === analystId; });
     if (!analyst) return;
-
-    function showModal() {
-      UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), function(newScore, updatedData) {
-        analyst.zendesk = newScore;
-        ZendeskSync.saveTickets(analystId, updatedData);
-        persist();
-        render();
-      });
-    }
-
-    // Se não há dados e nenhuma URL real configurada, carrega os dados de teste automaticamente
-    var noTickets = !ZendeskSync.getTickets(analystId);
-    var noUrl     = !ZendeskSync.getConfig().scriptUrl;
-    if (noTickets && noUrl) {
-      ZendeskSync.runTest(state.analysts, function(count) {
-        if (count > 0) { persist(); render(); }
-        updateZendeskBadge('ok');
-        showModal();
-      });
-    } else {
-      showModal();
-    }
+    UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), function(newScore, updatedData) {
+      analyst.zendesk = newScore;
+      ZendeskSync.saveTickets(analystId, updatedData);
+      persist();
+      render();
+    });
   }
 
   function importFromZendesk() {
@@ -426,14 +410,6 @@ var App = (function() {
     importFromZendesk();
   }
 
-  function testZendeskSync() {
-    document.getElementById('manageModal') && (document.getElementById('manageModal').style.display = 'none');
-    ZendeskSync.runTest(state.analysts, function(count, err, status) {
-      if (count > 0) { persist(); render(); }
-      updateZendeskBadge('ok');
-    });
-  }
-
   // Public API
   return {
     init:               init,
@@ -451,7 +427,6 @@ var App = (function() {
     openZendeskTickets: openZendeskTickets,
     importFromZendesk:      importFromZendesk,
     saveNameMapAndReimport: saveNameMapAndReimport,
-    testZendeskSync:        testZendeskSync,
     exportHTML:         exportHTML
   };
 })();
