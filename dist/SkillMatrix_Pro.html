@@ -1653,16 +1653,17 @@ var UIModals = (function() {
       if (!container || !rows || !found.length) return;
 
       var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
-      var selStyle   = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
-      var sectorOpts = sectorList.map(function(s) { return '<option>' + D.escapeHtml(s) + '</option>'; }).join('');
+      var selStyle   = 'background:#1e1e2e;border:1px solid var(--border);color:#e2e2e2;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
+      var optStyle   = 'background:#1e1e2e;color:#e2e2e2';
+      var sectorOpts = sectorList.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
 
       rows.innerHTML = found.map(function(zdName) {
         var current = nameMap[zdName] || '';
         var isNew   = current === '__NEW__';
-        var options = '<option value="">— não vincular —</option>' +
-          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
+        var options = '<option value="" style="' + optStyle + ';color:#888">— não vincular —</option>' +
+          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#1e1e2e;color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
           analystNames.map(function(n) {
-            return '<option value="' + D.escapeHtml(n) + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
+            return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
           }).join('');
         return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
           '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
