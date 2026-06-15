@@ -642,6 +642,7 @@ var UIModals = (function() {
                       (isConsider ? '<i class="ti ti-x" style="font-size:9px"></i> Técnico' : '<i class="ti ti-check" style="font-size:9px"></i> Comportamental') +
                     '</button>' +
                   '</div>' +
+                  (ticket.subject ? '<div style="font-size:11px;color:var(--white);font-weight:500;margin-bottom:4px">' + esc(ticket.subject) + '</div>' : '') +
                   '<div style="font-size:11px;color:var(--muted);line-height:1.5">' +
                     (ticket.comment ? '"' + esc(ticket.comment.substring(0, 220)) + '"' : '<em>Sem comentário do cliente</em>') +
                   '</div>' +

@@ -20,8 +20,8 @@ var ZendeskSync = (function() {
     'Sergio Junior':                       'Sergio',
     'Thales Silva':                        'Thales'
   } };
-  // Sensitive defaults — stored in sessionStorage only
-  var DEFAULT_SEC = { email: '', apiToken: '', geminiKey: '' };
+  // Credentials — stored in localStorage (persistent between sessions)
+  var DEFAULT_SEC = { email: 'lucas@beteltecnologia.com.br', apiToken: 'jXs605fvYJ6YAoLUUjlnUxRXmxGmI71wik57js3X', geminiKey: '' };
 
   var FOUND_KEY = 'skm6_zdfound';
 
@@ -44,12 +44,12 @@ var ZendeskSync = (function() {
   // Config: public fields in localStorage, credentials in sessionStorage
   // ---------------------------------------------------------------------------
   function _getSensitive() {
-    try { return Object.assign({}, DEFAULT_SEC, JSON.parse(sessionStorage.getItem(SEC_KEY)) || {}); }
+    try { return Object.assign({}, DEFAULT_SEC, JSON.parse(localStorage.getItem(SEC_KEY)) || {}); }
     catch (e) { return Object.assign({}, DEFAULT_SEC); }
   }
 
   function _saveSensitive(s) {
-    sessionStorage.setItem(SEC_KEY, JSON.stringify({
+    localStorage.setItem(SEC_KEY, JSON.stringify({
       email:     typeof s.email     === 'string' ? s.email.slice(0, 256)     : '',
       apiToken:  typeof s.apiToken  === 'string' ? s.apiToken.slice(0, 512)  : '',
       geminiKey: typeof s.geminiKey === 'string' ? s.geminiKey.slice(0, 256) : ''
@@ -59,12 +59,6 @@ var ZendeskSync = (function() {
   function getConfig() {
     try {
       var stored = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
-      // Migrate: if old storage still has plaintext credentials, move them to sessionStorage
-      if (stored.email || stored.apiToken || stored.geminiKey) {
-        _saveSensitive({ email: stored.email || '', apiToken: stored.apiToken || '', geminiKey: stored.geminiKey || '' });
-        delete stored.email; delete stored.apiToken; delete stored.geminiKey;
-        localStorage.setItem(CFG_KEY, JSON.stringify(Object.assign({}, DEFAULT_CFG, stored)));
-      }
       return Object.assign({}, DEFAULT_CFG, stored, _getSensitive());
     }
     catch (e) { return Object.assign({}, DEFAULT_CFG, _getSensitive()); }
@@ -458,12 +452,31 @@ var ZendeskSync = (function() {
           agentMap[n].raw.forEach(function(t) { badAll.push(t); });
         });
 
+        // 4.5 Busca assunto dos tickets negativos em lotes de 100
+        var subjectMap = {};
+        function fetchSubjects(ids, i) {
+          if (i >= ids.length) return Promise.resolve(subjectMap);
+          var batch = ids.slice(i, i + 100).join(',');
+          onProgress('Buscando assuntos dos tickets negativos... (' + Math.min(i + 100, ids.length) + '/' + ids.length + ')');
+          return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
+            .then(function(d) {
+              (d.tickets || []).forEach(function(t) { subjectMap[t.id] = t.subject || ''; });
+            })
+            .catch(function() {})
+            .then(function() { return fetchSubjects(ids, i + 100); });
+        }
+
+        var allBadIds = badAll.map(function(t) { return t.id; });
+        var subjectPromise = allBadIds.length ? fetchSubjects(allBadIds, 0) : Promise.resolve(subjectMap);
+
         // 5. Categoriza com Gemini se chave configurada
         var catPromise = (cfg.geminiKey && badAll.length)
           ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
           : Promise.resolve({});
 
-        return catPromise.then(function(cats) { return { agentMap: agentMap, cats: cats }; });
+        return Promise.all([subjectPromise, catPromise]).then(function(results) {
+          return { agentMap: agentMap, cats: results[1], subjectMap: results[0] || subjectMap };
+        });
       })
 
       // 5.5 Baixa fotos dos agentes como base64
@@ -506,7 +519,7 @@ var ZendeskSync = (function() {
             total:       a.good + a.bad,
             photo:       a.photo || null,
             bad_tickets: a.raw.map(function(t) {
-              return { id: t.id, date: t.date, comment: t.comment, category: cats[t.id] || '' };
+              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '' };
             })
           };
         });
