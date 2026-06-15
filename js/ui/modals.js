@@ -348,17 +348,20 @@ var UIModals = (function() {
     };
 
     // Renderiza tabela de mapeamento nome Zendesk → analista SkillMatrix
-    UIModals.renderNameMap = function(analystNames) {
+    UIModals.renderNameMap = function(analystNames, sectors) {
       var found     = ZendeskSync.getFoundNames();
       var nameMap   = ZendeskSync.getConfig().nameMap || {};
       var container = document.getElementById('zdNameMapContainer');
       var rows      = document.getElementById('zdNameMapRows');
       if (!container || !rows || !found.length) return;
 
-      var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit;width:100%';
+      var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
+      var selStyle   = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
+      var sectorOpts = sectorList.map(function(s) { return '<option>' + D.escapeHtml(s) + '</option>'; }).join('');
+
       rows.innerHTML = found.map(function(zdName) {
         var current = nameMap[zdName] || '';
-        var isNew = current === '__NEW__';
+        var isNew   = current === '__NEW__';
         var options = '<option value="">— não vincular —</option>' +
           '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
           analystNames.map(function(n) {
@@ -367,11 +370,17 @@ var UIModals = (function() {
         return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
           '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
           '<span style="font-size:11px;color:var(--muted)">→</span>' +
-          '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + inputStyle + ';flex:1">' + options + '</select>' +
+          '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + selStyle + ';flex:1" onchange="UIModals._zdMapChange(this)">' + options + '</select>' +
+          '<select data-sector style="' + selStyle + ';min-width:90px;' + (isNew ? '' : 'display:none') + '">' + sectorOpts + '</select>' +
         '</div>';
       }).join('');
 
       container.style.display = 'block';
+    };
+
+    UIModals._zdMapChange = function(sel) {
+      var sectorSel = sel.parentElement.querySelector('select[data-sector]');
+      if (sectorSel) sectorSel.style.display = sel.value === '__NEW__' ? '' : 'none';
     };
 
     document.getElementById('zdTestBtn') && (document.getElementById('zdTestBtn').onclick = function() {

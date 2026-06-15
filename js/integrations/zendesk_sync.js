@@ -498,7 +498,7 @@ var ZendeskSync = (function() {
         onProgress('Baixando fotos (' + total + ' agentes)...');
 
         var fetches = names.map(function(name) {
-          var url = result.agentMap[name].photoUrl;
+          var url = toUrl(result.agentMap[name].photoUrl); // usa proxy para evitar bloqueio CORS
           return fetch(url, { headers: headers })
             .then(function(r) { return r.ok ? r.blob() : null; })
             .then(function(blob) {

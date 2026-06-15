@@ -353,7 +353,7 @@ var App = (function() {
           updateZendeskBadge('ok');
           // Mostra tabela de mapeamento para vincular nomes não reconhecidos
           var analystNames = state.analysts.map(function(a) { return a.name; });
-          UIModals.renderNameMap && UIModals.renderNameMap(analystNames);
+          UIModals.renderNameMap && UIModals.renderNameMap(analystNames, state.sectors);
           if (count < state.analysts.length) {
             // Alguns analistas não foram vinculados — mantém modal aberto para mapear
             if (progEl) {
@@ -365,7 +365,7 @@ var App = (function() {
           }
         } else {
           var analystNames = state.analysts.map(function(a) { return a.name; });
-          UIModals.renderNameMap && UIModals.renderNameMap(analystNames);
+          UIModals.renderNameMap && UIModals.renderNameMap(analystNames, state.sectors);
         }
       }
     );
@@ -399,10 +399,15 @@ var App = (function() {
       var newScores  = {};
       state.modules.forEach(function(m) { newScores[m] = 1; });
 
+      // Lê setor do select inline (aparece ao escolher "Cadastrar")
+      var mapSel    = document.querySelector('#zdNameMapRows select[data-zdname="' + zdName.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"]');
+      var sectorSel = mapSel && mapSel.parentElement.querySelector('select[data-sector]');
+      var sector    = (sectorSel && sectorSel.value) || state.sectors[0] || 'Chat';
+
       var newAnalyst = {
         id:       Date.now() + Math.floor(Math.random() * 9999),
         name:     zdName,
-        sector:   state.sectors[0] || 'Chat',
+        sector:   sector,
         zendesk:  agentData ? agentData.score : null,
         provaAvg: null,
         photo:    agentData && agentData.photo ? agentData.photo : null,
