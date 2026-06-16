@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Carregando dados Zendesk...</title>
+  <style>
+    body { background: #1a1a2e; color: #fff; font-family: sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; flex-direction: column; gap: 16px; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,.2);
+               border-top-color: #4ADE80; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { color: rgba(255,255,255,.7); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>Carregando dados do Zendesk...</p>
+  <script src="/zd_import_data.js"></script>
+</body>
+</html>
