@@ -405,6 +405,23 @@ var App = (function() {
 
     var cfg = ZendeskSync.getConfig();
     ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nameMap }));
+
+    // Aplica fotos do cache (skm6_zdagents) para analistas vinculados agora
+    state.analysts.forEach(function(analyst) {
+      if (analyst.photo) return; // já tem foto, não sobrescreve
+      // Busca direto pelo nome do analista
+      var direct = ZendeskSync.getAgentData(analyst.name);
+      if (direct && direct.photo) { analyst.photo = direct.photo; return; }
+      // Busca pelo nameMap reverso (zdName → analyst.name)
+      Object.keys(nameMap).forEach(function(zdName) {
+        if (nameMap[zdName] === analyst.name) {
+          var d = ZendeskSync.getAgentData(zdName);
+          if (d && d.photo) analyst.photo = d.photo;
+        }
+      });
+    });
+
+    persist(); // salva fotos imediatamente antes do reimport
     state.analysts.forEach(function(a) { a.zendesk = null; });
     localStorage.removeItem('skm6_zdtickets');
     importFromZendesk();

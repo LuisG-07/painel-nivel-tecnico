@@ -331,6 +331,21 @@ var UIModals = (function() {
       if (!pendingModules.length) { alert('Deve existir pelo menos um módulo.'); return; }
       if (!pendingSectors.length) { alert('Deve existir pelo menos um setor.'); return; }
       var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
+      // Lê e persiste nameMap atual da tabela de vinculação (se visível)
+      var selects = document.querySelectorAll('#zdNameMapRows select[data-zdname]');
+      if (selects.length) {
+        var currentNameMap = ZendeskSync.getConfig().nameMap || {};
+        selects.forEach(function(sel) {
+          var zdName = sel.getAttribute('data-zdname');
+          var val    = sel.value;
+          if (zdName && val && val !== '__NEW__') currentNameMap[zdName] = val;
+          else if (zdName && !val)               delete currentNameMap[zdName];
+        });
+        var cfgNow = ZendeskSync.getConfig();
+        ZendeskSync.saveConfig(Object.assign({}, cfgNow, { nameMap: currentNameMap }));
+      }
+
       onSave({
         modules:    pendingModules,
         sectors:    pendingSectors,
