@@ -22,7 +22,7 @@ var ZendeskSync = (function() {
     'Thales Silva':                        'Thales'
   } };
   // Credentials — stored in localStorage (persistent between sessions)
-  var DEFAULT_SEC = { email: 'lucas@beteltecnologia.com.br', apiToken: 'jXs605fvYJ6YAoLUUjlnUxRXmxGmI71wik57js3X', geminiKey: '' };
+  var DEFAULT_SEC = { email: '', apiToken: '', geminiKey: '' };
 
   var FOUND_KEY = 'skm6_zdfound';
 
