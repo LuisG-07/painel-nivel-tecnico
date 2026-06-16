@@ -1847,17 +1847,16 @@ var UIModals = (function() {
       ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
       : null;
 
-    // Filtro de data — padrão: mês atual
+    // Filtro de data — padrão: sem filtro (exibe todos)
     function toInputVal(d) {
       var m   = String(d.getMonth() + 1).padStart(2, '0');
       var day = String(d.getDate()).padStart(2, '0');
       return d.getFullYear() + '-' + m + '-' + day;
     }
-    var _now   = new Date();
-    var filterFrom = new Date(_now.getFullYear(), _now.getMonth(), 1);
-    var filterTo   = new Date(_now.getFullYear(), _now.getMonth() + 1, 0);
-    var _defaultFrom = toInputVal(filterFrom);
-    var _defaultTo   = toInputVal(filterTo);
+    var filterFrom   = null;
+    var filterTo     = null;
+    var _defaultFrom = '';
+    var _defaultTo   = '';
 
     // Converte 'dd/mm/yyyy' ou 'dd/mm' → inteiro YYYYMMDD para comparação
     function dateToInt(d) {
