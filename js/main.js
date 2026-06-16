@@ -258,6 +258,12 @@ var App = (function() {
     renderSectorTabs();
     render();
 
+    // Mostra botão de logout se autenticado via servidor
+    if (localStorage.getItem('skm6_auth_token')) {
+      var logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.style.display = 'flex';
+    }
+
     // Zendesk CSAT sync — async, non-blocking
     updateZendeskBadge('loading');
     ZendeskSync.sync(state.analysts, function(count, err, status) {
@@ -444,6 +450,11 @@ var App = (function() {
     openZendeskTickets: openZendeskTickets,
     importFromZendesk:      importFromZendesk,
     saveNameMapAndReimport: saveNameMapAndReimport,
-    exportHTML:         exportHTML
+    exportHTML:         exportHTML,
+    logout: function() {
+      localStorage.removeItem('skm6_auth_token');
+      localStorage.removeItem('skm6_auth_email');
+      window.location.reload();
+    }
   };
 })();

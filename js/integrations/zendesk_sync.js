@@ -195,26 +195,34 @@ var ZendeskSync = (function() {
   // ---------------------------------------------------------------------------
   function importDirect(analysts, onProgress, callback) {
     var cfg = getConfig();
-    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
-      callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
-      return;
-    }
     if (!isValidSubdomain(cfg.subdomain)) {
       callback(0, 'Subdomínio inválido: use apenas letras, números e hífens (ex: minhaempresa).');
       return;
     }
 
     var base      = 'https://' + cfg.subdomain + '.zendesk.com';
-    var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
-    var headers   = { 'Authorization': auth };
     var startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
     var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
 
-    // Quando rodando em localhost, usa proxy local para evitar bloqueio CORS do Zendesk
-    var isLocal   = typeof window !== 'undefined' &&
-                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    // Include subdomain in proxy path so the server knows where to route the request
-    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+    // Usa proxy sempre que disponível (localhost OU servidor remoto).
+    // No servidor: credenciais ficam server-side, browser envia JWT.
+    // No file://:  sem proxy, usa credenciais locais (fallback).
+    var hasProxy  = typeof window !== 'undefined' && window.location.protocol !== 'file:';
+    var proxyBase = hasProxy ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+
+    // Cabeçalho de autenticação:
+    // - servidor remoto/localhost com JWT → Bearer token (credenciais ficam no servidor)
+    // - file:// sem proxy              → Basic auth com credenciais locais
+    var jwtToken = localStorage.getItem('skm6_auth_token');
+    var headers;
+    if (hasProxy && jwtToken) {
+      headers = { 'Authorization': 'Bearer ' + jwtToken };
+    } else if (cfg.email && cfg.apiToken) {
+      headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
+    } else {
+      callback(0, 'Preencha e-mail e token da API Zendesk antes de importar.');
+      return;
+    }
 
     function toUrl(path) {
       if (path.startsWith('http')) {

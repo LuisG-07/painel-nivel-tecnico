@@ -36,6 +36,86 @@
 </head>
 <body>
 
+<!-- ── Tela de Login ──────────────────────────────────────────────────────── -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#0f0f1a;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="width:100%;max-width:380px;padding:0 24px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-0.5px">Painel de Nível Técnico</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-top:6px">Acesso restrito — faça login para continuar</div>
+    </div>
+    <div style="background:#161625;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:28px 24px">
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.5px;display:block;margin-bottom:6px">EMAIL</label>
+        <input id="loginEmail" type="email" placeholder="seu@email.com"
+          style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.5px;display:block;margin-bottom:6px">SENHA</label>
+        <input id="loginPass" type="password" placeholder="••••••••"
+          style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="loginError" style="display:none;background:rgba(255,85,85,.12);border:1px solid rgba(255,85,85,.3);border-radius:6px;padding:8px 12px;color:#ff8080;font-size:12px;margin-bottom:14px"></div>
+      <button onclick="doLogin()" id="loginBtn"
+        style="width:100%;background:#2563EB;border:none;border-radius:8px;padding:11px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">
+        Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var overlay = document.getElementById('loginOverlay');
+
+  // Verifica se está rodando com servidor (tem /api/me)
+  var hasServer = window.location.protocol !== 'file:';
+
+  function showLogin() {
+    overlay.style.display = 'flex';
+    document.getElementById('loginEmail').focus();
+  }
+
+  function hideLogin() {
+    overlay.style.display = 'none';
+  }
+
+  window.doLogin = function() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var pass  = document.getElementById('loginPass').value;
+    var errEl = document.getElementById('loginError');
+    var btn   = document.getElementById('loginBtn');
+    errEl.style.display = 'none';
+    if (!email || !pass) { errEl.textContent = 'Preencha email e senha.'; errEl.style.display = 'block'; return; }
+    btn.textContent = 'Entrando...'; btn.disabled = true;
+    fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: pass })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+    .then(function(res) {
+      if (!res.ok) { errEl.textContent = res.data.error || 'Erro ao fazer login.'; errEl.style.display = 'block'; return; }
+      localStorage.setItem('skm6_auth_token', res.data.token);
+      localStorage.setItem('skm6_auth_email', res.data.email);
+      hideLogin();
+    })
+    .catch(function() { errEl.textContent = 'Erro de conexão.'; errEl.style.display = 'block'; })
+    .finally(function() { btn.textContent = 'Entrar'; btn.disabled = false; });
+  };
+
+  // Verifica autenticação ao carregar
+  if (hasServer) {
+    var token = localStorage.getItem('skm6_auth_token');
+    if (!token) { showLogin(); return; }
+    fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(function(r) { if (!r.ok) { localStorage.removeItem('skm6_auth_token'); showLogin(); } })
+      .catch(function() { showLogin(); });
+  }
+})();
+</script>
+
 <div class="topbar">
   <div class="logo-area">
     <i class="ti ti-chart-bar" style="color:var(--blue);font-size:20px" aria-hidden="true"></i>
@@ -53,6 +133,9 @@
     </span>
     <button onclick="App.exportHTML()" style="background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap" aria-label="Exportar HTML">
       <i class="ti ti-download" aria-hidden="true"></i> Exportar HTML
+    </button>
+    <button id="logoutBtn" onclick="App.logout()" style="display:none;background:transparent;color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.12);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px" title="Sair">
+      <i class="ti ti-logout" aria-hidden="true"></i>
     </button>
   </div>
 </div>

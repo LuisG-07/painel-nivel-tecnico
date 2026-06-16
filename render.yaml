@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: painel-nivel-tecnico
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ZENDESK_SUBDOMAIN
+        value: beteltecnologia
+      - key: ZENDESK_EMAIL
+        sync: false
+      - key: ZENDESK_TOKEN
+        sync: false
+      - key: USERS
+        sync: false
