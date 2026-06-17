@@ -292,19 +292,40 @@ var UIModals = (function() {
     var zdSubEl   = document.getElementById('zdSubdomain');
     var zdEmailEl = document.getElementById('zdEmail');
     var zdTokEl   = document.getElementById('zdApiToken');
-    var zdGemEl   = document.getElementById('zdGeminiKey');
-    var zdUrlEl   = document.getElementById('zdScriptUrl');
-    var zdGrpEl   = document.getElementById('zdGroupName');
-    var zdDaysEl  = document.getElementById('zdDays');
-    var zdProgEl  = document.getElementById('zdImportProgress');
-    if (zdSubEl)   zdSubEl.value   = zdCfg.subdomain  || '';
-    if (zdEmailEl) zdEmailEl.value = zdCfg.email      || '';
-    if (zdTokEl)   zdTokEl.value   = zdCfg.apiToken   || '';
-    if (zdGemEl)   zdGemEl.value   = zdCfg.geminiKey  || '';
-    if (zdUrlEl)   zdUrlEl.value   = zdCfg.scriptUrl  || '';
-    if (zdGrpEl)   zdGrpEl.value   = zdCfg.groupName  || 'suporte n1';
-    if (zdDaysEl)  zdDaysEl.value  = zdCfg.days        || 30;
-    if (zdProgEl)  zdProgEl.textContent = '';
+    var zdGemEl     = document.getElementById('zdGeminiKey');
+    var zdUrlEl     = document.getElementById('zdScriptUrl');
+    var zdGrpEl     = document.getElementById('zdGroupName');
+    var zdDateFromEl = document.getElementById('zdDateFrom');
+    var zdDateToEl   = document.getElementById('zdDateTo');
+    var zdProgEl    = document.getElementById('zdImportProgress');
+    if (zdSubEl)      zdSubEl.value   = zdCfg.subdomain  || '';
+    if (zdEmailEl)    zdEmailEl.value = zdCfg.email      || '';
+    if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
+    if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
+    if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
+    // Popula checkboxes de grupos
+    var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
+    if (typeof selectedIds === 'string') selectedIds = [selectedIds];
+    document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+      cb.checked = selectedIds.indexOf(cb.getAttribute('data-zd-group')) !== -1;
+    });
+    // Datas padrão: De = dia 01 do mês vigente, Até = hoje
+    if (zdDateFromEl) {
+      zdDateFromEl.value = zdCfg.dateFrom || (function() {
+        var today = new Date();
+        return today.getFullYear() + '-' +
+               String(today.getMonth() + 1).padStart(2, '0') + '-01';
+      })();
+    }
+    if (zdDateToEl) {
+      zdDateToEl.value = zdCfg.dateTo || (function() {
+        var today = new Date();
+        return today.getFullYear() + '-' +
+               String(today.getMonth() + 1).padStart(2, '0') + '-' +
+               String(today.getDate()).padStart(2, '0');
+      })();
+    }
+    if (zdProgEl)     zdProgEl.textContent = '';
 
     switchManageTab('modules');
     modal.style.display = 'flex';
@@ -355,8 +376,15 @@ var UIModals = (function() {
           apiToken:  g('zdApiToken'),
           geminiKey: g('zdGeminiKey'),
           scriptUrl: g('zdScriptUrl'),
-          groupName: g('zdGroupName') || 'suporte n1',
-          days:      parseInt(g('zdDays')) || 30
+          groupIds:  (function() {
+            var checked = [];
+            document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+              if (cb.checked) checked.push(cb.getAttribute('data-zd-group'));
+            });
+            return checked.length ? checked : ['6441506014871', '21198035409559', '360001272933'];
+          })(),
+          dateFrom:  g('zdDateFrom') || '',
+          dateTo:    g('zdDateTo') || ''
         }
       });
       modal.style.display = 'none';
@@ -370,12 +398,23 @@ var UIModals = (function() {
       var rows      = document.getElementById('zdNameMapRows');
       if (!container || !rows || !found.length) return;
 
+      // Filtra apenas nomes que ainda não foram vinculados
+      var unmapped = found.filter(function(zdName) {
+        return !nameMap[zdName] || nameMap[zdName] === '';
+      });
+
+      // Se todos já foram vinculados, esconde o container
+      if (!unmapped.length) {
+        container.style.display = 'none';
+        return;
+      }
+
       var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
       var selStyle   = 'background:#1e1e2e;border:1px solid var(--border);color:#e2e2e2;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
       var optStyle   = 'background:#1e1e2e;color:#e2e2e2';
       var sectorOpts = sectorList.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
 
-      rows.innerHTML = found.map(function(zdName) {
+      rows.innerHTML = unmapped.map(function(zdName) {
         var current = nameMap[zdName] || '';
         var isNew   = current === '__NEW__';
         var options = '<option value="" style="' + optStyle + ';color:#888">— não vincular —</option>' +
@@ -391,7 +430,7 @@ var UIModals = (function() {
         '</div>';
       }).join('');
 
-      container.style.display = 'block';
+      container.style.display = unmapped.length ? 'block' : 'none';
     };
 
     UIModals._zdMapChange = function(sel) {
@@ -568,16 +607,19 @@ var UIModals = (function() {
       ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
       : null;
 
-    // Filtro de data — padrão: sem filtro (exibe todos)
+    // Filtro de data — padrão: últimos 30 dias
     function toInputVal(d) {
       var m   = String(d.getMonth() + 1).padStart(2, '0');
       var day = String(d.getDate()).padStart(2, '0');
       return d.getFullYear() + '-' + m + '-' + day;
     }
+    var today    = new Date();
+    var thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     var filterFrom   = null;
     var filterTo     = null;
-    var _defaultFrom = '';
-    var _defaultTo   = '';
+    var _defaultFrom = toInputVal(thirtyDaysAgo);
+    var _defaultTo   = toInputVal(today);
 
     // Converte 'dd/mm/yyyy' ou 'dd/mm' → inteiro YYYYMMDD para comparação
     function dateToInt(d) {
@@ -689,10 +731,11 @@ var UIModals = (function() {
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
           '<i class="ti ti-calendar-search" style="color:var(--muted);font-size:14px"></i>' +
           '<span style="font-size:11px;color:var(--muted)">De</span>' +
-          '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
+          '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + ';cursor:pointer">' +
           '<span style="font-size:11px;color:var(--muted)">até</span>' +
-          '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
-          '<button onclick="UIModals._zdClearFilter()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
+          '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + ';cursor:pointer">' +
+          '<button type="button" onclick="UIModals._zdApplyFilter()" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,.15);color:var(--blue);cursor:pointer;font-family:inherit;font-weight:500">🔍 Filtrar</button>' +
+          '<button type="button" onclick="UIModals._zdClearFilter()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
         '</div>' +
         '<div id="zdTicketList"></div>';
     }
@@ -721,7 +764,31 @@ var UIModals = (function() {
     };
 
     setupBody();
+    // Aplica filtro padrão (últimos 30 dias)
+    filterFrom = new Date(_defaultFrom);
+    filterTo   = new Date(_defaultTo);
     renderList();
+
+    // Configura event listeners dos botões de filtro
+    setTimeout(function() {
+      var filterBtn = document.querySelector('button[onclick*="_zdApplyFilter"]');
+      var clearBtn = document.querySelector('button[onclick*="_zdClearFilter"]');
+      if (filterBtn) {
+        filterBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          UIModals._zdApplyFilter();
+        };
+      }
+      if (clearBtn) {
+        clearBtn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          UIModals._zdClearFilter();
+        };
+      }
+    }, 50);
+
     modal.style.display = 'flex';
 
     document.getElementById('zdTicketsSaveBtn').onclick = function() {

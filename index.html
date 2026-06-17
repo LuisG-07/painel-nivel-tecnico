@@ -233,10 +233,38 @@
       <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
       <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
       <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
-      <span class="input-label" for="zdGroupName">Grupo no Zendesk</span>
-      <input type="text" id="zdGroupName" class="form-input" placeholder="suporte n1">
-      <span class="input-label" for="zdDays">Período (dias)</span>
-      <input type="number" id="zdDays" class="form-input" min="7" max="90" step="7" placeholder="30" style="width:100px">
+      <span class="input-label">Grupos no Zendesk</span>
+      <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;font-weight:500">Selecione os grupos:</span>
+          <button type="button" onclick="document.querySelectorAll('[data-zd-group]').forEach(function(cb){cb.checked=true})" style="font-size:11px;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;font-family:inherit">Marcar todos</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup360001272933" data-zd-group="360001272933" checked style="cursor:pointer">
+            SUP-N1
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup6441506014871" data-zd-group="6441506014871" checked style="cursor:pointer">
+            Suporte (Outros Assuntos)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup21198035409559" data-zd-group="21198035409559" checked style="cursor:pointer">
+            Suporte para Nota Fiscal
+          </label>
+        </div>
+      </div>
+      <span class="input-label">Período</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--muted)">De</span>
+          <input type="date" id="zdDateFrom" class="form-input">
+        </div>
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--muted)">Até</span>
+          <input type="date" id="zdDateTo" class="form-input">
+        </div>
+      </div>
       <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
       <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px">
         <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>

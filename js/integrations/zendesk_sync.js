@@ -4,9 +4,10 @@ var ZendeskSync = (function() {
   var STATUS_KEY  = 'skm6_zdstatus';
   var TICKETS_KEY = 'skm6_zdtickets';
   var AGENTS_KEY  = 'skm6_zdagents'; // foto + score de todos os agentes do Zendesk
+  var PHOTOS_KEY  = 'skm6_zdphotos'; // cache persistente de fotos de analistas
 
   // Public (non-sensitive) defaults — stored in localStorage
-  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', days: 30, scriptUrl: '', nameMap: {
+  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', groupIds: ['6441506014871', '21198035409559', '360001272933'], days: 30, dateFrom: '', dateTo: '', scriptUrl: '', nameMap: {
     'Bruno Henrique Ferreira da Silva': 'Bruno',
     'Henrique Rodrigues Costa Sérgio': 'Henrique Sergio',
     'Mário Diniz':                    'Mario Diniz',
@@ -66,10 +67,15 @@ var ZendeskSync = (function() {
   }
 
   function saveConfig(c) {
+    var groupIds = c.groupIds || ['6441506014871', '21198035409559', '360001272933'];
+    if (!Array.isArray(groupIds)) groupIds = [groupIds];
     var pub = {
       subdomain: typeof c.subdomain === 'string' ? c.subdomain.slice(0, 63)  : '',
       groupName: typeof c.groupName === 'string' ? c.groupName.slice(0, 100) : 'suporte n1',
+      groupIds:  groupIds.map(function(id) { return typeof id === 'string' ? id.slice(0, 20) : ''; }).filter(function(id) { return id; }),
       days:      typeof c.days      === 'number' ? Math.min(Math.max(c.days, 1), 365) : 30,
+      dateFrom:  typeof c.dateFrom  === 'string' ? c.dateFrom.slice(0, 10) : '',
+      dateTo:    typeof c.dateTo    === 'string' ? c.dateTo.slice(0, 10) : '',
       scriptUrl: typeof c.scriptUrl === 'string' && isAllowedScriptUrl(c.scriptUrl) ? c.scriptUrl : '',
       nameMap:   (c.nameMap && typeof c.nameMap === 'object' && !Array.isArray(c.nameMap)) ? c.nameMap : {}
     };
@@ -91,6 +97,21 @@ var ZendeskSync = (function() {
   }
   function saveAgents(agentStore) {
     try { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentStore)); } catch(e) {}
+  }
+
+  // Cache persistente de fotos de analistas
+  function getPhotoCache() {
+    try { return JSON.parse(localStorage.getItem(PHOTOS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function savePhotoCache(photos) {
+    try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); }
+    catch (e) { console.error('Erro ao salvar cache de fotos'); }
+  }
+  function addPhotoToCache(analystName, photoBase64) {
+    var cache = getPhotoCache();
+    cache[analystName.toLowerCase()] = photoBase64;
+    savePhotoCache(cache);
   }
 
   function getTickets(analystId) {
@@ -129,9 +150,14 @@ var ZendeskSync = (function() {
     var found    = Object.keys(agentMap);
     saveFoundNames(found);
 
+    // Track which agentes foram já vinculados para evitar duplicatas
+    var usedAgents = {};
+
     analysts.forEach(function(analyst) {
       var key = analyst.name.trim().toLowerCase();
       Object.keys(agentMap).forEach(function(agentName) {
+        if (usedAgents[agentName]) return; // já foi vinculado, pula
+
         // Tenta: mapeamento manual → correspondência exata → sem match
         var mapped  = nameMap[agentName];
         var matches = mapped
@@ -162,9 +188,28 @@ var ZendeskSync = (function() {
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
         saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
+
+        // Aplica foto se tiver
+        if (data.photo && !analyst.photo) {
+          analyst.photo = data.photo;
+          addPhotoToCache(analyst.name, data.photo);
+        }
+
+        usedAgents[agentName] = true; // marca como usado para evitar duplicata
         updated++;
       });
     });
+
+    // Restaura fotos do cache para analistas
+    analysts.forEach(function(analyst) {
+      if (!analyst.photo) {
+        var cached = photoCache[analyst.name.toLowerCase()];
+        if (cached) {
+          analyst.photo = cached;
+        }
+      }
+    });
+
     return updated;
   }
 
@@ -207,7 +252,22 @@ var ZendeskSync = (function() {
     var base      = 'https://' + cfg.subdomain + '.zendesk.com';
     var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
     var headers   = { 'Authorization': auth };
-    var startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
+
+    // Calcula startTime e endTime baseado em dateFrom/dateTo ou usa período em dias
+    var startTime, endTime;
+    var now = Math.floor(Date.now() / 1000);
+    var oneMinuteAgo = now - 60;
+    if (cfg.dateFrom && cfg.dateTo) {
+      startTime = Math.floor(new Date(cfg.dateFrom).getTime() / 1000);
+      endTime   = Math.floor(new Date(cfg.dateTo).getTime() / 1000) + 86399; // até o final do dia
+      // Se end_time for no futuro, ajusta para 1 minuto atrás
+      if (endTime > oneMinuteAgo) {
+        endTime = oneMinuteAgo;
+      }
+    } else {
+      startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
+      endTime   = oneMinuteAgo; // sempre 1 minuto atrás para evitar erro
+    }
     var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
 
     // Quando rodando em localhost, usa proxy local para evitar bloqueio CORS do Zendesk
@@ -218,8 +278,16 @@ var ZendeskSync = (function() {
 
     function toUrl(path) {
       if (path.startsWith('http')) {
-        // next_page URLs are absolute — replace the Zendesk origin with the proxy origin
-        return proxyBase ? path.replace(base, proxyBase) : path;
+        // URLs absolutas — se for local, usa proxy passando URL completa
+        if (proxyBase) {
+          // Para imagens de CDN, passa a URL completa como parâmetro
+          if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path)) {
+            return proxyBase + '?url=' + encodeURIComponent(path);
+          }
+          // Para APIs, tenta substituir o domain
+          return path.replace(base, proxyBase);
+        }
+        return path;
       }
       return (proxyBase || base) + path;
     }
@@ -244,31 +312,51 @@ var ZendeskSync = (function() {
 
     onProgress('Conectando ao Zendesk...');
 
-    // 1. Encontra o grupo
-    zdFetch('/api/v2/groups.json?per_page=100')
-      .then(function(data) {
-        var group = (data.groups || []).filter(function(g) {
-          return g.name.trim().toLowerCase() === groupName;
-        })[0];
-        if (!group) throw new Error('Grupo "' + cfg.groupName + '" não encontrado.');
-        onProgress('Grupo "' + group.name + '" encontrado. Buscando avaliações...');
-        return group.id;
-      })
+    // 1. Define os grupos a importar (por ID) - usa config ou usa padrão
+    var groupIdMap = {
+      '360001272933': 'SUP-N1',
+      '6441506014871': 'Suporte (Outros Assuntos)',
+      '21198035409559': 'Suporte para Nota Fiscal'
+    };
+    var groupIds = (cfg.groupIds && cfg.groupIds.length) ? cfg.groupIds : ['6441506014871', '21198035409559', '360001272933'];
+    var groupNames = groupIds.map(function(id) { return groupIdMap[id] || 'Grupo ' + id; });
 
-      // 2. Busca avaliações filtrando por group_id na própria API
-      //    (evita paginação de todos os grupos e o limite de 100 páginas offset)
-      .then(function(groupId) {
-        var all = [];
-        function fetchPage(url) {
-          return zdFetch(url).then(function(data) {
-            var batch = data.satisfaction_ratings || [];
-            all = all.concat(batch);
-            onProgress('Avaliações encontradas: ' + all.length + '...');
-            if (data.next_page && all.length < 5000) return fetchPage(data.next_page);
-            return all;
+    // 2. Busca avaliações de todos os grupos (sequencial com delay para evitar rate limit)
+    function delay(ms) {
+      return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+
+    function fetchGroupRatings(idx) {
+      if (idx >= groupIds.length) return Promise.resolve([]);
+      var groupId = groupIds[idx];
+      var all = [];
+      function fetchPage(url) {
+        return zdFetch(url).then(function(data) {
+          var batch = data.satisfaction_ratings || [];
+          all = all.concat(batch);
+          onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
+          if (data.next_page && all.length < 5000) return delay(500).then(function() { return fetchPage(data.next_page); });
+          return all;
+        });
+      }
+      return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&end_time=' + endTime + '&group_id=' + groupId)
+        .then(function(ratings) {
+          return delay(1000).then(function() {
+            return fetchGroupRatings(idx + 1).then(function(nextRatings) {
+              return [ratings].concat(nextRatings);
+            });
           });
-        }
-        return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&group_id=' + groupId);
+        });
+    }
+
+    fetchGroupRatings(0)
+      .then(function(allRatingsArrays) {
+        var consolidated = [];
+        allRatingsArrays.forEach(function(ratings) {
+          consolidated = consolidated.concat(ratings);
+        });
+        onProgress('Total de avaliações: ' + consolidated.length);
+        return consolidated;
       })
 
       // 3. Resolve nomes e fotos dos agentes
@@ -320,7 +408,7 @@ var ZendeskSync = (function() {
           agentMap[n].raw.forEach(function(t) { badAll.push(t); });
         });
 
-        // 4.5 Busca assunto dos tickets negativos em lotes de 100
+        // 4.5 Busca assunto dos tickets negativos em lotes de 100 (com delay)
         var subjectMap = {};
         function fetchSubjects(ids, i) {
           if (i >= ids.length) return Promise.resolve(subjectMap);
@@ -331,7 +419,7 @@ var ZendeskSync = (function() {
               (d.tickets || []).forEach(function(t) { subjectMap[t.id] = t.subject || ''; });
             })
             .catch(function() {})
-            .then(function() { return fetchSubjects(ids, i + 100); });
+            .then(function() { return delay(500).then(function() { return fetchSubjects(ids, i + 100); }); });
         }
 
         var allBadIds = badAll.map(function(t) { return t.id; });
@@ -349,25 +437,42 @@ var ZendeskSync = (function() {
 
       // 5.5 Baixa fotos dos agentes como base64
       .then(function(result) {
-        var names    = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
+        var withPhoto = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
+        var withoutPhoto = Object.keys(result.agentMap).filter(function(n) { return !result.agentMap[n].photoUrl; });
+        console.log('Agentes COM foto:', withPhoto.length, withPhoto);
+        console.log('Agentes SEM foto:', withoutPhoto.length);
+
+        var names    = withPhoto;
         var total    = names.length;
-        if (!total) return result;
+        if (!total) { onProgress('⚠️ Nenhum agente com foto disponível'); return result; }
         onProgress('Baixando fotos (' + total + ' agentes)...');
 
         var fetches = names.map(function(name) {
-          var url = toUrl(result.agentMap[name].photoUrl); // usa proxy para evitar bloqueio CORS
-          return fetch(url, { headers: headers })
-            .then(function(r) { return r.ok ? r.blob() : null; })
+          var photoUrl = result.agentMap[name].photoUrl;
+          return fetch(photoUrl)
+            .then(function(r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              return r.blob();
+            })
             .then(function(blob) {
-              if (!blob) return;
+              if (!blob) return Promise.resolve();
               return new Promise(function(resolve) {
                 var reader = new FileReader();
-                reader.onload  = function(e) { result.agentMap[name].photo = e.target.result; resolve(); };
-                reader.onerror = function()  { resolve(); };
+                reader.onload  = function(e) {
+                  result.agentMap[name].photo = e.target.result;
+                  onProgress('Foto de ' + name + ' salva...');
+                  resolve();
+                };
+                reader.onerror = function() {
+                  onProgress('Erro ao ler foto de ' + name);
+                  resolve();
+                };
                 reader.readAsDataURL(blob);
               });
             })
-            .catch(function() {});
+            .catch(function(err) {
+              onProgress('Erro ao baixar foto de ' + name + ': ' + err.message);
+            });
         });
 
         return Promise.all(fetches).then(function() { return result; });
@@ -404,6 +509,7 @@ var ZendeskSync = (function() {
 
         // Aplica fotos: só preenche se o analista ainda não tiver foto
         var nameMap = getConfig().nameMap || {};
+        var photoCount = 0;
         analysts.forEach(function(analyst) {
           var key = analyst.name.trim().toLowerCase();
           if (analyst.photo) return; // não sobrescreve foto existente
@@ -414,9 +520,12 @@ var ZendeskSync = (function() {
               : zdName.trim().toLowerCase() === key;
             if (matches && finalMap[zdName].photo) {
               analyst.photo = finalMap[zdName].photo;
+              photoCount++;
+              console.log('✓ Foto aplicada a ' + analyst.name);
             }
           });
         });
+        console.log('Total de fotos aplicadas: ' + photoCount);
 
         saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
         onProgress('✓ ' + updated + ' analistas atualizados com dados reais!');

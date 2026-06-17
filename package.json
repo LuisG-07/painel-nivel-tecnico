@@ -1,0 +1,13 @@
+{
+  "name": "skillmatrix-pro",
+  "version": "1.0.0",
+  "description": "SkillMatrix Pro - Zendesk Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "*",
+    "jsonwebtoken": "*"
+  }
+}

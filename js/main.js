@@ -306,13 +306,28 @@ var App = (function() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var cfg = ZendeskSync.getConfig();
+    var groupIds = (function() {
+      var checked = [];
+      document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+        if (cb.checked) checked.push(cb.getAttribute('data-zd-group'));
+      });
+      return checked.length ? checked : cfg.groupIds;
+    })();
+    var subdomain = g('zdSubdomain')
+      .replace(/^https?:\/\//, '')        // Remove https:// ou http://
+      .replace(/^www\./, '')               // Remove www.
+      .replace(/\.zendesk\.com.*/i, '')    // Remove .zendesk.com e tudo depois
+      || cfg.subdomain;
+
     ZendeskSync.saveConfig(Object.assign({}, cfg, {
-      subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain,
+      subdomain: subdomain,
       email:     g('zdEmail')    || cfg.email,
       apiToken:  g('zdApiToken') || cfg.apiToken,
       geminiKey: g('zdGeminiKey')|| cfg.geminiKey,
-      groupName: g('zdGroupName')|| cfg.groupName,
-      days:      parseInt(g('zdDays')) || cfg.days
+      groupIds:  groupIds,
+      dateFrom:  g('zdDateFrom') || cfg.dateFrom,
+      dateTo:    g('zdDateTo')   || cfg.dateTo,
+      nameMap:   cfg.nameMap
     }));
 
     var btn     = document.getElementById('zdImportBtn');
@@ -332,9 +347,10 @@ var App = (function() {
         }
         if (progEl) progEl.style.color = '#4ADE80';
         if (count > 0) {
-          persist();
           render();
+          persist(); // Salva fotos e dados no localStorage
           updateZendeskBadge('ok');
+          if (progEl) progEl.textContent = '✓ Fotos e dados salvos!';
           // Mostra tabela de mapeamento para vincular nomes não reconhecidos
           var analystNames = state.analysts.map(function(a) { return a.name; });
           UIModals.renderNameMap && UIModals.renderNameMap(analystNames, state.sectors);
@@ -404,7 +420,9 @@ var App = (function() {
     });
 
     var cfg = ZendeskSync.getConfig();
-    ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nameMap }));
+    var previousNameMap = cfg.nameMap || {};
+    var mergedNameMap = Object.assign({}, previousNameMap, nameMap);
+    ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: mergedNameMap }));
 
     // Aplica fotos do cache (skm6_zdagents) para analistas vinculados agora
     state.analysts.forEach(function(analyst) {
@@ -424,6 +442,14 @@ var App = (function() {
     persist(); // salva fotos imediatamente antes do reimport
     state.analysts.forEach(function(a) { a.zendesk = null; });
     localStorage.removeItem('skm6_zdtickets');
+
+    // Mostra mensagem de sucesso
+    var progEl = document.getElementById('zdImportProgress');
+    if (progEl) {
+      progEl.textContent = '✓ Vinculação salva! Reimportando dados...';
+      progEl.style.color = '#4ADE80';
+    }
+
     importFromZendesk();
   }
 
