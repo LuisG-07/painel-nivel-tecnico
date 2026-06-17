@@ -257,17 +257,17 @@ var ZendeskSync = (function() {
     // Calcula startTime e endTime baseado em dateFrom/dateTo ou usa período em dias
     var startTime, endTime;
     var now = Math.floor(Date.now() / 1000);
-    var oneMinuteAgo = now - 60;
+    var twoMinutesAgo = now - 120;
     if (cfg.dateFrom && cfg.dateTo) {
       startTime = Math.floor(new Date(cfg.dateFrom).getTime() / 1000);
       endTime   = Math.floor(new Date(cfg.dateTo).getTime() / 1000) + 86399; // até o final do dia
-      // Se end_time for no futuro, ajusta para 1 minuto atrás
-      if (endTime > oneMinuteAgo) {
-        endTime = oneMinuteAgo;
+      // Se end_time for no futuro, ajusta para 2 minutos atrás
+      if (endTime > twoMinutesAgo) {
+        endTime = twoMinutesAgo;
       }
     } else {
       startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
-      endTime   = oneMinuteAgo; // sempre 1 minuto atrás para evitar erro
+      endTime   = twoMinutesAgo; // sempre 2 minutos atrás para garantir
     }
     var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
 
