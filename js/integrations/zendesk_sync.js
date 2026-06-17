@@ -201,6 +201,7 @@ var ZendeskSync = (function() {
     });
 
     // Restaura fotos do cache para analistas
+    var photoCache = getPhotoCache();
     analysts.forEach(function(analyst) {
       if (!analyst.photo) {
         var cached = photoCache[analyst.name.toLowerCase()];
