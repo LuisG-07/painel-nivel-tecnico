@@ -51,7 +51,9 @@ var UIEvolution = (function() {
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
           avatarHtml +
           '<div>' +
-            '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + ' ' + sectorBadge(analyst.sector) + '</div>' +
+            '<div style="font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + esc(analyst.name) + ' ' + sectorBadge(analyst.sector) +
+              ' <span class="lvl ' + (analyst.level === 'Sênior' ? 'lvl-sr' : analyst.level === 'Pleno' ? 'lvl-pl' : 'lvl-jr') + '">' + esc(analyst.level || 'Júnior') + '</span>' +
+              ' <span class="stp">Step ' + (analyst.step || 1) + '</span></div>' +
             '<div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap">' +
               '<span style="font-size:12px;color:var(--muted)">Técnica: <b style="color:' + D.scoreColor(tech) + '">' + tech.toFixed(1) + '</b></span>' +
               '<span style="font-size:12px;color:var(--muted)">Prova: <b style="color:' + provaColor + '">' + (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</b></span>' +

@@ -15,6 +15,8 @@ var UIModals = (function() {
     secSel.innerHTML = sectors.map(function(s) {
       return '<option' + (analyst.sector === s ? ' selected' : '') + '>' + esc(s) + '</option>';
     }).join('');
+    document.getElementById('editLevel').value = analyst.level || 'Júnior';
+    document.getElementById('editStep').value = String(analyst.step || 1);
     document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
     document.getElementById('editComment').value = analyst.comment || '';
     updateCommentCounter();
@@ -92,6 +94,8 @@ var UIModals = (function() {
       var name = document.getElementById('editName').value.trim();
       if (!name) { alert('O nome não pode ser vazio.'); return; }
       var sector = document.getElementById('editSector').value;
+      var level = document.getElementById('editLevel').value;
+      var step = parseInt(document.getElementById('editStep').value, 10) || 1;
       var zv = parseFloat(document.getElementById('editZendesk').value);
       var comment = document.getElementById('editComment').value.slice(0, 500);
 
@@ -110,6 +114,8 @@ var UIModals = (function() {
         id:       analyst.id,
         name:     name,
         sector:   sector,
+        level:    level,
+        step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
         comment:  comment,
         photo:    pendingPhoto,
@@ -133,6 +139,8 @@ var UIModals = (function() {
     secSel.innerHTML = sectors.map(function(s) {
       return '<option>' + esc(s) + '</option>';
     }).join('');
+    document.getElementById('addLevel').value = 'Júnior';
+    document.getElementById('addStep').value = '1';
     document.getElementById('addZendesk').value = '';
     document.getElementById('addComment').value = '';
     document.getElementById('addPhotoPreview').style.display = 'none';
@@ -184,6 +192,8 @@ var UIModals = (function() {
       var name = document.getElementById('addName').value.trim();
       if (!name) { alert('Digite o nome do analista.'); return; }
       var sector = document.getElementById('addSector').value;
+      var level = document.getElementById('addLevel').value;
+      var step = parseInt(document.getElementById('addStep').value, 10) || 1;
       var zv = parseFloat(document.getElementById('addZendesk').value);
       var comment = document.getElementById('addComment').value.slice(0, 500);
 
@@ -204,6 +214,8 @@ var UIModals = (function() {
         id:       Date.now(),
         name:     name,
         sector:   sector,
+        level:    level,
+        step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
         provaAvg: null,
         comment:  comment,

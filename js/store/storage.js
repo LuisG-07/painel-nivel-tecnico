@@ -85,6 +85,16 @@ var Storage = (function() {
     return true;
   }
 
+  var LEVELS = ['Júnior', 'Pleno', 'Sênior'];
+
+  function clampLevel(v) {
+    return LEVELS.indexOf(v) !== -1 ? v : 'Júnior';
+  }
+  function clampStep(v) {
+    var n = parseInt(v, 10);
+    return (isFinite(n) && n >= 1 && n <= 6) ? n : 1;
+  }
+
   function migrateAnalyst(raw) {
     var zendesk = typeof raw.zendesk === 'number' && isFinite(raw.zendesk)
       ? Math.min(10, Math.max(0, raw.zendesk)) : null;
@@ -99,6 +109,8 @@ var Storage = (function() {
       id:       raw.id,
       name:     (raw.name || '').trim().slice(0, 80),
       sector:   (raw.sector || 'Chat').slice(0, 50),
+      level:    clampLevel(raw.level),
+      step:     clampStep(raw.step),
       zendesk:  zendesk,
       provaAvg: provaAvg,
       photo:    photo,

@@ -124,6 +124,13 @@ body{
 .bc{background:var(--blue-soft);color:var(--blue)}
 .bt{background:var(--green-soft);color:var(--green)}
 .bn{background:var(--amber-soft);color:var(--amber)}
+/* Nível do cargo / Step */
+.lvl{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:#EEF2F7;color:#334155}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.lvl-jr{background:#F1F5F9;color:#64748B}
+.lvl-pl{background:#E7EEFB;color:#1D4ED8}
+.lvl-sr{background:#EDE9FE;color:#6D28D9}
+.stp{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600;display:inline-block;background:var(--navy);color:#fff}
 
 /* ============================== KPI strip ============================== */
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}

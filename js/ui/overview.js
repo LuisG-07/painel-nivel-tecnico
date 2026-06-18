@@ -7,6 +7,20 @@ var UIOverview = (function() {
     return '<span class="' + cls + '">' + esc(sector) + '</span>';
   }
 
+  function levelBadge(level) {
+    var cls = level === 'Sênior' ? 'lvl-sr' : level === 'Pleno' ? 'lvl-pl' : 'lvl-jr';
+    return '<span class="lvl ' + cls + '">' + esc(level || 'Júnior') + '</span>';
+  }
+
+  // Linha de metadados: setor + nível do cargo + step
+  function metaRow(analyst) {
+    return '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">' +
+      sectorBadge(analyst.sector) +
+      levelBadge(analyst.level) +
+      '<span class="stp">Step ' + (analyst.step || 1) + '</span>' +
+    '</div>';
+  }
+
   function avatarHtml(analyst, sizeClass) {
     var score = D.unifiedScore(analyst);
     var cls = sizeClass || D.scoreAvatarClass(score);
@@ -48,7 +62,7 @@ var UIOverview = (function() {
           avatarHtml(analyst, 'av-r') +
           '<div>' +
             '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + '</div>' +
-            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+            metaRow(analyst) +
           '</div>' +
           '<div style="margin-left:auto;text-align:right">' +
             '<div style="font-size:22px;font-weight:700;color:#CC0000">' + u.toFixed(1) + '</div>' +
@@ -121,7 +135,7 @@ var UIOverview = (function() {
           avatar +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:13px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(analyst.name) + '</div>' +
-            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+            metaRow(analyst) +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:5px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
@@ -210,7 +224,7 @@ var UIOverview = (function() {
           '<div>' +
             '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">🏆 Destaque — Maior nota unificada</div>' +
             '<div style="font-size:20px;font-weight:600;color:var(--white);margin-top:2px">' + esc(best.name) + '</div>' +
-            '<div style="margin-top:4px">' + sectorBadge(best.sector) + '</div>' +
+            metaRow(best) +
           '</div>' +
           '<div style="margin-left:auto;text-align:right">' +
             '<div style="font-size:30px;font-weight:700;color:' + D.scoreColor(us) + '">' + us.toFixed(1) + '</div>' +
