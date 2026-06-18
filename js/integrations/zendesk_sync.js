@@ -600,6 +600,7 @@ var ZendeskSync = (function() {
     getConfig:      getConfig,
     saveConfig:     saveConfig,
     getStatus:      getStatus,
-    getFoundNames:  getFoundNames
+    getFoundNames:  getFoundNames,
+    getPhotoCache:  getPhotoCache
   };
 })();

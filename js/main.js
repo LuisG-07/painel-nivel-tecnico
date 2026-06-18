@@ -330,6 +330,17 @@ var App = (function() {
       nameMap:   cfg.nameMap
     }));
 
+    // Restaura fotos do cache antes de reimportar para não perder dados
+    var photoCache = ZendeskSync.getPhotoCache();
+    state.analysts.forEach(function(analyst) {
+      if (!analyst.photo) {
+        var cached = photoCache[analyst.name.toLowerCase()];
+        if (cached) {
+          analyst.photo = cached;
+        }
+      }
+    });
+
     var btn     = document.getElementById('zdImportBtn');
     var progEl  = document.getElementById('zdImportProgress');
     if (btn)    { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Importando...'; }
