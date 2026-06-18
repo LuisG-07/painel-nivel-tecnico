@@ -7,8 +7,15 @@ var App = (function() {
     trainings:     [],
     history:       {},
     currentPage:   'visao',
-    currentSector: 'all'
+    currentSector: 'all',
+    search:        ''
   };
+
+  // --- Global search ---
+  function setSearch(value) {
+    state.search = (value || '').trim().toLowerCase();
+    render();
+  }
 
   // --- Persistence ---
   function persist() {
@@ -469,6 +476,7 @@ var App = (function() {
     init:               init,
     switchPage:         switchPage,
     setSector:          setSector,
+    setSearch:          setSearch,
     openEditModal:      openEditModal,
     openAddAnalystModal: openAddAnalystModal,
     removeAnalyst:      removeAnalyst,

@@ -31,36 +31,53 @@
 <meta name="referrer" content="no-referrer">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.18/index.min.css">
 <link rel="stylesheet" href="css/main.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="logo-area">
-    <i class="ti ti-chart-bar" style="color:var(--blue);font-size:20px" aria-hidden="true"></i>
-    <div class="logo-text">Skill<span>Matrix</span> Pro</div>
-  </div>
-  <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral">Visão Geral</button>
-  <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução">Evolução</button>
-  <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento">Treinamento</button>
-  <div class="sep" aria-hidden="true"></div>
-  <div id="sectorTabsContainer" style="display:contents"></div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-left:1px solid var(--border)">
-    <span id="zdBadge" title="" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05)" onclick="App.openManageModal()" aria-label="Status Zendesk">
-      <span class="zd-dot" style="width:7px;height:7px;border-radius:50%;display:inline-block;background:#888"></span>
-      <span class="zd-label">Zendesk</span>
-    </span>
-    <button onclick="App.exportHTML()" style="background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap" aria-label="Exportar HTML">
-      <i class="ti ti-download" aria-hidden="true"></i> Exportar HTML
-    </button>
-  </div>
-</div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-mark"><i class="ti ti-chart-bar" aria-hidden="true"></i></span>
+      <div class="logo-text">Skill<span>Matrix</span> Pro</div>
+    </div>
+    <div class="sidebar-section">Painel</div>
+    <nav class="sidebar-nav" aria-label="Navegação principal">
+      <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Visão Geral</span></button>
+      <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução"><i class="ti ti-chart-line" aria-hidden="true"></i><span>Evolução</span></button>
+      <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento"><i class="ti ti-school" aria-hidden="true"></i><span>Treinamento</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <span id="zdBadge" class="zd-badge" title="" style="display:none" onclick="App.openManageModal()" aria-label="Status Zendesk">
+        <span class="zd-dot"></span>
+        <span class="zd-label">Zendesk</span>
+      </span>
+    </div>
+  </aside>
 
-<div class="container">
-  <div id="page-visao"       class="page active"></div>
-  <div id="page-evolucao"    class="page"></div>
-  <div id="page-treinamento" class="page"></div>
+  <div class="main-area">
+    <header class="topbar">
+      <label class="topbar-search">
+        <i class="ti ti-search" aria-hidden="true"></i>
+        <input type="text" id="globalSearch" placeholder="Buscar analista…" oninput="App.setSearch(this.value)" aria-label="Buscar analista">
+      </label>
+      <div id="sectorTabsContainer" class="sector-tabs"></div>
+      <div class="topbar-actions">
+        <button class="btn-export" onclick="App.exportHTML()" aria-label="Exportar HTML">
+          <i class="ti ti-download" aria-hidden="true"></i> <span>Exportar</span>
+        </button>
+        <div class="user-avatar" title="Administrador">AD</div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="page-visao"       class="page active"></div>
+      <div id="page-evolucao"    class="page"></div>
+      <div id="page-treinamento" class="page"></div>
+    </main>
+  </div>
 </div>
 
 <!-- Edit Analyst Modal -->
@@ -234,7 +251,7 @@
       <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
       <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
       <span class="input-label">Grupos no Zendesk</span>
-      <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <span style="font-size:12px;font-weight:500">Selecione os grupos:</span>
           <button type="button" onclick="document.querySelectorAll('[data-zd-group]').forEach(function(cb){cb.checked=true})" style="font-size:11px;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;font-family:inherit">Marcar todos</button>
@@ -266,7 +283,7 @@
         </div>
       </div>
       <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
-      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px">
+      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
         <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>
         <div id="zdNameMapRows"></div>
         <button onclick="App.saveNameMapAndReimport()" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit">

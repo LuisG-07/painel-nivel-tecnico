@@ -28,9 +28,15 @@ var UIEvolution = (function() {
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
 
+    if (state.search) {
+      list = list.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
+
     var sectorLabel = state.currentSector === 'all' ? 'Todos' : state.currentSector;
 
-    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Evolução por Analista — ' + esc(sectorLabel) + '</div>';
+    var h = '<div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:18px;letter-spacing:-.3px">Evolução por Analista — ' + esc(sectorLabel) + '</div>';
 
     list.forEach(function(analyst, idx) {
       var u = D.unifiedScore(analyst);
@@ -60,7 +66,7 @@ var UIEvolution = (function() {
 
     document.getElementById('page-evolucao').innerHTML = h;
 
-    Chart.defaults.color = '#8AADDB';
+    Chart.defaults.color = '#64748B';
 
     list.forEach(function(analyst, idx) {
       var ctx = document.getElementById('evo-' + analyst.id);
@@ -94,13 +100,13 @@ var UIEvolution = (function() {
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              ticks: { color: '#8AADDB', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
-              grid: { color: 'rgba(14,48,96,.4)' }
+              ticks: { color: '#64748B', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
+              grid: { color: 'rgba(2,104,205,.08)' }
             },
             y: {
               min: 0, max: 5,
-              ticks: { stepSize: 1, color: '#8AADDB', font: { size: 10 } },
-              grid: { color: 'rgba(14,48,96,.4)' }
+              ticks: { stepSize: 1, color: '#64748B', font: { size: 10 } },
+              grid: { color: 'rgba(2,104,205,.08)' }
             }
           }
         }

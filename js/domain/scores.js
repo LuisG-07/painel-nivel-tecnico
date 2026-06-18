@@ -20,9 +20,9 @@ var Domain = (function() {
   }
 
   function scoreColor(score) {
-    if (score >= 7) return '#4ADE80';
-    if (score >= 5) return '#FCD34D';
-    return '#FF5555';
+    if (score >= 7) return '#15803D';
+    if (score >= 5) return '#B45309';
+    return '#CC0000';
   }
 
   function scoreBorderClass(score) {

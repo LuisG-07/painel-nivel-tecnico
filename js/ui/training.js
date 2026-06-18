@@ -12,15 +12,21 @@ var UITraining = (function() {
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
 
+    if (state.search) {
+      filtered = filtered.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
+
     var modAvgs = D.moduleAverages(state.modules, filtered);
 
-    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Painel de Treinamentos</div>';
+    var h = '<div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:18px;letter-spacing:-.3px">Painel de Treinamentos</div>';
 
     // Critical vs mastered modules
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">';
 
     // Most critical
-    h += '<div><div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-triangle"></i> Módulos mais críticos</div>';
+    h += '<div><div class="sectitle" style="color:#CC0000"><i class="ti ti-alert-triangle"></i> Módulos mais críticos</div>';
     modAvgs.slice(0, 5).forEach(function(x) {
       var safeId = 'md_' + x.name.replace(/[^a-z0-9]/gi, '_');
       var needTraining = filtered.filter(function(a) {
@@ -30,9 +36,9 @@ var UITraining = (function() {
         return (a.scores[x.name] || 0) - (b.scores[x.name] || 0);
       });
 
-      h += '<div onclick="App.toggleModuleDetail(\'' + safeId + '\')" style="cursor:pointer;padding:9px 12px;border:1px solid rgba(204,0,0,.3);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:rgba(204,0,0,.1);color:var(--white);transition:border-color .15s">' +
+      h += '<div onclick="App.toggleModuleDetail(\'' + safeId + '\')" style="cursor:pointer;padding:9px 12px;border:1px solid #F2C4C4;border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:#FBEAEA;color:var(--white);transition:border-color .15s">' +
         '<span>' + esc(x.name) + '</span>' +
-        '<span style="color:#FF5555;font-weight:500">' + x.avg.toFixed(2) + ' <i class="ti ti-chevron-down" style="font-size:11px"></i></span>' +
+        '<span style="color:#CC0000;font-weight:500">' + x.avg.toFixed(2) + ' <i class="ti ti-chevron-down" style="font-size:11px"></i></span>' +
       '</div>' +
       '<div id="' + safeId + '" style="display:none;" class="mod-detail-block">' +
         '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Precisam de treinamento</div>' +
@@ -48,11 +54,11 @@ var UITraining = (function() {
     h += '</div>';
 
     // Most mastered
-    h += '<div><div class="sectitle" style="color:#4ADE80"><i class="ti ti-star"></i> Módulos dominados</div>';
+    h += '<div><div class="sectitle" style="color:#15803D"><i class="ti ti-star"></i> Módulos dominados</div>';
     modAvgs.slice(-5).reverse().forEach(function(x) {
-      h += '<div style="padding:9px 12px;border:1px solid rgba(34,197,94,.25);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;background:rgba(34,197,94,.08);color:var(--white)">' +
+      h += '<div style="padding:9px 12px;border:1px solid #C9E7D4;border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;background:#E9F5EE;color:var(--white)">' +
         '<span>' + esc(x.name) + '</span>' +
-        '<span style="color:#4ADE80;font-weight:500">' + x.avg.toFixed(2) + '</span>' +
+        '<span style="color:#15803D;font-weight:500">' + x.avg.toFixed(2) + '</span>' +
       '</div>';
     });
     h += '</div></div>';
@@ -78,13 +84,13 @@ var UITraining = (function() {
               (t.obs ? '<div style="font-size:12px;color:var(--muted)">' + esc(t.obs) + '</div>' : '') +
               '<div style="font-size:12px;color:var(--muted);margin-top:3px">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
               (provaEntries.length
-                ? '<div style="font-size:12px;color:#60AAFF;margin-top:5px"><i class="ti ti-clipboard-check"></i> ' +
+                ? '<div style="font-size:12px;color:#0268CD;margin-top:5px"><i class="ti ti-clipboard-check"></i> ' +
                     provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1]; }).join(' · ') +
                   '</div>'
                 : '') +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
-              '<button class="btn-secondary" style="font-size:11px;padding:5px 10px;border-color:var(--blue);color:#60AAFF" onclick="App.openProvaModal(' + idx + ')"><i class="ti ti-clipboard-check"></i> Nota prova</button>' +
+              '<button class="btn-secondary" style="font-size:11px;padding:5px 10px;border-color:var(--blue);color:#0268CD" onclick="App.openProvaModal(' + idx + ')"><i class="ti ti-clipboard-check"></i> Nota prova</button>' +
               '<button class="btn-primary" style="font-size:11px;padding:5px 10px;background:#15803D;border-color:#15803D" onclick="App.finishTraining(' + idx + ')"><i class="ti ti-check"></i> Finalizar</button>' +
             '</div>' +
           '</div>' +
@@ -95,15 +101,15 @@ var UITraining = (function() {
     }
 
     if (done.length) {
-      h += '<div class="sectitle" style="margin-top:20px;color:#4ADE80"><i class="ti ti-checks"></i> Finalizados</div>';
+      h += '<div class="sectitle" style="margin-top:20px;color:#15803D"><i class="ti ti-checks"></i> Finalizados</div>';
       done.forEach(function(t) {
         var provaEntries = t.provas ? Object.entries(t.provas) : [];
         h += '<div class="done-card">' +
-          '<div style="font-size:13px;font-weight:500;color:#4ADE80">✅ ' + esc(t.module) + '</div>' +
-          '<div style="font-size:12px;color:#4ADE80;margin-top:3px">' + esc(t.date) + ' · ' + esc(t.leader) + '</div>' +
-          '<div style="font-size:12px;color:#4ADE80">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
+          '<div style="font-size:13px;font-weight:500;color:#15803D">✅ ' + esc(t.module) + '</div>' +
+          '<div style="font-size:12px;color:#15803D;margin-top:3px">' + esc(t.date) + ' · ' + esc(t.leader) + '</div>' +
+          '<div style="font-size:12px;color:#15803D">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
           (provaEntries.length
-            ? '<div style="font-size:12px;color:#60AAFF;margin-top:4px">Notas: ' +
+            ? '<div style="font-size:12px;color:#0268CD;margin-top:4px">Notas: ' +
                 provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1] + '/10'; }).join(' · ') +
               '</div>'
             : '') +

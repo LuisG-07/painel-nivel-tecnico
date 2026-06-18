@@ -410,15 +410,15 @@ var UIModals = (function() {
       }
 
       var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
-      var selStyle   = 'background:#1e1e2e;border:1px solid var(--border);color:#e2e2e2;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
-      var optStyle   = 'background:#1e1e2e;color:#e2e2e2';
+      var selStyle   = 'background:#fff;border:1px solid var(--border);color:#0F2440;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
+      var optStyle   = 'background:#fff;color:#0F2440';
       var sectorOpts = sectorList.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
 
       rows.innerHTML = unmapped.map(function(zdName) {
         var current = nameMap[zdName] || '';
         var isNew   = current === '__NEW__';
-        var options = '<option value="" style="' + optStyle + ';color:#888">— não vincular —</option>' +
-          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#1e1e2e;color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
+        var options = '<option value="" style="' + optStyle + ';color:#9AA8BC">— não vincular —</option>' +
+          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#fff;color:#15803D;font-weight:600">+ Cadastrar novo analista</option>' +
           analystNames.map(function(n) {
             return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
           }).join('');
@@ -453,13 +453,13 @@ var UIModals = (function() {
           var count = Object.keys(data.agents || {}).length;
           if (resEl) {
             resEl.textContent = '✓ Conectado — ' + count + ' analistas na planilha';
-            resEl.style.color = '#4ADE80';
+            resEl.style.color = '#15803D';
           }
         })
         .catch(function(err) {
           if (resEl) {
             resEl.textContent = '✗ ' + err.message;
-            resEl.style.color = '#FF5555';
+            resEl.style.color = '#CC0000';
           }
         })
         .finally(function() {
@@ -472,7 +472,7 @@ var UIModals = (function() {
       document.getElementById('modulesList').innerHTML = list.map(function(m, i) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
           '<span>' + esc(m) + '</span>' +
-          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'modules\')" title="Remover"><i class="ti ti-x"></i></button>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'modules\')" title="Remover"><i class="ti ti-x"></i></button>' +
         '</div>';
       }).join('');
     }
@@ -481,7 +481,7 @@ var UIModals = (function() {
       document.getElementById('sectorsList').innerHTML = list.map(function(s, i) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
           '<span>' + esc(s) + '</span>' +
-          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'sectors\')" title="Remover"><i class="ti ti-x"></i></button>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'sectors\')" title="Remover"><i class="ti ti-x"></i></button>' +
         '</div>';
       }).join('');
     }
@@ -651,13 +651,13 @@ var UIModals = (function() {
       if (scoreEl) {
         scoreEl.textContent = newScore !== null ? newScore.toFixed(1) : '—';
         scoreEl.style.color = newScore === null ? 'var(--muted)'
-          : newScore >= 7 ? '#4ADE80' : newScore >= 5 ? '#FCD34D' : '#FF5555';
+          : newScore >= 7 ? '#15803D' : newScore >= 5 ? '#B45309' : '#CC0000';
       }
       if (scoreLbl && orig !== null && newScore !== null) {
         var diff = parseFloat((newScore - orig).toFixed(1));
         scoreLbl.textContent = diff > 0 ? '(+' + diff + ' excluindo comportamentais)'
           : diff < 0 ? '(' + diff + ')' : '';
-        scoreLbl.style.color = diff > 0 ? '#4ADE80' : diff < 0 ? '#FF5555' : 'var(--muted)';
+        scoreLbl.style.color = diff > 0 ? '#15803D' : diff < 0 ? '#CC0000' : 'var(--muted)';
       }
     }
 
@@ -685,18 +685,18 @@ var UIModals = (function() {
       listEl.innerHTML =
         '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
           good + ' positivos · ' + consBad + '/' + pending.bad_tickets.length + ' considerados · total: ' + total +
-          (filtered ? ' <span style="color:#FCD34D">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
+          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
         '</div>' +
         (visible.length === 0
           ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket nesse período.</div>'
           : visible.map(function(ticket) {
               var idx        = pending.bad_tickets.indexOf(ticket);
               var isConsider = ticket.consider;
-              var borderCol  = isConsider ? 'rgba(255,85,85,.4)' : 'var(--border)';
-              var tagBg      = isConsider ? 'rgba(255,85,85,.15)' : 'rgba(255,255,255,.05)';
-              var tagColor   = isConsider ? '#FF8080' : 'var(--muted)';
+              var borderCol  = isConsider ? '#F2C4C4' : 'var(--border)';
+              var tagBg      = isConsider ? '#FBEAEA' : '#F1F4F8';
+              var tagColor   = isConsider ? '#CC0000' : 'var(--muted)';
               return (
-                '<div style="border:1px solid ' + borderCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;background:rgba(0,0,0,.15)">' +
+                '<div style="border:1px solid ' + borderCol + ';border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#FAFBFD">' +
                   '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">' +
                     '<div style="flex:1;min-width:0">' +
                       (zdSubdomain
@@ -705,7 +705,7 @@ var UIModals = (function() {
                       '<span style="font-size:10px;color:var(--muted)"> · ' + esc(ticket.date) + '</span>' +
                       (ticket.category ? ' <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:' + tagBg + ';color:' + tagColor + '">' + esc(ticket.category) + '</span>' : '') +
                     '</div>' +
-                    '<button style="flex-shrink:0;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid ' + (isConsider ? '#FF5555' : 'var(--border)') + ';background:' + (isConsider ? 'rgba(255,85,85,.2)' : 'rgba(255,255,255,.05)') + ';color:' + (isConsider ? '#FF8080' : 'var(--muted)') + ';cursor:pointer;white-space:nowrap;font-family:inherit" ' +
+                    '<button style="flex-shrink:0;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid ' + (isConsider ? '#CC0000' : 'var(--border)') + ';background:' + (isConsider ? '#FBEAEA' : '#F1F4F8') + ';color:' + (isConsider ? '#CC0000' : 'var(--muted)') + ';cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500" ' +
                       'onclick="UIModals._zdToggle(' + idx + ')">' +
                       (isConsider ? '<i class="ti ti-x" style="font-size:9px"></i> Técnico' : '<i class="ti ti-check" style="font-size:9px"></i> Comportamental') +
                     '</button>' +
@@ -723,9 +723,9 @@ var UIModals = (function() {
 
     // Monta o corpo do modal uma única vez (filtro + container da lista)
     function setupBody() {
-      var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;color-scheme:dark';
+      var inputStyle = 'background:#fff;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:11px;font-family:inherit;color-scheme:light';
       body.innerHTML =
-        '<div style="background:rgba(252,211,77,.07);border:1px solid rgba(252,211,77,.25);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:11px;color:#FCD34D;line-height:1.5">' +
+        '<div style="background:#FBF1E3;border:1px solid #F1DFBE;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:11px;color:#B45309;line-height:1.5">' +
           '<i class="ti ti-info-circle"></i> <strong>Marque apenas questões técnicas</strong> para compor a nota. Comportamentais ficam com a supervisão.' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +

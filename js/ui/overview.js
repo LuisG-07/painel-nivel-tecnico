@@ -51,18 +51,18 @@ var UIOverview = (function() {
             '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
           '</div>' +
           '<div style="margin-left:auto;text-align:right">' +
-            '<div style="font-size:22px;font-weight:700;color:#FF5555">' + u.toFixed(1) + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:#CC0000">' + u.toFixed(1) + '</div>' +
             '<div style="font-size:10px;color:var(--muted)">unificada</div>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
         worst.map(function(x, i) {
-          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(204,0,0,.2);font-size:12px;color:var(--white)">' +
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
             '<span>' +
               '<span style="background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-right:4px">' + (i + 1) + '</span>' +
               esc(x.name) +
             '</span>' +
-            '<span style="color:#FF5555;font-weight:500">Nota ' + x.score + '</span>' +
+            '<span style="color:#CC0000;font-weight:500">Nota ' + x.score + '</span>' +
           '</div>';
         }).join('') +
       '</div>'
@@ -132,7 +132,7 @@ var UIOverview = (function() {
           '</div>' +
           '<div style="display:flex;gap:4px">' +
             '<button class="edit-btn" onclick="App.openEditModal(' + analyst.id + ')" title="Editar" aria-label="Editar ' + esc(analyst.name) + '"><i class="ti ti-pencil"></i></button>' +
-            '<button class="edit-btn" onclick="App.removeAnalyst(' + analyst.id + ')" style="color:#FF5555" title="Remover" aria-label="Remover ' + esc(analyst.name) + '"><i class="ti ti-trash"></i></button>' +
+            '<button class="edit-btn" onclick="App.removeAnalyst(' + analyst.id + ')" style="color:#CC0000" title="Remover" aria-label="Remover ' + esc(analyst.name) + '"><i class="ti ti-trash"></i></button>' +
             '<button class="edit-btn" onclick="App.toggleExpand(' + analyst.id + ')" title="Detalhes" aria-label="Detalhes ' + esc(analyst.name) + '"><i class="ti ti-chevron-down"></i></button>' +
           '</div>' +
         '</div>' +
@@ -151,6 +151,12 @@ var UIOverview = (function() {
     var filtered = state.currentSector === 'all'
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
+
+    if (state.search) {
+      filtered = filtered.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
 
     var sorted = filtered.slice().sort(function(a, b) {
       return D.unifiedScore(a) - D.unifiedScore(b);
@@ -171,37 +177,6 @@ var UIOverview = (function() {
 
     var h = '';
 
-    // --- Sector filter tabs ---
-    var sectorDot = function(s) {
-      var cls = D.sectorBadgeClass(s);
-      return cls === 'bc' ? '#60AAFF' : cls === 'bt' ? '#4ADE80' : '#FCD34D';
-    };
-    var allSectors = [{ key: 'all', label: 'Todos', color: '#8AADDB' }].concat(
-      state.sectors.map(function(s) { return { key: s, label: s, color: sectorDot(s) }; })
-    );
-    h += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
-    allSectors.forEach(function(tab) {
-      var active = state.currentSector === tab.key;
-      var count  = tab.key === 'all'
-        ? state.analysts.length
-        : state.analysts.filter(function(a) { return a.sector === tab.key; }).length;
-      h += '<button onclick="App.setSector(\'' + esc(tab.key) + '\',this)" style="' +
-        'padding:8px 18px;border-radius:22px;cursor:pointer;font-size:13px;font-family:inherit;' +
-        'font-weight:' + (active ? '600' : '400') + ';' +
-        'border:1.5px solid ' + (active ? tab.color : 'var(--border)') + ';' +
-        'background:' + (active ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.03)') + ';' +
-        'color:' + (active ? tab.color : 'var(--muted)') + ';' +
-        'display:inline-flex;align-items:center;gap:7px;transition:all .15s">' +
-        (tab.key !== 'all'
-          ? '<span style="width:9px;height:9px;border-radius:50%;background:' + tab.color + ';flex-shrink:0"></span>'
-          : '') +
-        esc(tab.label) +
-        '<span style="font-size:11px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.08);color:' +
-          (active ? tab.color : 'var(--muted)') + '">' + count + '</span>' +
-      '</button>';
-    });
-    h += '</div>';
-
     // Header
     h += '<div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
       '<div>' +
@@ -217,9 +192,9 @@ var UIOverview = (function() {
     // KPI strip
     h += '<div class="stat-strip">' +
       '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">' + filtered.length + '</div><div class="stat-lbl">Analistas</div></div>' +
-      '<div class="stat-card"><div class="stat-val" style="color:#4ADE80">' + avgTech + '</div><div class="stat-lbl">Média técnica</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#15803D">' + avgTech + '</div><div class="stat-lbl">Média técnica</div></div>' +
       '<div class="stat-card"><div class="stat-val" style="color:var(--red)">' + criticalCount + '</div><div class="stat-lbl">Críticos (&lt;5)</div></div>' +
-      '<div class="stat-card"><div class="stat-val" style="color:#FCD34D;font-size:16px;margin-top:4px">' + esc(mostCriticalModule) + '</div><div class="stat-lbl">Módulo mais crítico</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#B45309;font-size:15px;margin-top:4px">' + esc(mostCriticalModule) + '</div><div class="stat-lbl">Módulo mais crítico</div></div>' +
     '</div>';
 
     // Highlight card (best analyst — always from all analysts, not filtered)
@@ -247,7 +222,7 @@ var UIOverview = (function() {
     }
 
     // Critical highlight
-    h += '<div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-circle"></i> Destaque Crítico</div>' +
+    h += '<div class="sectitle" style="color:#CC0000"><i class="ti ti-alert-circle"></i> Destaque Crítico</div>' +
       '<div class="critic-grid">';
     sorted.slice(0, 2).forEach(function(a) {
       h += criticCard(a, state.modules);
@@ -266,14 +241,13 @@ var UIOverview = (function() {
     h += '<div style="margin-top:28px"><div class="sectitle"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
       '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
-      var statusBg   = x.avg < 3 ? 'rgba(204,0,0,.25)'      : x.avg < 4 ? 'rgba(245,158,11,.2)'   : 'rgba(34,197,94,.15)';
-      var statusColor = x.avg < 3 ? '#FF8080'                : x.avg < 4 ? '#FCD34D'               : '#4ADE80';
-      var statusBorder = x.avg < 3 ? 'rgba(204,0,0,.3)'     : x.avg < 4 ? 'rgba(245,158,11,.3)'   : 'rgba(34,197,94,.3)';
+      var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
+      var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
       h += '<tr>' +
         '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
-        '<td>' + esc(x.name) + '</td>' +
-        '<td style="color:' + (x.avg >= 4 ? '#4ADE80' : x.avg >= 3 ? '#FCD34D' : '#FF5555') + ';font-weight:600">' + x.avg.toFixed(2) + '</td>' +
-        '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;padding:2px 10px;border-radius:99px;border:1px solid ' + statusBorder + '">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
+        '<td style="font-weight:500">' + esc(x.name) + '</td>' +
+        '<td style="color:' + statusColor + ';font-weight:700">' + x.avg.toFixed(2) + '</td>' +
+        '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
       '</tr>';
     });
     h += '</tbody></table></div>';
