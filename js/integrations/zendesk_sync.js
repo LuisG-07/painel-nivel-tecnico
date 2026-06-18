@@ -7,7 +7,7 @@ var ZendeskSync = (function() {
   var PHOTOS_KEY  = 'skm6_zdphotos'; // cache persistente de fotos de analistas
 
   // Public (non-sensitive) defaults — stored in localStorage
-  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', groupIds: ['6441506014871', '21198035409559', '360001272933'], days: 30, dateFrom: '', dateTo: '', scriptUrl: '', nameMap: {
+  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', groupIds: ['6441506014871', '21198035409559', '360001272933'], days: 30, dateFrom: '', dateTo: '', scriptUrl: '', categoryFieldId: '', nameMap: {
     'Bruno Henrique Ferreira da Silva': 'Bruno',
     'Henrique Rodrigues Costa Sérgio': 'Henrique Sergio',
     'Mário Diniz':                    'Mario Diniz',
@@ -77,6 +77,7 @@ var ZendeskSync = (function() {
       dateFrom:  typeof c.dateFrom  === 'string' ? c.dateFrom.slice(0, 10) : '',
       dateTo:    typeof c.dateTo    === 'string' ? c.dateTo.slice(0, 10) : '',
       scriptUrl: typeof c.scriptUrl === 'string' && isAllowedScriptUrl(c.scriptUrl) ? c.scriptUrl : '',
+      categoryFieldId: typeof c.categoryFieldId === 'string' ? c.categoryFieldId.slice(0, 30) : (c.categoryFieldId != null ? String(c.categoryFieldId).slice(0, 30) : ''),
       nameMap:   (c.nameMap && typeof c.nameMap === 'object' && !Array.isArray(c.nameMap)) ? c.nameMap : {}
     };
     localStorage.setItem(CFG_KEY, JSON.stringify(pub));
@@ -380,6 +381,64 @@ var ZendeskSync = (function() {
   // ---------------------------------------------------------------------------
   // Importação direta do Zendesk via browser (sem Apps Script)
   // ---------------------------------------------------------------------------
+  // Cria uma função zdFetch (auth + proxy local) a partir da config.
+  function buildZdFetch(cfg) {
+    var base    = 'https://' + cfg.subdomain + '.zendesk.com';
+    var headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
+    var isLocal = typeof window !== 'undefined' &&
+                  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+    function toUrl(path) {
+      if (path.indexOf('http') === 0) return proxyBase ? path.replace(base, proxyBase) : path;
+      return (proxyBase || base) + path;
+    }
+    return function zdFetch(path) {
+      return fetch(toUrl(path), { headers: headers }).then(function(r) {
+        return r.text().then(function(body) {
+          if (!r.ok) {
+            var hint = r.status === 404 ? 'verifique o subdomínio.'
+                     : r.status === 401 ? 'verifique e-mail e token da API.'
+                     : r.status === 403 ? 'token sem permissão na API.'
+                     : 'erro inesperado.';
+            var detail = '';
+            try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
+            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
+          }
+          return JSON.parse(body);
+        });
+      });
+    };
+  }
+
+  // Detecta os campos personalizados de ticket (dropdowns) para o usuário escolher
+  // qual é a "categoria do atendimento". callback(fields, errorMessage).
+  function detectTicketFields(callback) {
+    var cfg = getConfig();
+    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
+      callback(null, 'Preencha subdomínio, e-mail e token antes de detectar.');
+      return;
+    }
+    if (!isValidSubdomain(cfg.subdomain)) {
+      callback(null, 'Subdomínio inválido.');
+      return;
+    }
+    buildZdFetch(cfg)('/api/v2/ticket_fields.json')
+      .then(function(data) {
+        var fields = (data.ticket_fields || [])
+          .filter(function(f) { return Array.isArray(f.custom_field_options) && f.custom_field_options.length; })
+          .map(function(f) {
+            return {
+              id:      f.id,
+              title:   f.title || f.raw_title || ('Campo ' + f.id),
+              type:    f.type,
+              options: f.custom_field_options.map(function(o) { return { name: o.name, value: o.value }; })
+            };
+          });
+        callback(fields, null);
+      })
+      .catch(function(err) { callback(null, err.message); });
+  }
+
   function importDirect(analysts, onProgress, callback) {
     var cfg = getConfig();
     if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
@@ -753,6 +812,7 @@ var ZendeskSync = (function() {
     recalcScore:    recalcScore,
     recomputeAllScores: recomputeAllScores,
     getTeamPrior:   getTeamPrior,
+    detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,
     getAgentData:   getAgentData,

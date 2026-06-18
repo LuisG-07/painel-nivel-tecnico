@@ -298,6 +298,14 @@
           <input type="date" id="zdDateTo" class="form-input">
         </div>
       </div>
+      <span class="input-label">Campo de categoria (cruza com os módulos)</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button type="button" id="zdDetectBtn" class="btn-secondary" style="font-size:12px;padding:6px 12px" onclick="App.detectZendeskFields()">
+          <i class="ti ti-search" aria-hidden="true"></i> Detectar campos
+        </button>
+        <span id="zdFieldChosen" style="font-size:11px;color:var(--muted)"></span>
+      </div>
+      <div id="zdFieldsResult" style="font-size:11px;margin-top:8px"></div>
       <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
       <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
         <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>
