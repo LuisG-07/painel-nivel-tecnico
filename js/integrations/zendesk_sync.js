@@ -143,6 +143,54 @@ var ZendeskSync = (function() {
     localStorage.setItem(FOUND_KEY, JSON.stringify(names));
   }
 
+  // Auto-match Zendesk agent names com analistas cadastrados
+  function autoMatchNames(zdNames, analysts) {
+    var nameMap = getConfig().nameMap || {};
+
+    // Helper para normalizar nomes
+    function normalize(str) {
+      return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+
+    zdNames.forEach(function(zdName) {
+      if (nameMap[zdName]) return; // Já foi mapeado manualmente
+
+      var zdNorm = normalize(zdName);
+      var zdWords = zdNorm.split(/\s+/);
+
+      // Tenta encontrar analista que combina
+      var found = analysts.find(function(analyst) {
+        var analystNorm = normalize(analyst.name);
+        var analystWords = analystNorm.split(/\s+/);
+
+        // Correspondência exata
+        if (zdNorm === analystNorm) return true;
+
+        // Primeiro nome combina
+        if (zdWords[0] === analystWords[0]) return true;
+
+        // Analista com nome único que combina com primeiro nome do Zendesk
+        if (analystWords.length === 1 && zdWords[0] === analystWords[0]) return true;
+
+        // Dois primeiros nomes combinam
+        if (zdWords.length >= 2 && analystWords.length >= 2) {
+          var zdFirstTwo = (zdWords[0] + ' ' + zdWords[1]).trim();
+          var analystFirstTwo = (analystWords[0] + ' ' + analystWords[1]).trim();
+          if (zdFirstTwo === analystFirstTwo) return true;
+        }
+
+        return false;
+      });
+
+      if (found) {
+        nameMap[zdName] = found.name;
+        console.log('✓ Auto-vinculado: "' + zdName + '" → "' + found.name + '"');
+      }
+    });
+
+    return nameMap;
+  }
+
   // Processa resposta da API (Apps Script doGet) e atualiza analysts in-place
   function applyAgentData(analysts, agentMap) {
     var updated  = 0;
@@ -568,10 +616,17 @@ var ZendeskSync = (function() {
         });
         saveAgents(agentStore);
 
+        // Auto-vincula nomes do Zendesk com analistas cadastrados
+        var zdNames = Object.keys(finalMap);
+        var autoNameMap = autoMatchNames(zdNames, analysts);
+
         // Aplica scores e tickets
         var result = applyAgentData(analysts, finalMap);
         var updated = result.updated;
         var nameMap = result.nameMap;
+
+        // Mescla auto-matching com resultado do applyAgentData
+        Object.assign(nameMap, autoNameMap);
 
         // Salva o nameMap atualizado na config
         var cfg = getConfig();
