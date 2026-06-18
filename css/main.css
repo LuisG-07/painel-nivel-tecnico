@@ -134,13 +134,11 @@ body{
 
 /* ============================== Highlight box ============================== */
 .hbox{
-  background:linear-gradient(120deg,#001636 0%,#00306e 100%);
-  border:none;border-radius:var(--r);padding:22px;margin-bottom:22px;color:#fff;
-  box-shadow:0 16px 40px rgba(0,22,54,.28);
+  background:linear-gradient(120deg,#EAF2FC 0%,#FFFFFF 62%);
+  border:1px solid #D6E6FA;border-radius:var(--r);padding:22px;margin-bottom:22px;
+  box-shadow:var(--sh-md);position:relative;overflow:hidden;
 }
-.hbox *{color:#fff}
-.hbox .score-box{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
-.hbox .score-box-label{color:rgba(255,255,255,.7)}
+.hbox::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--blue)}
 
 /* ============================== Critical cards ============================== */
 .critic-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
