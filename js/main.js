@@ -261,6 +261,11 @@ var App = (function() {
 
     Domain.applyTrainingScores(state.analysts, state.trainings);
 
+    // Recalcula notas do Zendesk com a métrica atual (média suavizada),
+    // garantindo consistência mesmo para dados importados antes da mudança.
+    ZendeskSync.recomputeAllScores(state.analysts);
+    persist();
+
     UIModals.init();
     renderSectorTabs();
     render();

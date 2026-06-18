@@ -166,6 +166,8 @@ body{
 .av-g{background:var(--green-soft);color:var(--green)}
 .av-b{background:var(--blue-soft);color:var(--blue)}
 
+.help-dot{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;padding:0;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;vertical-align:middle;border-radius:50%;transition:color .15s,background .15s}
+.help-dot:hover{color:var(--blue);background:var(--blue-soft)}
 .score-box{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center;flex:1}
 .score-box-label{font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .score-box-val{font-size:16px;font-weight:700}

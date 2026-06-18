@@ -805,6 +805,10 @@ var UIModals = (function() {
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
-    _zdToggle:           function() {}
+    _zdToggle:           function() {},
+    openZendeskHelp:     function() {
+      var m = document.getElementById('zdHelpModal');
+      if (m) m.style.display = 'flex';
+    }
   };
 })();

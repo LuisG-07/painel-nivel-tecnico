@@ -42,7 +42,9 @@ var UIOverview = (function() {
         '<div class="score-box-val" style="' + fs + 'color:' + provaColor + '">' +
           (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</div></div>' +
       '<div class="score-box" style="cursor:pointer" onclick="App.openZendeskTickets(' + analyst.id + ')" title="Ver atendimentos negativados">' +
-        '<div class="score-box-label">Zendesk <i class="ti ti-chevron-down" style="font-size:8px;vertical-align:middle;opacity:.5"></i></div>' +
+        '<div class="score-box-label">Zendesk ' +
+          '<button type="button" class="help-dot" onclick="event.stopPropagation();UIModals.openZendeskHelp()" title="Como esta nota é calculada" aria-label="Como a nota do Zendesk é calculada"><i class="ti ti-help"></i></button> ' +
+          '<i class="ti ti-chevron-down" style="font-size:8px;vertical-align:middle;opacity:.5"></i></div>' +
         '<div class="score-box-val" style="' + fs + 'color:' + zColor + '">' +
           (analyst.zendesk != null ? analyst.zendesk.toFixed(1) : '—') +
         '</div>' +

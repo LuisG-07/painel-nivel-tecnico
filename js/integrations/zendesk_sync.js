@@ -128,11 +128,55 @@ var ZendeskSync = (function() {
     } catch (e) {}
   }
 
-  // Nota 0-10 contando apenas tickets com consider:true como negativos
+  // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
+  // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
+  // para a nota refletir o desempenho individual.
+  var BAYES_K = 10;
+  var DEFAULT_PRIOR = 0.8; // fallback quando não há dados da equipe
+
+  // Média de satisfação da equipe (proporção 0–1), a partir dos tickets salvos.
+  // C = total de positivos / (positivos + negativos técnicos) de TODOS os analistas.
+  function getTeamPrior() {
+    try {
+      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
+      var good = 0, bad = 0;
+      Object.keys(all).forEach(function(id) {
+        var t = all[id];
+        if (!t) return;
+        good += t.good_count || 0;
+        bad  += (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
+      });
+      return (good + bad) > 0 ? good / (good + bad) : DEFAULT_PRIOR;
+    } catch (e) { return DEFAULT_PRIOR; }
+  }
+
+  // Nota 0–10 com MÉDIA SUAVIZADA (Bayesiana), contando apenas negativos técnicos.
+  //   nota = ( positivos + C·k ) / ( positivos + negativos + k ) × 10
+  // Amostra pequena → nota perto da média da equipe (C); muita avaliação → nota real.
+  // Sem avaliações (n = 0) → null (não inventa nota; não entra na unificada).
+  function bayesianScore(goodCount, consideredBad, prior) {
+    var n = goodCount + consideredBad;
+    if (n === 0) return null;
+    var adjusted = (goodCount + prior * BAYES_K) / (n + BAYES_K);
+    return parseFloat((adjusted * 10).toFixed(1));
+  }
+
   function recalcScore(goodCount, badTickets) {
     var consideredBad = badTickets.filter(function(t) { return t.consider; }).length;
-    var total = goodCount + consideredBad;
-    return total > 0 ? parseFloat(((goodCount / total) * 10).toFixed(1)) : null;
+    return bayesianScore(goodCount, consideredBad, getTeamPrior());
+  }
+
+  // Recalcula a nota Zendesk de todos os analistas usando o MESMO prior da equipe.
+  // Preserva analistas que têm nota manual e não possuem tickets importados.
+  function recomputeAllScores(analysts) {
+    if (!Array.isArray(analysts)) return;
+    var prior = getTeamPrior();
+    analysts.forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return; // sem tickets → mantém nota manual (se houver)
+      var consideredBad = (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
+      a.zendesk = bayesianScore(t.good_count || 0, consideredBad, prior);
+    });
   }
 
   function getFoundNames() {
@@ -652,6 +696,9 @@ var ZendeskSync = (function() {
         });
         console.log('Total de fotos aplicadas: ' + photoCount);
 
+        // Recalcula todas as notas com o prior final da equipe (consistente)
+        recomputeAllScores(analysts);
+
         saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
         onProgress('✓ ' + updated + ' analistas atualizados com dados reais!');
         callback(updated, null);
@@ -704,6 +751,8 @@ var ZendeskSync = (function() {
     sync:           sync,
     importDirect:   importDirect,
     recalcScore:    recalcScore,
+    recomputeAllScores: recomputeAllScores,
+    getTeamPrior:   getTeamPrior,
     getTickets:     getTickets,
     saveTickets:    saveTickets,
     getAgentData:   getAgentData,
