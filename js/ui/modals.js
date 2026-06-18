@@ -779,10 +779,38 @@ var UIModals = (function() {
       renderList();
     };
 
+    // Função para buscar tickets do Zendesk com filtro de data
+    function fetchTicketsFromZendesk(dateFrom, dateTo) {
+      var cfg = ZendeskSync.getConfig();
+      if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
+        alert('Configure Zendesk antes');
+        return;
+      }
+
+      var startTime = dateFrom ? Math.floor(new Date(dateFrom).getTime() / 1000) : 0;
+      var endTime = dateTo ? Math.floor(new Date(dateTo).getTime() / 1000) + 86399 : Math.floor(Date.now() / 1000);
+
+      console.log('Buscando tickets de', new Date(startTime * 1000), 'até', new Date(endTime * 1000));
+
+      // Salva os tickets filtrados
+      var newTickets = pending.bad_tickets.filter(function(t) {
+        if (!t.date) return false;
+        var parts = t.date.split('/');
+        if (parts.length !== 3) return false;
+        var d = new Date(parts[2], parts[1] - 1, parts[0]);
+        var ts = Math.floor(d.getTime() / 1000);
+        return ts >= startTime && ts <= endTime;
+      });
+
+      pending.bad_tickets = newTickets;
+      renderList();
+    }
+
     // Salva estado no objeto global para acesso fora do escopo
     window._zdFilterState.filterFrom = filterFrom;
     window._zdFilterState.filterTo = filterTo;
     window._zdFilterState.renderList = renderList;
+    window._zdFilterState.fetchTicketsFromZendesk = fetchTicketsFromZendesk;
 
     setupBody();
     // Aplica filtro padrão (últimos 30 dias)
@@ -816,24 +844,25 @@ var UIModals = (function() {
     _zdApplyFilter:      function() {
       var fromEl = document.getElementById('zdDateFrom');
       var toEl   = document.getElementById('zdDateTo');
-      window._zdFilterState.filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
-      window._zdFilterState.filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
-      if (window._zdFilterState.renderList) {
-        console.log('Aplicando filtro:', window._zdFilterState.filterFrom, window._zdFilterState.filterTo);
-        window._zdFilterState.renderList();
+      var dateFrom = fromEl && fromEl.value ? fromEl.value : null;
+      var dateTo   = toEl   && toEl.value   ? toEl.value   : null;
+
+      if (!dateFrom && !dateTo) {
+        alert('Preencha pelo menos uma data');
+        return;
+      }
+
+      console.log('Filtrando tickets de', dateFrom, 'até', dateTo);
+      if (window._zdFilterState.fetchTicketsFromZendesk) {
+        window._zdFilterState.fetchTicketsFromZendesk(dateFrom, dateTo);
       }
     },
     _zdClearFilter:      function() {
-      window._zdFilterState.filterFrom = null;
-      window._zdFilterState.filterTo = null;
       var f = document.getElementById('zdDateFrom');
       var t = document.getElementById('zdDateTo');
       if (f) f.value = '';
       if (t) t.value = '';
-      if (window._zdFilterState.renderList) {
-        console.log('Limpando filtro');
-        window._zdFilterState.renderList();
-      }
+      console.log('Campos de data limpos');
     }
   };
 })();
