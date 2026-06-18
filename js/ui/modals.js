@@ -751,25 +751,25 @@ var UIModals = (function() {
       var clearBtn = document.getElementById('zdClearFilterBtn');
 
       if (applyBtn) {
-        applyBtn.onclick = function() {
-          var fromEl = document.getElementById('zdDateFrom');
-          var toEl   = document.getElementById('zdDateTo');
-          filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
-          filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
-          renderList();
+        applyBtn.onclick = function(e) {
+          console.log('🔍 CLICOU NO BOTÃO FILTRAR');
+          e.preventDefault();
+          e.stopPropagation();
+          UIModals._zdApplyFilter();
         };
+      } else {
+        console.error('❌ Botão Filtrar não encontrado no DOM!');
       }
 
       if (clearBtn) {
-        clearBtn.onclick = function() {
-          filterFrom = null;
-          filterTo = null;
-          var f = document.getElementById('zdDateFrom');
-          var t = document.getElementById('zdDateTo');
-          if (f) f.value = '';
-          if (t) t.value = '';
-          renderList();
+        clearBtn.onclick = function(e) {
+          console.log('🗑️ CLICOU NO BOTÃO LIMPAR');
+          e.preventDefault();
+          e.stopPropagation();
+          UIModals._zdClearFilter();
         };
+      } else {
+        console.error('❌ Botão Limpar não encontrado no DOM!');
       }
     }
 
