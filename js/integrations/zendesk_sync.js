@@ -526,6 +526,16 @@ var ZendeskSync = (function() {
       return new Promise(function(resolve) { setTimeout(resolve, ms); });
     }
 
+    // Próxima página — suporta paginação por OFFSET (next_page) e por CURSOR
+    // (meta.has_more + links.next). O Zendesk migrou várias APIs para cursor,
+    // então sem isso só vinha a 1ª página (~100 registros).
+    function nextPageUrl(data) {
+      if (data && data.meta && typeof data.meta.has_more === 'boolean') {
+        return (data.meta.has_more && data.links && data.links.next) ? data.links.next : null;
+      }
+      return (data && data.next_page) || null;
+    }
+
     function fetchGroupRatings(idx) {
       if (idx >= groupIds.length) return Promise.resolve([]);
       var groupId = groupIds[idx];
@@ -535,7 +545,8 @@ var ZendeskSync = (function() {
           var batch = data.satisfaction_ratings || [];
           all = all.concat(batch);
           onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
-          if (data.next_page && all.length < 5000) return delay(500).then(function() { return fetchPage(data.next_page); });
+          var next = nextPageUrl(data);
+          if (next && all.length < 8000) return delay(500).then(function() { return fetchPage(next); });
           return all;
         });
       }
@@ -839,7 +850,8 @@ var ZendeskSync = (function() {
                   collected++;
                 });
                 onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
-                if (d.next_page && collected < 1000) return delay(500).then(function() { return page(d.next_page); });
+                var next = nextPageUrl(d);
+                if (next && collected < 3000) return delay(500).then(function() { return page(next); });
                 return null;
               }).catch(function() { return null; });
             }
