@@ -8,8 +8,16 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Serve arquivos estáticos
-app.use(express.static(path.join(__dirname)));
+// Serve arquivos estáticos — sem cache, para sempre carregar a versão mais recente
+app.use(express.static(path.join(__dirname), {
+  etag: false,
+  lastModified: false,
+  setHeaders: function(res) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
 
 // Proxy para Zendesk API e imagens
 app.use('/zdproxy/:subdomain', (req, res) => {

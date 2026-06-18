@@ -1,10 +1,3 @@
-// Variáveis globais para filtro de Zendesk
-window._zdFilterState = {
-  filterFrom: null,
-  filterTo: null,
-  renderList: null
-};
-
 var UIModals = (function() {
   var D = Domain;
   var esc = Domain.escapeHtml;
@@ -609,43 +602,43 @@ var UIModals = (function() {
     var scoreEl   = document.getElementById('zdNewScore');
     var scoreLbl  = document.getElementById('zdScoreLabel');
 
-    // Working copy — mutated in-place on toggle
+    // Cópia de trabalho. bad_tickets é a lista MESTRE (nunca apagada);
+    // o filtro de data apenas oculta itens visualmente, sem remover.
     var pending = ticketData
       ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
       : null;
 
-    // Filtro de data — padrão: últimos 30 dias
-    function toInputVal(d) {
-      var m   = String(d.getMonth() + 1).padStart(2, '0');
-      var day = String(d.getDate()).padStart(2, '0');
-      return d.getFullYear() + '-' + m + '-' + day;
-    }
-    var today    = new Date();
-    var thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // Filtro de data (em inteiros YYYYMMDD). null = sem filtro (mostra tudo).
+    var filterFromInt = null;
+    var filterToInt   = null;
 
-    var filterFrom   = null;
-    var filterTo     = null;
-    var _defaultFrom = toInputVal(thirtyDaysAgo);
-    var _defaultTo   = toInputVal(today);
+    // Pré-preenche os campos com o período importado (se houver), mas NÃO aplica
+    // o filtro automaticamente — ao abrir, todos os tickets aparecem.
+    var cfg          = ZendeskSync.getConfig();
+    var _defaultFrom = cfg.dateFrom || '';
+    var _defaultTo   = cfg.dateTo   || '';
 
-    // Converte 'dd/mm/yyyy' ou 'dd/mm' → inteiro YYYYMMDD para comparação
-    function dateToInt(d) {
-      return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    // 'yyyy-mm-dd' (input date) → inteiro YYYYMMDD
+    function inputToInt(str) {
+      if (!str) return null;
+      var p = str.split('-');
+      if (p.length !== 3) return null;
+      return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]);
     }
-    function parseTicketDate(str) {
+    // 'dd/mm/yyyy' ou 'dd/mm' (data do ticket) → inteiro YYYYMMDD
+    function ticketDateToInt(str) {
       if (!str) return null;
       var p = str.split('/');
-      if (p.length === 3) return new Date(+p[2], +p[1] - 1, +p[0]);
-      if (p.length === 2) return new Date(2026, +p[1] - 1, +p[0]);
+      if (p.length === 3) return (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0]);
+      if (p.length === 2) return 2026 * 10000 + (+p[1]) * 100 + (+p[0]);
       return null;
     }
     function ticketVisible(ticket) {
-      if (!filterFrom && !filterTo) return true;
-      var d = parseTicketDate(ticket.date);
-      if (!d) return true;
-      var n = dateToInt(d);
-      if (filterFrom && n < dateToInt(filterFrom)) return false;
-      if (filterTo   && n > dateToInt(filterTo))   return false;
+      if (filterFromInt === null && filterToInt === null) return true;
+      var n = ticketDateToInt(ticket.date);
+      if (n === null) return true; // sem data → sempre mostra
+      if (filterFromInt !== null && n < filterFromInt) return false;
+      if (filterToInt   !== null && n > filterToInt)   return false;
       return true;
     }
 
@@ -738,39 +731,35 @@ var UIModals = (function() {
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
           '<i class="ti ti-calendar-search" style="color:var(--muted);font-size:14px"></i>' +
           '<span style="font-size:11px;color:var(--muted)">De</span>' +
-          '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + ';cursor:pointer">' +
+          '<input type="date" id="zdTktDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + ';cursor:pointer">' +
           '<span style="font-size:11px;color:var(--muted)">até</span>' +
-          '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + ';cursor:pointer">' +
+          '<input type="date" id="zdTktDateTo" value="' + _defaultTo + '" style="' + inputStyle + ';cursor:pointer">' +
           '<button id="zdApplyFilterBtn" type="button" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,.15);color:var(--blue);cursor:pointer;font-family:inherit;font-weight:500">🔍 Filtrar</button>' +
           '<button id="zdClearFilterBtn" type="button" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
         '</div>' +
         '<div id="zdTicketList"></div>';
 
-      // Adiciona event listeners diretos aos botões
+      // Event listeners diretos — acesso por closure às variáveis do filtro.
       var applyBtn = document.getElementById('zdApplyFilterBtn');
       var clearBtn = document.getElementById('zdClearFilterBtn');
 
-      if (applyBtn) {
-        applyBtn.onclick = function(e) {
-          console.log('🔍 CLICOU NO BOTÃO FILTRAR');
-          e.preventDefault();
-          e.stopPropagation();
-          UIModals._zdApplyFilter();
-        };
-      } else {
-        console.error('❌ Botão Filtrar não encontrado no DOM!');
-      }
+      applyBtn.onclick = function() {
+        var fromEl = document.getElementById('zdTktDateFrom');
+        var toEl   = document.getElementById('zdTktDateTo');
+        filterFromInt = inputToInt(fromEl && fromEl.value);
+        filterToInt   = inputToInt(toEl   && toEl.value);
+        renderList();
+      };
 
-      if (clearBtn) {
-        clearBtn.onclick = function(e) {
-          console.log('🗑️ CLICOU NO BOTÃO LIMPAR');
-          e.preventDefault();
-          e.stopPropagation();
-          UIModals._zdClearFilter();
-        };
-      } else {
-        console.error('❌ Botão Limpar não encontrado no DOM!');
-      }
+      clearBtn.onclick = function() {
+        filterFromInt = null;
+        filterToInt   = null;
+        var fromEl = document.getElementById('zdTktDateFrom');
+        var toEl   = document.getElementById('zdTktDateTo');
+        if (fromEl) fromEl.value = '';
+        if (toEl)   toEl.value = '';
+        renderList();
+      };
     }
 
     UIModals._zdToggle = function(idx) {
@@ -779,44 +768,8 @@ var UIModals = (function() {
       renderList();
     };
 
-    // Função para buscar tickets do Zendesk com filtro de data
-    function fetchTicketsFromZendesk(dateFrom, dateTo) {
-      var cfg = ZendeskSync.getConfig();
-      if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
-        alert('Configure Zendesk antes');
-        return;
-      }
-
-      var startTime = dateFrom ? Math.floor(new Date(dateFrom).getTime() / 1000) : 0;
-      var endTime = dateTo ? Math.floor(new Date(dateTo).getTime() / 1000) + 86399 : Math.floor(Date.now() / 1000);
-
-      console.log('Buscando tickets de', new Date(startTime * 1000), 'até', new Date(endTime * 1000));
-
-      // Salva os tickets filtrados
-      var newTickets = pending.bad_tickets.filter(function(t) {
-        if (!t.date) return false;
-        var parts = t.date.split('/');
-        if (parts.length !== 3) return false;
-        var d = new Date(parts[2], parts[1] - 1, parts[0]);
-        var ts = Math.floor(d.getTime() / 1000);
-        return ts >= startTime && ts <= endTime;
-      });
-
-      pending.bad_tickets = newTickets;
-      renderList();
-    }
-
-    // Salva estado no objeto global para acesso fora do escopo
-    window._zdFilterState.filterFrom = filterFrom;
-    window._zdFilterState.filterTo = filterTo;
-    window._zdFilterState.renderList = renderList;
-    window._zdFilterState.fetchTicketsFromZendesk = fetchTicketsFromZendesk;
-
     setupBody();
-    // Aplica filtro padrão (últimos 30 dias)
-    filterFrom = new Date(_defaultFrom);
-    filterTo   = new Date(_defaultTo);
-    renderList();
+    renderList(); // Mostra todos os tickets ao abrir (sem filtro aplicado)
 
     modal.style.display = 'flex';
 
@@ -840,29 +793,6 @@ var UIModals = (function() {
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
-    _zdToggle:           function() {},
-    _zdApplyFilter:      function() {
-      var fromEl = document.getElementById('zdDateFrom');
-      var toEl   = document.getElementById('zdDateTo');
-      var dateFrom = fromEl && fromEl.value ? fromEl.value : null;
-      var dateTo   = toEl   && toEl.value   ? toEl.value   : null;
-
-      if (!dateFrom && !dateTo) {
-        alert('Preencha pelo menos uma data');
-        return;
-      }
-
-      console.log('Filtrando tickets de', dateFrom, 'até', dateTo);
-      if (window._zdFilterState.fetchTicketsFromZendesk) {
-        window._zdFilterState.fetchTicketsFromZendesk(dateFrom, dateTo);
-      }
-    },
-    _zdClearFilter:      function() {
-      var f = document.getElementById('zdDateFrom');
-      var t = document.getElementById('zdDateTo');
-      if (f) f.value = '';
-      if (t) t.value = '';
-      console.log('Campos de data limpos');
-    }
+    _zdToggle:           function() {}
   };
 })();
