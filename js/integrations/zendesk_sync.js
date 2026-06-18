@@ -153,34 +153,56 @@ var ZendeskSync = (function() {
     // Track which agentes foram já vinculados para evitar duplicatas
     var usedAgents = {};
 
+    // Helper para remover acentuação
+    function normalize(str) {
+      return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+
     analysts.forEach(function(analyst) {
       var key = analyst.name.trim().toLowerCase();
+      var keyNorm = normalize(analyst.name);
       Object.keys(agentMap).forEach(function(agentName) {
         if (usedAgents[agentName]) return; // já foi vinculado, pula
 
-        // Tenta: mapeamento manual → correspondência exata → sem match
+        // Tenta: mapeamento manual → correspondência exata → fuzzy match
         var mapped  = nameMap[agentName];
         var agentLower = agentName.trim().toLowerCase();
-        var matches = mapped
-          ? mapped.trim().toLowerCase() === key
-          : agentLower === key;
+        var agentNorm = normalize(agentName);
 
-        // Se não encontrou correspondência exata, tenta correspondência parcial
-        if (!matches && !mapped) {
-          // Verifica se o nome do Zendesk contém o nome do analista (ou vice-versa)
-          // Por exemplo: "Bruno Henrique Ferreira da Silva" ≈ "Bruno"
-          var words = agentLower.split(/\s+/);
-          var analystWords = key.split(/\s+/);
+        var matches = false;
 
-          // Se primeiro nome + sobrenome do Zendesk == nome do analista
-          if (words.length >= 2 && (words[0] + ' ' + words[words.length - 1]) === key) {
+        // Primeiro: verifica mapeamento manual
+        if (mapped) {
+          matches = mapped.trim().toLowerCase() === key;
+        } else {
+          // Correspondência exata (com normalização)
+          if (agentNorm === keyNorm) {
             matches = true;
-          } else if (words.length === 1 && analystWords.length === 1 && words[0] === analystWords[0]) {
-            // Se são nomes únicos idênticos
-            matches = true;
-          } else if (words.length > 1 && analystWords.length === 1 && words[0] === analystWords[0]) {
-            // Se primeiro nome do Zendesk == nome do analista (ex: "Zendesk: Bruno Henrique..." == "Analista: Bruno")
-            matches = true;
+          } else {
+            // Fuzzy matching: tenta vários padrões
+            var agentWords = agentNorm.split(/\s+/);
+            var analystWords = keyNorm.split(/\s+/);
+
+            // Se primeiro nome (word[0]) do Zendesk == nome completo do analista
+            if (agentWords[0] === keyNorm) {
+              matches = true;
+            }
+            // Se primeiro nome do Zendesk == primeiro nome do analista
+            else if (agentWords[0] === analystWords[0]) {
+              matches = true;
+            }
+            // Se o nome do analista está contido no nome do Zendesk
+            else if (agentNorm.includes(keyNorm)) {
+              matches = true;
+            }
+            // Se nomes parciais combinam (ex: "João Pedro Vianey" + "João Pedro S.")
+            else if (analystWords.length > 0 && agentWords.length > 0) {
+              var agentFirstTwo = (agentWords[0] + ' ' + agentWords[1]).trim();
+              var analystFirstTwo = (analystWords[0] + ' ' + analystWords[1]).trim();
+              if (agentFirstTwo && analystFirstTwo && agentFirstTwo === analystFirstTwo) {
+                matches = true;
+              }
+            }
           }
         }
 
