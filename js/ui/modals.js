@@ -2,6 +2,13 @@ var UIModals = (function() {
   var D = Domain;
   var esc = Domain.escapeHtml;
 
+  // Estado global para filtros de Zendesk
+  var _zdFilterState = {
+    filterFrom: null,
+    filterTo: null,
+    renderList: null
+  };
+
   // --- Edit Analyst Modal ---
 
   function openEdit(analyst, modules, sectors, onSave) {
@@ -746,22 +753,10 @@ var UIModals = (function() {
       renderList();
     };
 
-    UIModals._zdApplyFilter = function() {
-      var fromEl = document.getElementById('zdDateFrom');
-      var toEl   = document.getElementById('zdDateTo');
-      filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
-      filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
-      renderList();
-    };
-
-    UIModals._zdClearFilter = function() {
-      filterFrom = null; filterTo = null;
-      var f = document.getElementById('zdDateFrom');
-      var t = document.getElementById('zdDateTo');
-      if (f) f.value = '';
-      if (t) t.value = '';
-      renderList();
-    };
+    // Salva estado no objeto global para acesso fora do escopo
+    _zdFilterState.filterFrom = filterFrom;
+    _zdFilterState.filterTo = filterTo;
+    _zdFilterState.renderList = renderList;
 
     setupBody();
     // Aplica filtro padrão (últimos 30 dias)
@@ -792,7 +787,21 @@ var UIModals = (function() {
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
     _zdToggle:           function() {},
-    _zdApplyFilter:      function() {},
-    _zdClearFilter:      function() {}
+    _zdApplyFilter:      function() {
+      var fromEl = document.getElementById('zdDateFrom');
+      var toEl   = document.getElementById('zdDateTo');
+      _zdFilterState.filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
+      _zdFilterState.filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
+      if (_zdFilterState.renderList) _zdFilterState.renderList();
+    },
+    _zdClearFilter:      function() {
+      _zdFilterState.filterFrom = null;
+      _zdFilterState.filterTo = null;
+      var f = document.getElementById('zdDateFrom');
+      var t = document.getElementById('zdDateTo');
+      if (f) f.value = '';
+      if (t) t.value = '';
+      if (_zdFilterState.renderList) _zdFilterState.renderList();
+    }
   };
 })();
