@@ -450,21 +450,34 @@ var ZendeskSync = (function() {
 
         var fetches = names.map(function(name) {
           var photoUrl = result.agentMap[name].photoUrl;
-          return fetch(photoUrl)
+          var isLocal   = typeof window !== 'undefined' &&
+                          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+          var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+          var url = isLocal && proxyBase ? proxyBase + '?url=' + encodeURIComponent(photoUrl) : photoUrl;
+
+          return fetch(url)
             .then(function(r) {
-              if (!r.ok) throw new Error('HTTP ' + r.status);
+              if (!r.ok) {
+                console.error('Erro ao baixar foto de ' + name + ': HTTP ' + r.status);
+                throw new Error('HTTP ' + r.status);
+              }
               return r.blob();
             })
             .then(function(blob) {
-              if (!blob) return Promise.resolve();
+              if (!blob || blob.size === 0) {
+                console.warn('Blob vazio para foto de ' + name);
+                return Promise.resolve();
+              }
               return new Promise(function(resolve) {
                 var reader = new FileReader();
                 reader.onload  = function(e) {
                   result.agentMap[name].photo = e.target.result;
+                  console.log('✓ Foto de ' + name + ' salva (' + Math.round(e.target.result.length / 1024) + 'KB)');
                   onProgress('Foto de ' + name + ' salva...');
                   resolve();
                 };
                 reader.onerror = function() {
+                  console.error('Erro ao ler foto de ' + name);
                   onProgress('Erro ao ler foto de ' + name);
                   resolve();
                 };
@@ -472,7 +485,8 @@ var ZendeskSync = (function() {
               });
             })
             .catch(function(err) {
-              onProgress('Erro ao baixar foto de ' + name + ': ' + err.message);
+              console.error('Erro ao baixar foto de ' + name + ':', err);
+              onProgress('⚠️ Foto de ' + name + ' não disponível');
             });
         });
 
