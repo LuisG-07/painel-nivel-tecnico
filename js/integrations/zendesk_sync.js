@@ -180,6 +180,49 @@ var ZendeskSync = (function() {
     });
   }
 
+  // Normaliza nomes para comparação (sem acento, minúsculo, separadores → espaço)
+  function normalizeName(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  // Nota Zendesk POR MÓDULO de um analista (mesma média suavizada).
+  // Retorna { "Módulo": { good, bad, score } } para cada módulo informado.
+  function moduleScores(analystId, modules) {
+    var out = {};
+    var t = getTickets(analystId);
+    if (!t || !Array.isArray(modules)) return out;
+    var prior = getTeamPrior();
+    var mg = t.module_good || {};
+    modules.forEach(function(m) {
+      var good = mg[m] || 0;
+      var bad = (t.bad_tickets || []).filter(function(x) { return x.module === m && x.consider; }).length;
+      out[m] = { good: good, bad: bad, score: bayesianScore(good, bad, prior) };
+    });
+    return out;
+  }
+
+  // Escolhe, entre os campos de ticket (dropdowns), aquele cujas opções mais
+  // batem com os módulos do painel. Retorna { id, valueToModule } ou null.
+  function pickCategoryField(ticketFields, modules) {
+    if (!Array.isArray(ticketFields) || !Array.isArray(modules) || !modules.length) return null;
+    var modByNorm = {};
+    modules.forEach(function(m) { modByNorm[normalizeName(m)] = m; });
+
+    var best = null, bestCount = 0;
+    ticketFields.forEach(function(f) {
+      if (!Array.isArray(f.custom_field_options) || !f.custom_field_options.length) return;
+      var valueToModule = {};
+      var count = 0;
+      f.custom_field_options.forEach(function(o) {
+        var hit = modByNorm[normalizeName(o.name)] || modByNorm[normalizeName(o.value)];
+        if (hit) { valueToModule[String(o.value)] = hit; count++; }
+      });
+      if (count > bestCount) { bestCount = count; best = { id: f.id, valueToModule: valueToModule }; }
+    });
+    return bestCount > 0 ? best : null;
+  }
+
   function getFoundNames() {
     try { return JSON.parse(localStorage.getItem(FOUND_KEY)) || []; }
     catch(e) { return []; }
@@ -323,12 +366,13 @@ var ZendeskSync = (function() {
             date:     t.date || '',
             category: t.category || '',
             comment:  t.comment || '',
+            module:   t.module || '',
             consider: prev !== undefined ? prev : true
           };
         });
 
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets });
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {} });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
 
         // Aplica foto se tiver
@@ -439,8 +483,9 @@ var ZendeskSync = (function() {
       .catch(function(err) { callback(null, err.message); });
   }
 
-  function importDirect(analysts, onProgress, callback) {
+  function importDirect(analysts, modules, onProgress, callback) {
     var cfg = getConfig();
+    var moduleList = Array.isArray(modules) ? modules : [];
     if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
       callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
       return;
@@ -582,12 +627,15 @@ var ZendeskSync = (function() {
         });
       })
 
-      // 4. Agrupa por agente (captura photoUrl)
+      // 4. Agrupa por agente (captura photoUrl) e coleta todos os ticket_ids avaliados
       .then(function(result) {
+        var ratings = result.ratings;
         var agentMap = {};
-        result.ratings.forEach(function(r) {
+        var allIds = {};
+        ratings.forEach(function(r) {
           var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], photoUrl: result.photoMap[r.assignee_id] || null };
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
+          if (r.ticket_id) allIds[r.ticket_id] = true;
           if (r.score === 'good') {
             agentMap[name].good++;
           } else if (r.score === 'bad') {
@@ -599,40 +647,75 @@ var ZendeskSync = (function() {
                        (d.getMonth()+1).toString().padStart(2,'0') + '/' +
                        d.getFullYear(),
               comment: r.comment || '',
-              category: ''
+              category: '',
+              module:  ''
             });
           }
         });
 
-        var badAll = [];
-        Object.keys(agentMap).forEach(function(n) {
-          agentMap[n].raw.forEach(function(t) { badAll.push(t); });
-        });
-
-        // 4.5 Busca assunto dos tickets negativos em lotes de 100 (com delay)
+        var ticketIds = Object.keys(allIds);
         var subjectMap = {};
-        function fetchSubjects(ids, i) {
-          if (i >= ids.length) return Promise.resolve(subjectMap);
-          var batch = ids.slice(i, i + 100).join(',');
-          onProgress('Buscando assuntos dos tickets negativos... (' + Math.min(i + 100, ids.length) + '/' + ids.length + ')');
-          return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
-            .then(function(d) {
-              (d.tickets || []).forEach(function(t) { subjectMap[t.id] = t.subject || ''; });
-            })
-            .catch(function() {})
-            .then(function() { return delay(500).then(function() { return fetchSubjects(ids, i + 100); }); });
-        }
+        var moduleMap  = {};
 
-        var allBadIds = badAll.map(function(t) { return t.id; });
-        var subjectPromise = allBadIds.length ? fetchSubjects(allBadIds, 0) : Promise.resolve(subjectMap);
+        // 4.1 Descobre automaticamente o campo de categoria (casa opções × módulos)
+        var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
+          .then(function(fd) {
+            var f = pickCategoryField(fd.ticket_fields || [], moduleList);
+            if (f) {
+              try { var c = getConfig(); c.categoryFieldId = String(f.id); saveConfig(c); } catch (e) {}
+              onProgress('Campo de categoria detectado (ID ' + f.id + ').');
+            } else {
+              onProgress('Nenhum campo de categoria batendo com os módulos — seguindo sem cruzar módulos.');
+            }
+            return f;
+          })
+          .catch(function() { return null; });
 
-        // 5. Categoriza com Gemini se chave configurada
-        var catPromise = (cfg.geminiKey && badAll.length)
-          ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
-          : Promise.resolve({});
+        return fieldPromise.then(function(catField) {
+          // 4.2 Busca assunto + categoria de TODOS os tickets avaliados (lotes de 100)
+          function fetchInfo(i) {
+            if (i >= ticketIds.length) return Promise.resolve();
+            var batch = ticketIds.slice(i, i + 100).join(',');
+            onProgress('Lendo categorias dos tickets... (' + Math.min(i + 100, ticketIds.length) + '/' + ticketIds.length + ')');
+            return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
+              .then(function(d) {
+                (d.tickets || []).forEach(function(t) {
+                  subjectMap[t.id] = t.subject || '';
+                  if (catField) {
+                    var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(catField.id); })[0];
+                    if (cf && cf.value != null && cf.value !== '') {
+                      moduleMap[t.id] = catField.valueToModule[String(cf.value)] || '';
+                    }
+                  }
+                });
+              })
+              .catch(function() {})
+              .then(function() { return delay(500).then(function() { return fetchInfo(i + 100); }); });
+          }
 
-        return Promise.all([subjectPromise, catPromise]).then(function(results) {
-          return { agentMap: agentMap, cats: results[1], subjectMap: results[0] || subjectMap };
+          return (ticketIds.length ? fetchInfo(0) : Promise.resolve()).then(function() {
+            // 4.3 Segunda passada: positivos por módulo + tag de módulo nos negativos
+            ratings.forEach(function(r) {
+              var mod = moduleMap[r.ticket_id];
+              if (!mod || r.score !== 'good') return;
+              var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
+              agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
+            });
+            Object.keys(agentMap).forEach(function(n) {
+              agentMap[n].raw.forEach(function(t) { t.module = moduleMap[t.id] || ''; });
+            });
+
+            // 5. Categoriza com Gemini (texto livre) se chave configurada
+            var badAll = [];
+            Object.keys(agentMap).forEach(function(n) { agentMap[n].raw.forEach(function(t) { badAll.push(t); }); });
+            var catPromise = (cfg.geminiKey && badAll.length)
+              ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
+              : Promise.resolve({});
+
+            return catPromise.then(function(cats) {
+              return { agentMap: agentMap, cats: cats, subjectMap: subjectMap };
+            });
+          });
         });
       })
 
@@ -706,8 +789,9 @@ var ZendeskSync = (function() {
             bad_count:   a.bad,
             total:       a.good + a.bad,
             photo:       a.photo || null,
+            module_good: a.module_good || {},
             bad_tickets: a.raw.map(function(t) {
-              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '' };
+              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '' };
             })
           };
         });
@@ -812,6 +896,7 @@ var ZendeskSync = (function() {
     recalcScore:    recalcScore,
     recomputeAllScores: recomputeAllScores,
     getTeamPrior:   getTeamPrior,
+    moduleScores:   moduleScores,
     detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,

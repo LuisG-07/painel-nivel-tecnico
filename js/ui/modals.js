@@ -602,9 +602,11 @@ var UIModals = (function() {
 
   // --- Zendesk Tickets Modal ---
 
-  function openZendeskTickets(analyst, ticketData, onSave) {
+  function openZendeskTickets(analyst, ticketData, modules, onSave) {
     var modal = document.getElementById('zdTicketsModal');
     if (!modal) return;
+    if (typeof modules === 'function') { onSave = modules; modules = []; }
+    modules = modules || [];
 
     var zdSubdomain = (ZendeskSync.getConfig().subdomain || '').trim();
 
@@ -623,6 +625,20 @@ var UIModals = (function() {
     // Filtro de data (em inteiros YYYYMMDD). null = sem filtro (mostra tudo).
     var filterFromInt = null;
     var filterToInt   = null;
+    var filterModule  = null; // null = todos os módulos
+
+    // Notas do Zendesk por módulo (calculado da cópia de trabalho → reflete toggles)
+    var modScores = {};
+    function computeModScores() {
+      var mg = (ticketData && ticketData.module_good) || {};
+      var out = {};
+      (modules || []).forEach(function(m) {
+        var good = mg[m] || 0;
+        var badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        out[m] = { good: good, bad: badArr.length, score: ZendeskSync.recalcScore(good, badArr) };
+      });
+      return out;
+    }
 
     // Pré-preenche os campos com o período importado (se houver), mas NÃO aplica
     // o filtro automaticamente — ao abrir, todos os tickets aparecem.
@@ -646,12 +662,47 @@ var UIModals = (function() {
       return null;
     }
     function ticketVisible(ticket) {
+      if (filterModule !== null && (ticket.module || '') !== filterModule) return false;
       if (filterFromInt === null && filterToInt === null) return true;
       var n = ticketDateToInt(ticket.date);
       if (n === null) return true; // sem data → sempre mostra
       if (filterFromInt !== null && n < filterFromInt) return false;
       if (filterToInt   !== null && n > filterToInt)   return false;
       return true;
+    }
+
+    function scoreHex(s) {
+      return s == null ? 'var(--muted)' : s >= 7 ? '#15803D' : s >= 5 ? '#B45309' : '#CC0000';
+    }
+
+    // Painel "Nota Zendesk por módulo" — clicar filtra os tickets do módulo
+    function renderModuleScores() {
+      var box = document.getElementById('zdModuleScores');
+      if (!box) return;
+      var entries = Object.keys(modScores)
+        .map(function(m) { return { module: m, d: modScores[m] }; })
+        .filter(function(e) { return (e.d.good + e.d.bad) > 0; })
+        .sort(function(a, b) {
+          var sa = a.d.score == null ? 99 : a.d.score, sb = b.d.score == null ? 99 : b.d.score;
+          return sa - sb; // piores primeiro
+        });
+      if (!entries.length) {
+        box.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Sem categorias cruzadas com os módulos ainda. Importe do Zendesk para preencher.</div>';
+        return;
+      }
+      var head = '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;font-weight:600">Nota Zendesk por módulo</div>';
+      var allBtn = '<button type="button" onclick="UIModals._zdFilterModule(null)" style="font-size:10px;padding:3px 10px;border-radius:99px;border:1px solid ' + (filterModule === null ? 'var(--blue)' : 'var(--border)') + ';background:' + (filterModule === null ? 'var(--blue-soft)' : '#fff') + ';color:' + (filterModule === null ? 'var(--blue)' : 'var(--muted)') + ';cursor:pointer;font-family:inherit;font-weight:600;margin:0 6px 6px 0">Todos</button>';
+      var chips = entries.map(function(e) {
+        var sel = filterModule === e.module;
+        var sc = e.d.score == null ? '—' : e.d.score.toFixed(1);
+        return '<button type="button" onclick="UIModals._zdFilterModule(\'' + esc(e.module).replace(/'/g, "\\'") + '\')" ' +
+          'style="font-size:11px;padding:5px 11px;border-radius:10px;border:1px solid ' + (sel ? 'var(--blue)' : 'var(--border)') + ';background:' + (sel ? 'var(--blue-soft)' : '#fff') + ';cursor:pointer;font-family:inherit;margin:0 6px 6px 0;display:inline-flex;align-items:center;gap:7px">' +
+          '<span style="color:var(--ink);font-weight:500">' + esc(e.module) + '</span>' +
+          '<b style="color:' + scoreHex(e.d.score) + '">' + sc + '</b>' +
+          '<span style="color:var(--muted);font-size:10px">(' + e.d.good + '👍/' + e.d.bad + '👎)</span>' +
+        '</button>';
+      }).join('');
+      box.innerHTML = head + '<div style="display:flex;flex-wrap:wrap;align-items:center">' + allBtn + chips + '</div>';
     }
 
     function updateScoreDisplay() {
@@ -737,6 +788,7 @@ var UIModals = (function() {
     function setupBody() {
       var inputStyle = 'background:#fff;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:11px;font-family:inherit;color-scheme:light';
       body.innerHTML =
+        '<div id="zdModuleScores" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)"></div>' +
         '<div style="background:#FBF1E3;border:1px solid #F1DFBE;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:11px;color:#B45309;line-height:1.5">' +
           '<i class="ti ti-info-circle"></i> <strong>Marque apenas questões técnicas</strong> para compor a nota. Comportamentais ficam com a supervisão.' +
         '</div>' +
@@ -777,10 +829,20 @@ var UIModals = (function() {
     UIModals._zdToggle = function(idx) {
       if (!pending) return;
       pending.bad_tickets[idx].consider = !pending.bad_tickets[idx].consider;
+      modScores = computeModScores(); // reflete o toggle na nota por módulo
+      renderModuleScores();
+      renderList();
+    };
+
+    UIModals._zdFilterModule = function(mod) {
+      filterModule = mod;
+      renderModuleScores();
       renderList();
     };
 
     setupBody();
+    modScores = computeModScores();
+    renderModuleScores();
     renderList(); // Mostra todos os tickets ao abrir (sem filtro aplicado)
 
     modal.style.display = 'flex';
@@ -806,6 +868,7 @@ var UIModals = (function() {
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
     _zdToggle:           function() {},
+    _zdFilterModule:     function() {},
     openZendeskHelp:     function() {
       var m = document.getElementById('zdHelpModal');
       if (m) m.style.display = 'flex';

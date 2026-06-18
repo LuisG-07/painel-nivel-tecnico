@@ -306,7 +306,7 @@ var App = (function() {
   function openZendeskTickets(analystId) {
     var analyst = state.analysts.find(function(a) { return a.id === analystId; });
     if (!analyst) return;
-    UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), function(newScore, updatedData) {
+    UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), state.modules, function(newScore, updatedData) {
       analyst.zendesk = newScore;
       ZendeskSync.saveTickets(analystId, updatedData);
       persist();
@@ -358,7 +358,7 @@ var App = (function() {
     if (btn)    { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Importando...'; }
     if (progEl) progEl.style.color = 'var(--muted)';
 
-    ZendeskSync.importDirect(state.analysts,
+    ZendeskSync.importDirect(state.analysts, state.modules,
       function(msg) {
         if (progEl) progEl.textContent = msg;
       },
@@ -476,72 +476,12 @@ var App = (function() {
     importFromZendesk();
   }
 
-  // --- Detecção do campo de categoria do Zendesk ---
-  function detectZendeskFields() {
-    var esc = Domain.escapeHtml;
-    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    var resEl = document.getElementById('zdFieldsResult');
-
-    // Salva credenciais atuais do formulário para a detecção usar
-    var cfg = ZendeskSync.getConfig();
-    var subdomain = g('zdSubdomain')
-      .replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain;
-    ZendeskSync.saveConfig(Object.assign({}, cfg, {
-      subdomain: subdomain,
-      email:     g('zdEmail')    || cfg.email,
-      apiToken:  g('zdApiToken') || cfg.apiToken
-    }));
-
-    if (resEl) { resEl.style.color = 'var(--muted)'; resEl.textContent = 'Buscando campos no Zendesk…'; }
-
-    ZendeskSync.detectTicketFields(function(fields, err) {
-      if (err) {
-        if (resEl) { resEl.innerHTML = '<span style="color:#CC0000">✗ ' + esc(err) + '</span>'; }
-        return;
-      }
-      if (!fields || !fields.length) {
-        if (resEl) { resEl.textContent = 'Nenhum campo de lista (dropdown) encontrado nos tickets.'; }
-        return;
-      }
-      var chosen = String(ZendeskSync.getConfig().categoryFieldId || '');
-      resEl.innerHTML = fields.map(function(f) {
-        var ex = f.options.slice(0, 6).map(function(o) { return esc(o.name); }).join(', ');
-        var more = f.options.length > 6 ? '…' : '';
-        var sel = String(f.id) === chosen;
-        return '<div style="border:1px solid ' + (sel ? 'var(--blue)' : 'var(--border)') + ';border-radius:10px;padding:10px 12px;margin-bottom:6px;background:' + (sel ? 'var(--blue-soft)' : '#fff') + '">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
-            '<div><b style="color:var(--ink)">' + esc(f.title) + '</b> <span style="color:var(--muted)">· ID ' + esc(String(f.id)) + ' · ' + f.options.length + ' opções</span></div>' +
-            '<button type="button" class="' + (sel ? 'btn-primary' : 'btn-secondary') + '" style="font-size:11px;padding:5px 10px" onclick="App.useZendeskField(\'' + esc(String(f.id)) + '\')">' + (sel ? '✓ Selecionado' : 'Usar este') + '</button>' +
-          '</div>' +
-          '<div style="font-size:11px;color:var(--muted);margin-top:5px">Valores: ' + ex + more + '</div>' +
-        '</div>';
-      }).join('');
-      updateChosenFieldLabel();
-    });
-  }
-
-  function useZendeskField(id) {
-    var cfg = ZendeskSync.getConfig();
-    ZendeskSync.saveConfig(Object.assign({}, cfg, { categoryFieldId: String(id) }));
-    updateChosenFieldLabel();
-    detectZendeskFields(); // re-renderiza marcando o selecionado
-  }
-
-  function updateChosenFieldLabel() {
-    var el = document.getElementById('zdFieldChosen');
-    if (!el) return;
-    var id = ZendeskSync.getConfig().categoryFieldId;
-    el.textContent = id ? ('Campo selecionado: ID ' + id) : 'Nenhum campo selecionado ainda.';
-  }
-
   // Public API
   return {
     init:               init,
     switchPage:         switchPage,
     setSector:          setSector,
     setSearch:          setSearch,
-    detectZendeskFields: detectZendeskFields,
-    useZendeskField:    useZendeskField,
     openEditModal:      openEditModal,
     openAddAnalystModal: openAddAnalystModal,
     removeAnalyst:      removeAnalyst,
