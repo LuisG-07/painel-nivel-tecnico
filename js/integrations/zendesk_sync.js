@@ -186,6 +186,22 @@ var ZendeskSync = (function() {
       .replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
+  // Casamento PRECISO entre nome de agente (Zendesk) e nome de analista (painel).
+  // Regra: nomes iguais, OU o nome do analista é prefixo EXATO (palavra a palavra)
+  // do nome do agente — ex.: "Bruno" ⊂ "Bruno Henrique Silva". NUNCA casa só pelo
+  // primeiro nome quando os demais divergem (ex.: "João Pedro S." ✗ "João Vitor Almeida").
+  function agentMatchesAnalyst(agentName, analystName) {
+    var a = normalizeName(agentName).split(' ').filter(Boolean);
+    var b = normalizeName(analystName).split(' ').filter(Boolean);
+    if (!a.length || !b.length) return false;
+    if (a.join(' ') === b.join(' ')) return true;       // iguais
+    if (b.length > a.length) return false;               // analista mais longo → não é prefixo
+    for (var i = 0; i < b.length; i++) {                 // todas as palavras do analista batem com as primeiras do agente
+      if (b[i] !== a[i]) return false;
+    }
+    return true;
+  }
+
   // Nota Zendesk POR MÓDULO de um analista (mesma média suavizada).
   // Retorna { "Módulo": { good, bad, score } } para cada módulo informado.
   function moduleScores(analystId, modules) {
@@ -228,15 +244,13 @@ var ZendeskSync = (function() {
   function findAnalystForAgent(agentName, analysts, nameMap) {
     if (!Array.isArray(analysts)) return null;
     var mapped = (nameMap && nameMap[agentName]) || '';
-    var target = normalizeName(mapped || agentName);
-    var aw = normalizeName(agentName).split(' ');
-    var exact = null, byFirst = null;
-    analysts.forEach(function(a) {
-      var an = normalizeName(a.name);
-      if (an === target) exact = exact || a;
-      else if (an.split(' ')[0] === aw[0]) byFirst = byFirst || a;
-    });
-    return exact || byFirst || null;
+    if (mapped) {
+      var target = normalizeName(mapped);
+      var byMap = analysts.filter(function(a) { return normalizeName(a.name) === target; })[0];
+      if (byMap) return byMap;
+    }
+    // sem mapeamento manual → casamento preciso (igual ou prefixo exato)
+    return analysts.filter(function(a) { return agentMatchesAnalyst(agentName, a.name); })[0] || null;
   }
 
   function getFoundNames() {
@@ -247,51 +261,17 @@ var ZendeskSync = (function() {
     localStorage.setItem(FOUND_KEY, JSON.stringify(names));
   }
 
-  // Auto-match Zendesk agent names com analistas cadastrados
+  // Auto-match Zendesk agent names com analistas cadastrados (casamento PRECISO)
   function autoMatchNames(zdNames, analysts) {
     var nameMap = getConfig().nameMap || {};
-
-    // Helper para normalizar nomes
-    function normalize(str) {
-      return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-    }
-
     zdNames.forEach(function(zdName) {
-      if (nameMap[zdName]) return; // Já foi mapeado manualmente
-
-      var zdNorm = normalize(zdName);
-      var zdWords = zdNorm.split(/\s+/);
-
-      // Tenta encontrar analista que combina
-      var found = analysts.find(function(analyst) {
-        var analystNorm = normalize(analyst.name);
-        var analystWords = analystNorm.split(/\s+/);
-
-        // Correspondência exata
-        if (zdNorm === analystNorm) return true;
-
-        // Primeiro nome combina
-        if (zdWords[0] === analystWords[0]) return true;
-
-        // Analista com nome único que combina com primeiro nome do Zendesk
-        if (analystWords.length === 1 && zdWords[0] === analystWords[0]) return true;
-
-        // Dois primeiros nomes combinam
-        if (zdWords.length >= 2 && analystWords.length >= 2) {
-          var zdFirstTwo = (zdWords[0] + ' ' + zdWords[1]).trim();
-          var analystFirstTwo = (analystWords[0] + ' ' + analystWords[1]).trim();
-          if (zdFirstTwo === analystFirstTwo) return true;
-        }
-
-        return false;
-      });
-
+      if (nameMap[zdName]) return; // já mapeado manualmente
+      var found = analysts.filter(function(a) { return agentMatchesAnalyst(zdName, a.name); })[0];
       if (found) {
         nameMap[zdName] = found.name;
         console.log('✓ Auto-vinculado: "' + zdName + '" → "' + found.name + '"');
       }
     });
-
     return nameMap;
   }
 
@@ -305,63 +285,20 @@ var ZendeskSync = (function() {
     // Track which agentes foram já vinculados para evitar duplicatas
     var usedAgents = {};
 
-    // Helper para remover acentuação
-    function normalize(str) {
-      return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-    }
-
     analysts.forEach(function(analyst) {
-      var key = analyst.name.trim().toLowerCase();
-      var keyNorm = normalize(analyst.name);
       Object.keys(agentMap).forEach(function(agentName) {
         if (usedAgents[agentName]) return; // já foi vinculado, pula
 
-        // Tenta: mapeamento manual → correspondência exata → fuzzy match
+        // Mapeamento manual tem prioridade; senão, casamento PRECISO (igual/prefixo exato)
         var mapped  = nameMap[agentName];
-        var agentLower = agentName.trim().toLowerCase();
-        var agentNorm = normalize(agentName);
-
-        var matches = false;
-
-        // Primeiro: verifica mapeamento manual
-        if (mapped) {
-          matches = mapped.trim().toLowerCase() === key;
-        } else {
-          // Correspondência exata (com normalização)
-          if (agentNorm === keyNorm) {
-            matches = true;
-          } else {
-            // Fuzzy matching: tenta vários padrões
-            var agentWords = agentNorm.split(/\s+/);
-            var analystWords = keyNorm.split(/\s+/);
-
-            // Se primeiro nome (word[0]) do Zendesk == nome completo do analista
-            if (agentWords[0] === keyNorm) {
-              matches = true;
-            }
-            // Se primeiro nome do Zendesk == primeiro nome do analista
-            else if (agentWords[0] === analystWords[0]) {
-              matches = true;
-            }
-            // Se o nome do analista está contido no nome do Zendesk
-            else if (agentNorm.includes(keyNorm)) {
-              matches = true;
-            }
-            // Se nomes parciais combinam (ex: "João Pedro Vianey" + "João Pedro S.")
-            else if (analystWords.length > 0 && agentWords.length > 0) {
-              var agentFirstTwo = (agentWords[0] + ' ' + agentWords[1]).trim();
-              var analystFirstTwo = (analystWords[0] + ' ' + analystWords[1]).trim();
-              if (agentFirstTwo && analystFirstTwo && agentFirstTwo === analystFirstTwo) {
-                matches = true;
-              }
-            }
-          }
-        }
+        var matches = mapped
+          ? normalizeName(mapped) === normalizeName(analyst.name)
+          : agentMatchesAnalyst(agentName, analyst.name);
 
         if (!matches) return;
 
         // Auto-preenche nameMap se encontrou correspondência automática
-        if (!mapped && matches) {
+        if (!mapped) {
           nameMap[agentName] = analyst.name;
           console.log('✓ Auto-vinculado: ' + agentName + ' → ' + analyst.name);
         }
@@ -618,8 +555,23 @@ var ZendeskSync = (function() {
         allRatingsArrays.forEach(function(ratings) {
           consolidated = consolidated.concat(ratings);
         });
-        onProgress('Total de avaliações: ' + consolidated.length);
-        return consolidated;
+
+        // Deduplica por TICKET (um ticket pode ter várias avaliações — reavaliação —
+        // ou vir repetido entre grupos). Mantém a avaliação mais recente de cada ticket,
+        // para a contagem bater com os tickets reais do Zendesk.
+        var byTicket = {};
+        consolidated.forEach(function(r) {
+          var key = (r.ticket_id != null) ? ('t' + r.ticket_id) : ('r' + r.id);
+          var prev = byTicket[key];
+          if (!prev) { byTicket[key] = r; return; }
+          var prevT = new Date(prev.updated_at || prev.created_at || 0).getTime();
+          var curT  = new Date(r.updated_at || r.created_at || 0).getTime();
+          if (curT >= prevT) byTicket[key] = r;
+        });
+        var unique = Object.keys(byTicket).map(function(k) { return byTicket[k]; });
+
+        onProgress('Avaliações: ' + consolidated.length + ' (tickets únicos: ' + unique.length + ')');
+        return unique;
       })
 
       // 3. Resolve nomes e fotos dos agentes
@@ -867,7 +819,7 @@ var ZendeskSync = (function() {
         }
         function fetchAllTickets() {
           var startYmd = ymd(startTime), endYmd = ymd(endTime);
-          var raw = [], assigneeIds = {};
+          var raw = [], assigneeIds = {}, seen = {};
           function fieldModule(t) {
             if (!detectedField) return '';
             var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(detectedField.id); })[0];
@@ -880,7 +832,8 @@ var ZendeskSync = (function() {
             function page(url) {
               return zdFetch(url).then(function(d) {
                 (d.results || []).forEach(function(t) {
-                  if (t.id == null) return;
+                  if (t.id == null || seen[t.id]) return;
+                  seen[t.id] = true;
                   if (t.assignee_id) assigneeIds[t.assignee_id] = true;
                   raw.push({ assignee_id: t.assignee_id, id: t.id, subject: (t.subject || '').slice(0, 120), created_at: t.created_at, status: t.status || '', module: fieldModule(t) });
                   collected++;
