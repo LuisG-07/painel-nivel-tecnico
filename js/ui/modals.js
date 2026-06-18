@@ -741,10 +741,36 @@ var UIModals = (function() {
           '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + ';cursor:pointer">' +
           '<span style="font-size:11px;color:var(--muted)">até</span>' +
           '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + ';cursor:pointer">' +
-          '<button type="button" onclick="UIModals._zdApplyFilter()" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,.15);color:var(--blue);cursor:pointer;font-family:inherit;font-weight:500">🔍 Filtrar</button>' +
-          '<button type="button" onclick="UIModals._zdClearFilter()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
+          '<button id="zdApplyFilterBtn" type="button" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,.15);color:var(--blue);cursor:pointer;font-family:inherit;font-weight:500">🔍 Filtrar</button>' +
+          '<button id="zdClearFilterBtn" type="button" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
         '</div>' +
         '<div id="zdTicketList"></div>';
+
+      // Adiciona event listeners diretos aos botões
+      var applyBtn = document.getElementById('zdApplyFilterBtn');
+      var clearBtn = document.getElementById('zdClearFilterBtn');
+
+      if (applyBtn) {
+        applyBtn.onclick = function() {
+          var fromEl = document.getElementById('zdDateFrom');
+          var toEl   = document.getElementById('zdDateTo');
+          filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
+          filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
+          renderList();
+        };
+      }
+
+      if (clearBtn) {
+        clearBtn.onclick = function() {
+          filterFrom = null;
+          filterTo = null;
+          var f = document.getElementById('zdDateFrom');
+          var t = document.getElementById('zdDateTo');
+          if (f) f.value = '';
+          if (t) t.value = '';
+          renderList();
+        };
+      }
     }
 
     UIModals._zdToggle = function(idx) {
