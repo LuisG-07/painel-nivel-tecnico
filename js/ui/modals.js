@@ -791,6 +791,8 @@ var UIModals = (function() {
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
-    _zdToggle:           function() {}
+    _zdToggle:           function() {},
+    _zdApplyFilter:      function() {},
+    _zdClearFilter:      function() {}
   };
 })();
