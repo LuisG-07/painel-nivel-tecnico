@@ -223,6 +223,22 @@ var ZendeskSync = (function() {
     return bestCount > 0 ? best : null;
   }
 
+  // Encontra o analista do painel correspondente a um nome de agente do Zendesk
+  // (usa o nameMap manual/auto e, como fallback, casamento por nome normalizado).
+  function findAnalystForAgent(agentName, analysts, nameMap) {
+    if (!Array.isArray(analysts)) return null;
+    var mapped = (nameMap && nameMap[agentName]) || '';
+    var target = normalizeName(mapped || agentName);
+    var aw = normalizeName(agentName).split(' ');
+    var exact = null, byFirst = null;
+    analysts.forEach(function(a) {
+      var an = normalizeName(a.name);
+      if (an === target) exact = exact || a;
+      else if (an.split(' ')[0] === aw[0]) byFirst = byFirst || a;
+    });
+    return exact || byFirst || null;
+  }
+
   function getFoundNames() {
     try { return JSON.parse(localStorage.getItem(FOUND_KEY)) || []; }
     catch(e) { return []; }
@@ -486,6 +502,7 @@ var ZendeskSync = (function() {
   function importDirect(analysts, modules, onProgress, callback) {
     var cfg = getConfig();
     var moduleList = Array.isArray(modules) ? modules : [];
+    var detectedField = null; // campo de categoria (definido na detecção) — usado também na busca de todos os tickets
     if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
       callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
       return;
@@ -661,6 +678,7 @@ var ZendeskSync = (function() {
         var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
           .then(function(fd) {
             var f = pickCategoryField(fd.ticket_fields || [], moduleList);
+            detectedField = f;
             if (f) {
               try { var c = getConfig(); c.categoryFieldId = String(f.id); saveConfig(c); } catch (e) {}
               onProgress('Campo de categoria detectado (ID ' + f.id + ').');
@@ -842,9 +860,77 @@ var ZendeskSync = (function() {
         // Recalcula todas as notas com o prior final da equipe (consistente)
         recomputeAllScores(analysts);
 
-        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
-        onProgress('✓ ' + updated + ' analistas atualizados com dados reais!');
-        callback(updated, null);
+        // 7. Busca TODOS os atendimentos do período (não só os avaliados) por analista
+        function ymd(ts) {
+          var d = new Date(ts * 1000);
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function fetchAllTickets() {
+          var startYmd = ymd(startTime), endYmd = ymd(endTime);
+          var raw = [], assigneeIds = {};
+          function fieldModule(t) {
+            if (!detectedField) return '';
+            var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(detectedField.id); })[0];
+            return (cf && cf.value != null && cf.value !== '') ? (detectedField.valueToModule[String(cf.value)] || '') : '';
+          }
+          function fetchGroup(gi) {
+            if (gi >= groupIds.length) return Promise.resolve();
+            var query = 'type:ticket group:' + groupIds[gi] + ' created>=' + startYmd + ' created<=' + endYmd;
+            var collected = 0;
+            function page(url) {
+              return zdFetch(url).then(function(d) {
+                (d.results || []).forEach(function(t) {
+                  if (t.id == null) return;
+                  if (t.assignee_id) assigneeIds[t.assignee_id] = true;
+                  raw.push({ assignee_id: t.assignee_id, id: t.id, subject: (t.subject || '').slice(0, 120), created_at: t.created_at, status: t.status || '', module: fieldModule(t) });
+                  collected++;
+                });
+                onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
+                if (d.next_page && collected < 1000) return delay(500).then(function() { return page(d.next_page); });
+                return null;
+              }).catch(function() { return null; });
+            }
+            return page(base + '/api/v2/search.json?per_page=100&query=' + encodeURIComponent(query))
+              .then(function() { return delay(1000).then(function() { return fetchGroup(gi + 1); }); });
+          }
+          onProgress('Buscando todos os atendimentos no período...');
+          return fetchGroup(0).then(function() {
+            var ids = Object.keys(assigneeIds), nameById = {};
+            function resolve(i) {
+              if (i >= ids.length) return Promise.resolve();
+              return zdFetch('/api/v2/users/show_many.json?ids=' + ids.slice(i, i + 100).join(','))
+                .then(function(d) { (d.users || []).forEach(function(u) { nameById[u.id] = u.name; }); })
+                .catch(function() {})
+                .then(function() { return delay(300).then(function() { return resolve(i + 100); }); });
+            }
+            return (ids.length ? resolve(0) : Promise.resolve()).then(function() {
+              var byAnalyst = {};
+              raw.forEach(function(t) {
+                var agentName = nameById[t.assignee_id] || ('Agente-' + t.assignee_id);
+                var an = findAnalystForAgent(agentName, analysts, nameMap);
+                if (!an) return;
+                var d = new Date(t.created_at);
+                var rec = {
+                  id: t.id, subject: t.subject, status: t.status, module: t.module,
+                  date: d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear()
+                };
+                (byAnalyst[an.id] = byAnalyst[an.id] || []).push(rec);
+              });
+              Object.keys(byAnalyst).forEach(function(aid) {
+                var stored = getTickets(aid) || {};
+                stored.all_tickets = byAnalyst[aid].slice(0, 1000);
+                saveTickets(aid, stored);
+              });
+              onProgress('Atendimentos por analista atualizados.');
+            });
+          });
+        }
+
+        return fetchAllTickets().catch(function() {}).then(function() {
+          saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
+          onProgress('✓ ' + updated + ' analistas atualizados (avaliações + atendimentos)!');
+          callback(updated, null);
+        });
       })
 
       .catch(function(err) {

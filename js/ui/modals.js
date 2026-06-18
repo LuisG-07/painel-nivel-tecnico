@@ -626,6 +626,8 @@ var UIModals = (function() {
     var filterFromInt = null;
     var filterToInt   = null;
     var filterModule  = null; // null = todos os módulos
+    var allTickets    = (ticketData && ticketData.all_tickets) || []; // todos os atendimentos (não só avaliados)
+    var viewMode      = 'csat'; // 'csat' = avaliados/negativos · 'all' = todos os atendimentos
 
     // Notas do Zendesk por módulo (calculado da cópia de trabalho → reflete toggles)
     var modScores = {};
@@ -724,10 +726,49 @@ var UIModals = (function() {
       }
     }
 
+    function dateInRange(dStr) {
+      if (filterFromInt === null && filterToInt === null) return true;
+      var n = ticketDateToInt(dStr);
+      if (n === null) return true;
+      if (filterFromInt !== null && n < filterFromInt) return false;
+      if (filterToInt   !== null && n > filterToInt)   return false;
+      return true;
+    }
+
     // Atualiza apenas a lista de tickets (sem sobrescrever o filtro de data)
     function renderList() {
       var listEl = document.getElementById('zdTicketList');
       if (!listEl) return;
+
+      // Modo "Todos os atendimentos" — lista completa (avaliados ou não)
+      if (viewMode === 'all') {
+        var vis = allTickets.filter(function(t) {
+          if (filterModule !== null && (t.module || '') !== filterModule) return false;
+          return dateInRange(t.date);
+        });
+        listEl.innerHTML =
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
+            vis.length + ' de ' + allTickets.length + ' atendimentos' + (filterModule ? ' · módulo: ' + esc(filterModule) : '') +
+          '</div>' +
+          (vis.length === 0
+            ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum atendimento nesse filtro.</div>'
+            : vis.map(function(t) {
+                return '<div style="border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:7px;background:#FAFBFD">' +
+                  '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+                    (zdSubdomain
+                      ? '<a href="https://' + esc(zdSubdomain) + '.zendesk.com/agent/tickets/' + esc(String(t.id)) + '" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:var(--blue);text-decoration:none">#' + esc(String(t.id)) + ' <i class="ti ti-external-link" style="font-size:9px"></i></a>'
+                      : '<span style="font-size:10px;color:var(--muted)">#' + esc(String(t.id)) + '</span>') +
+                    '<span style="font-size:10px;color:var(--muted)">' + esc(t.date) + '</span>' +
+                  '</div>' +
+                  (t.subject ? '<div style="font-size:11px;color:var(--ink);font-weight:500;margin-top:4px">' + esc(t.subject) + '</div>' : '') +
+                  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+                    (t.module ? '<span class="bc">' + esc(t.module) + '</span>' : '<span style="font-size:10px;color:var(--muted)">sem módulo</span>') +
+                    (t.status ? '<span style="font-size:10px;color:var(--muted)">· ' + esc(t.status) + '</span>' : '') +
+                  '</div>' +
+                '</div>';
+              }).join(''));
+        return;
+      }
 
       if (!pending) {
         listEl.innerHTML =
@@ -787,8 +828,16 @@ var UIModals = (function() {
     // Monta o corpo do modal uma única vez (filtro + container da lista)
     function setupBody() {
       var inputStyle = 'background:#fff;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:11px;font-family:inherit;color-scheme:light';
+      var btnBase = 'font-size:11px;padding:6px 12px;border-radius:9px;cursor:pointer;font-family:inherit';
+      var toggleHtml = allTickets.length
+        ? '<div style="display:flex;gap:6px;margin-bottom:12px">' +
+            '<button id="zdViewCsat" type="button" onclick="UIModals._zdSetView(\'csat\')" style="' + btnBase + ';border:1px solid var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:600">Avaliados (CSAT)</button>' +
+            '<button id="zdViewAll" type="button" onclick="UIModals._zdSetView(\'all\')" style="' + btnBase + ';border:1px solid var(--border);background:#fff;color:var(--muted);font-weight:500">Todos os atendimentos (' + allTickets.length + ')</button>' +
+          '</div>'
+        : '';
       body.innerHTML =
         '<div id="zdModuleScores" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)"></div>' +
+        toggleHtml +
         '<div style="background:#FBF1E3;border:1px solid #F1DFBE;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:11px;color:#B45309;line-height:1.5">' +
           '<i class="ti ti-info-circle"></i> <strong>Marque apenas questões técnicas</strong> para compor a nota. Comportamentais ficam com a supervisão.' +
         '</div>' +
@@ -840,6 +889,20 @@ var UIModals = (function() {
       renderList();
     };
 
+    UIModals._zdSetView = function(mode) {
+      viewMode = mode;
+      var a = document.getElementById('zdViewCsat'), b = document.getElementById('zdViewAll');
+      function style(btn, on) {
+        if (!btn) return;
+        btn.style.background  = on ? 'var(--blue-soft)' : '#fff';
+        btn.style.borderColor = on ? 'var(--blue)' : 'var(--border)';
+        btn.style.color       = on ? 'var(--blue)' : 'var(--muted)';
+        btn.style.fontWeight  = on ? '600' : '500';
+      }
+      style(a, mode === 'csat'); style(b, mode === 'all');
+      renderList();
+    };
+
     setupBody();
     modScores = computeModScores();
     renderModuleScores();
@@ -869,6 +932,7 @@ var UIModals = (function() {
     _removeListItem:     function() {},
     _zdToggle:           function() {},
     _zdFilterModule:     function() {},
+    _zdSetView:          function() {},
     openZendeskHelp:     function() {
       var m = document.getElementById('zdHelpModal');
       if (m) m.style.display = 'flex';
