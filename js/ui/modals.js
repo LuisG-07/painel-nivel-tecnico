@@ -769,26 +769,6 @@ var UIModals = (function() {
     filterTo   = new Date(_defaultTo);
     renderList();
 
-    // Configura event listeners dos botões de filtro
-    setTimeout(function() {
-      var filterBtn = document.querySelector('button[onclick*="_zdApplyFilter"]');
-      var clearBtn = document.querySelector('button[onclick*="_zdClearFilter"]');
-      if (filterBtn) {
-        filterBtn.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          UIModals._zdApplyFilter();
-        };
-      }
-      if (clearBtn) {
-        clearBtn.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          UIModals._zdClearFilter();
-        };
-      }
-    }, 50);
-
     modal.style.display = 'flex';
 
     document.getElementById('zdTicketsSaveBtn').onclick = function() {
