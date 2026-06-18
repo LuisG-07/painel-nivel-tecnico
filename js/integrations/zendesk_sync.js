@@ -209,8 +209,9 @@ var ZendeskSync = (function() {
         if (!matches) return;
 
         // Auto-preenche nameMap se encontrou correspondência automática
-        if (!mapped && matches && agentLower !== key) {
+        if (!mapped && matches) {
           nameMap[agentName] = analyst.name;
+          console.log('✓ Auto-vinculado: ' + agentName + ' → ' + analyst.name);
         }
         var data = agentMap[agentName];
         var score = data.score;
