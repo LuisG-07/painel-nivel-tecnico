@@ -160,10 +160,36 @@ var ZendeskSync = (function() {
 
         // Tenta: mapeamento manual → correspondência exata → sem match
         var mapped  = nameMap[agentName];
+        var agentLower = agentName.trim().toLowerCase();
         var matches = mapped
           ? mapped.trim().toLowerCase() === key
-          : agentName.trim().toLowerCase() === key;
+          : agentLower === key;
+
+        // Se não encontrou correspondência exata, tenta correspondência parcial
+        if (!matches && !mapped) {
+          // Verifica se o nome do Zendesk contém o nome do analista (ou vice-versa)
+          // Por exemplo: "Bruno Henrique Ferreira da Silva" ≈ "Bruno"
+          var words = agentLower.split(/\s+/);
+          var analystWords = key.split(/\s+/);
+
+          // Se primeiro nome + sobrenome do Zendesk == nome do analista
+          if (words.length >= 2 && (words[0] + ' ' + words[words.length - 1]) === key) {
+            matches = true;
+          } else if (words.length === 1 && analystWords.length === 1 && words[0] === analystWords[0]) {
+            // Se são nomes únicos idênticos
+            matches = true;
+          } else if (words.length > 1 && analystWords.length === 1 && words[0] === analystWords[0]) {
+            // Se primeiro nome do Zendesk == nome do analista (ex: "Zendesk: Bruno Henrique..." == "Analista: Bruno")
+            matches = true;
+          }
+        }
+
         if (!matches) return;
+
+        // Auto-preenche nameMap se encontrou correspondência automática
+        if (!mapped && matches && agentLower !== key) {
+          nameMap[agentName] = analyst.name;
+        }
         var data = agentMap[agentName];
         var score = data.score;
         if (score === null || score === undefined || isNaN(parseFloat(score))) return;
@@ -211,7 +237,7 @@ var ZendeskSync = (function() {
       }
     });
 
-    return updated;
+    return { updated: updated, nameMap: nameMap };
   }
 
   function sync(analysts, callback) {
@@ -226,9 +252,9 @@ var ZendeskSync = (function() {
       .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data) {
         if (data.error) throw new Error(data.error);
-        var updated = applyAgentData(analysts, data.agents || {});
-        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
-        callback && callback(updated, null, 'ok');
+        var result = applyAgentData(analysts, data.agents || {});
+        saveStatus({ ok: true, at: new Date().toISOString(), updated: result.updated });
+        callback && callback(result.updated, null, 'ok');
       })
       .catch(function(err) {
         saveStatus({ ok: false, at: new Date().toISOString(), error: err.message });
@@ -520,10 +546,16 @@ var ZendeskSync = (function() {
         saveAgents(agentStore);
 
         // Aplica scores e tickets
-        var updated = applyAgentData(analysts, finalMap);
+        var result = applyAgentData(analysts, finalMap);
+        var updated = result.updated;
+        var nameMap = result.nameMap;
+
+        // Salva o nameMap atualizado na config
+        var cfg = getConfig();
+        cfg.nameMap = nameMap;
+        saveConfig(cfg);
 
         // Aplica fotos: só preenche se o analista ainda não tiver foto
-        var nameMap = getConfig().nameMap || {};
         var photoCount = 0;
         analysts.forEach(function(analyst) {
           var key = analyst.name.trim().toLowerCase();
