@@ -382,12 +382,11 @@ var ZendeskSync = (function() {
   function buildZdFetch(cfg) {
     var base    = 'https://' + cfg.subdomain + '.zendesk.com';
     var headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
-    var isLocal = typeof window !== 'undefined' &&
-                  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+    // Sempre via proxy relativo: local = Express (server.js); web = Cloud Function (rewrite /zdproxy/**)
+    var proxyBase = '/zdproxy/' + cfg.subdomain;
     function toUrl(path) {
-      if (path.indexOf('http') === 0) return proxyBase ? path.replace(base, proxyBase) : path;
-      return (proxyBase || base) + path;
+      if (path.indexOf('http') === 0) return path.replace(base, proxyBase);
+      return proxyBase + path;
     }
     return function zdFetch(path) {
       return fetch(toUrl(path), { headers: headers }).then(function(r) {
@@ -470,26 +469,19 @@ var ZendeskSync = (function() {
     }
     var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
 
-    // Quando rodando em localhost, usa proxy local para evitar bloqueio CORS do Zendesk
-    var isLocal   = typeof window !== 'undefined' &&
-                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    // Include subdomain in proxy path so the server knows where to route the request
-    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+    // Proxy relativo sempre: local = Express; web = Cloud Function (rewrite /zdproxy/**)
+    var proxyBase = '/zdproxy/' + cfg.subdomain;
 
     function toUrl(path) {
       if (path.startsWith('http')) {
-        // URLs absolutas — se for local, usa proxy passando URL completa
-        if (proxyBase) {
-          // Para imagens de CDN, passa a URL completa como parâmetro
-          if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path)) {
-            return proxyBase + '?url=' + encodeURIComponent(path);
-          }
-          // Para APIs, tenta substituir o domain
-          return path.replace(base, proxyBase);
+        // Imagens de CDN: passa a URL completa como parâmetro
+        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path)) {
+          return proxyBase + '?url=' + encodeURIComponent(path);
         }
-        return path;
+        // APIs: substitui o domínio pelo proxy
+        return path.replace(base, proxyBase);
       }
-      return (proxyBase || base) + path;
+      return proxyBase + path;
     }
 
     function zdFetch(path) {
@@ -714,10 +706,8 @@ var ZendeskSync = (function() {
 
         var fetches = names.map(function(name) {
           var photoUrl = result.agentMap[name].photoUrl;
-          var isLocal   = typeof window !== 'undefined' &&
-                          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-          var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
-          var url = isLocal && proxyBase ? proxyBase + '?url=' + encodeURIComponent(photoUrl) : photoUrl;
+          // Foto via proxy (relativo) — funciona local e na web
+          var url = '/zdproxy/' + cfg.subdomain + '?url=' + encodeURIComponent(photoUrl);
 
           return fetch(url)
             .then(function(r) {

@@ -3,6 +3,10 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
@@ -10,6 +14,7 @@
       ".firebaserc",
       "**/.*",
       "**/node_modules/**",
+      "functions/**",
       "server.js",
       "package.json",
       "package-lock.json",
@@ -17,6 +22,9 @@
       "firestore.indexes.json",
       "*.md",
       "*.log"
+    ],
+    "rewrites": [
+      { "source": "/zdproxy/**", "function": "zdproxy" }
     ]
   }
 }
