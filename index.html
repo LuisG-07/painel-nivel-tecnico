@@ -258,14 +258,13 @@
     </div>
 
     <div class="modal-tab-panel" data-panel="zendesk">
-      <span class="input-label" for="zdSubdomain">Subdomínio do Zendesk</span>
-      <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
-      <span class="input-label" for="zdEmail">E-mail do administrador</span>
-      <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
-      <span class="input-label" for="zdApiToken">Token da API Zendesk</span>
-      <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
-      <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
-      <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
+      <!-- Credenciais ocultas (já salvas) — mantidas no DOM para a importação ler -->
+      <div style="display:none">
+        <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
+        <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
+        <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
+        <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza…">
+      </div>
       <span class="input-label">Grupos no Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -311,9 +310,8 @@
           <i class="ti ti-cloud-download" aria-hidden="true"></i> Importar do Zendesk
         </button>
       </div>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-        <span class="input-label" for="zdScriptUrl" style="color:var(--muted)">URL Apps Script (automação agendada — opcional)</span>
-        <input type="url" id="zdScriptUrl" class="form-input" style="opacity:.7" placeholder="https://script.google.com/macros/s/…/exec">
+      <div style="display:none">
+        <input type="url" id="zdScriptUrl" class="form-input" placeholder="https://script.google.com/macros/s/…/exec">
       </div>
     </div>
 
