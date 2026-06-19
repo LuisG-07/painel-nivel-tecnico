@@ -1,13 +1,22 @@
 rules_version = '2';
 
-// Regras do Firestore — SkillMatrix / GCK
-// Workspace único compartilhado: exige usuário autenticado (inclui login anônimo).
-// ⚠️ Baseline para uso interno. Se o app for publicado na web, troque por
-// autenticação real (e-mail/senha com allowlist) — peça ao assistente.
+// Regras do Firestore — SkillMatrix / GCK (app PUBLICADO na web)
+// Acesso restrito a uma LISTA DE E-MAILS autorizados. A config web do Firebase
+// é pública, então a segurança real vem daqui: só e-mails na allowlist leem/gravam.
+// Para adicionar/remover pessoas, edite a lista e rode:
+//   npx firebase deploy --only firestore:rules
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function autorizado() {
+      return request.auth != null && request.auth.token.email in [
+        // ⟶ preencher com os e-mails (Google) autorizados:
+        "__EMAIL_AUTORIZADO_1__"
+      ];
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if autorizado();
     }
   }
 }
