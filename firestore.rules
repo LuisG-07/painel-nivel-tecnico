@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Regras do Firestore — SkillMatrix / GCK
+// Workspace único compartilhado: exige usuário autenticado (inclui login anônimo).
+// ⚠️ Baseline para uso interno. Se o app for publicado na web, troque por
+// autenticação real (e-mail/senha com allowlist) — peça ao assistente.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

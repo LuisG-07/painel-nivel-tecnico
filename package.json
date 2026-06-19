@@ -9,5 +9,8 @@
   "dependencies": {
     "express": "*",
     "jsonwebtoken": "*"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.22.0"
   }
 }
