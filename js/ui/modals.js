@@ -403,51 +403,88 @@ var UIModals = (function() {
     };
 
     // Renderiza tabela de mapeamento nome Zendesk → analista SkillMatrix
+    // Normaliza para busca (minúsculo, sem acento)
+    function _nameNorm(s) {
+      return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    }
+
+    // Monta a linha de vínculo de um nome do Zendesk
+    function _nameMapRowHtml(zdName) {
+      var data = UIModals._nameMapData; if (!data) return '';
+      var nameMap  = ZendeskSync.getConfig().nameMap || {};
+      var current  = nameMap[zdName] || '';
+      var isNew    = current === '__NEW__';
+      var optStyle = 'background:#fff;color:#0F2440';
+      var selStyle = 'background:#fff;border:1px solid var(--border);color:#0F2440;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
+      var sectorOpts = data.sectors.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
+      var options = '<option value="" style="' + optStyle + ';color:#9AA8BC">— não vincular —</option>' +
+        '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#fff;color:#15803D;font-weight:600">+ Cadastrar novo analista</option>' +
+        data.analystNames.map(function(n) {
+          return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
+        }).join('');
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+        '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
+        '<span style="font-size:11px;color:var(--muted)">→</span>' +
+        '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + selStyle + ';flex:1" onchange="UIModals._zdMapChange(this)">' + options + '</select>' +
+        '<select data-sector style="' + selStyle + ';min-width:90px;' + (isNew ? '' : 'display:none') + '">' + sectorOpts + '</select>' +
+      '</div>';
+    }
+
+    // Após a importação: NÃO lista todos os agentes do Zendesk (muitos não são
+    // analistas). Mostra só um campo de busca; o usuário digita o nome e vincula.
     UIModals.renderNameMap = function(analystNames, sectors) {
       var found     = ZendeskSync.getFoundNames();
       var nameMap   = ZendeskSync.getConfig().nameMap || {};
       var container = document.getElementById('zdNameMapContainer');
       var rows      = document.getElementById('zdNameMapRows');
+      var hint      = document.getElementById('zdNameMapHint');
+      var searchEl  = document.getElementById('zdNameMapSearch');
       if (!container || !rows || !found.length) return;
 
-      // Filtra apenas nomes que ainda não foram vinculados
       var unmapped = found.filter(function(zdName) {
         return !nameMap[zdName] || nameMap[zdName] === '';
       });
 
-      // Se todos já foram vinculados, esconde o container
-      if (!unmapped.length) {
-        container.style.display = 'none';
-        return;
-      }
+      // Todos já vinculados → nada a exibir
+      if (!unmapped.length) { container.style.display = 'none'; return; }
 
-      var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
-      var selStyle   = 'background:#fff;border:1px solid var(--border);color:#0F2440;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
-      var optStyle   = 'background:#fff;color:#0F2440';
-      var sectorOpts = sectorList.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
+      UIModals._nameMapData = {
+        unmapped: unmapped,
+        analystNames: analystNames || [],
+        sectors: (sectors && sectors.length) ? sectors : ['Chat', 'Telefone', 'Notas']
+      };
+      container.style.display = 'block';
+      if (searchEl) searchEl.value = '';
+      if (hint) hint.textContent = unmapped.length + ' usuário(s) do Zendesk sem vínculo. Digite um nome para localizar e vincular (opcional).';
+      rows.innerHTML = '';
+    };
 
-      rows.innerHTML = unmapped.map(function(zdName) {
-        var current = nameMap[zdName] || '';
-        var isNew   = current === '__NEW__';
-        var options = '<option value="" style="' + optStyle + ';color:#9AA8BC">— não vincular —</option>' +
-          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#fff;color:#15803D;font-weight:600">+ Cadastrar novo analista</option>' +
-          analystNames.map(function(n) {
-            return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
-          }).join('');
-        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-          '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
-          '<span style="font-size:11px;color:var(--muted)">→</span>' +
-          '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + selStyle + ';flex:1" onchange="UIModals._zdMapChange(this)">' + options + '</select>' +
-          '<select data-sector style="' + selStyle + ';min-width:90px;' + (isNew ? '' : 'display:none') + '">' + sectorOpts + '</select>' +
-        '</div>';
-      }).join('');
-
-      container.style.display = unmapped.length ? 'block' : 'none';
+    // Busca incremental: só renderiza os nomes que casam com o que foi digitado
+    UIModals._zdNameMapFilter = function(query) {
+      var rows = document.getElementById('zdNameMapRows');
+      var data = UIModals._nameMapData;
+      if (!rows || !data) return;
+      var q = _nameNorm(query);
+      if (!q) { rows.innerHTML = ''; return; }
+      var matches = data.unmapped.filter(function(zdName) {
+        return _nameNorm(zdName).indexOf(q) !== -1;
+      }).slice(0, 20);
+      rows.innerHTML = matches.length
+        ? matches.map(_nameMapRowHtml).join('')
+        : '<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum usuário do Zendesk encontrado com esse nome.</div>';
     };
 
     UIModals._zdMapChange = function(sel) {
       var sectorSel = sel.parentElement.querySelector('select[data-sector]');
       if (sectorSel) sectorSel.style.display = sel.value === '__NEW__' ? '' : 'none';
+      // Persiste o vínculo na hora (analista existente) para não se perder ao filtrar
+      var zdName = sel.getAttribute('data-zdname');
+      if (zdName && sel.value && sel.value !== '__NEW__') {
+        var cfg = ZendeskSync.getConfig();
+        var nm  = cfg.nameMap || {};
+        nm[zdName] = sel.value;
+        ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nm }));
+      }
     };
 
     document.getElementById('zdTestBtn') && (document.getElementById('zdTestBtn').onclick = function() {
