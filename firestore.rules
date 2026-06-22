@@ -10,8 +10,8 @@ service cloud.firestore {
 
     function autorizado() {
       return request.auth != null && request.auth.token.email in [
-        // ⟶ preencher com os e-mails (Google) autorizados:
-        "__EMAIL_AUTORIZADO_1__"
+        // ⟶ e-mails (Google) autorizados — adicione/remova conforme necessário:
+        "gustavo@clickdigital.com.br"
       ];
     }
 
