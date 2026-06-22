@@ -253,11 +253,43 @@ var UIOverview = (function() {
     });
     h += '</div>';
 
-    // Rankings lado a lado: Módulos (sempre) + Categorias do Zendesk (se houver dados).
-    var catRank = (typeof ZendeskSync !== 'undefined' && ZendeskSync.categoryRanking) ? ZendeskSync.categoryRanking(state.analysts) : [];
+    // Rankings: módulos (técnico) + módulos negativados (Zendesk) lado a lado;
+    // categorias negativadas (Zendesk) na sequência. Os do Zendesk só com dados.
+    var zdReady   = typeof ZendeskSync !== 'undefined';
+    var catRank   = (zdReady && ZendeskSync.categoryRanking) ? ZendeskSync.categoryRanking(state.analysts) : [];
+    var zdModRank = (zdReady && ZendeskSync.moduleRanking)   ? ZendeskSync.moduleRanking(state.analysts)   : [];
 
-    // Coluna 1 — Ranking de Módulos
-    var modTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
+    // Helper de status (Zendesk) por % de negativas
+    function zdStatus(pct) {
+      return pct >= 30 ? { c: '#CC0000', bg: '#FBEAEA', l: 'Crítica' }
+           : pct >= 15 ? { c: '#B45309', bg: '#FBF1E3', l: 'Atenção' }
+           :             { c: '#15803D', bg: '#E9F5EE', l: 'Saudável' };
+    }
+    // Tabela de ranking negativado do Zendesk (módulos ou categorias).
+    // clickFn (opcional): nome de função global chamada com o índice da linha,
+    // tornando as linhas clicáveis para consultar os tickets.
+    function zdNegTable(title, icon, label, rows, clickFn) {
+      var hintClick = clickFn ? ' Clique numa linha para ver os tickets.' : '';
+      var t = '<div><div class="sectitle" style="margin-top:0"><i class="ti ' + icon + '"></i> ' + title + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">Avaliações de toda a equipe, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.' + hintClick + '</div>' +
+        '<table class="tbl"><thead><tr><th>#</th><th>' + label + '</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
+      rows.slice(0, 15).forEach(function(r, i) {
+        var pct = r.rate * 100, st = zdStatus(pct);
+        var trAttr = clickFn ? ' onclick="' + clickFn + '(' + i + ')" style="cursor:pointer" title="Ver tickets"' : '';
+        t += '<tr' + trAttr + '>' +
+          '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
+          '<td style="font-weight:500">' + esc(r.name) + '</td>' +
+          '<td style="color:#CC0000;font-weight:700">' + r.bad + '</td>' +
+          '<td style="color:var(--muted)">' + r.total + '</td>' +
+          '<td style="color:' + st.c + ';font-weight:600">' + pct.toFixed(0) + '%</td>' +
+          '<td><span style="background:' + st.bg + ';color:' + st.c + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + st.l + '</span></td>' +
+        '</tr>';
+      });
+      return t + '</tbody></table></div>';
+    }
+
+    // 1) Ranking de Módulos (técnico, média 1–5)
+    var modTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-list-numbers"></i> Ranking de Módulos (técnico)</div>' +
       '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
@@ -271,32 +303,25 @@ var UIOverview = (function() {
     });
     modTable += '</tbody></table></div>';
 
-    // Coluna 2 — Categorias do Zendesk mais negativadas (global, na mesma base das notas)
-    var catTable = '';
-    if (catRank.length) {
-      catTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-mood-sad"></i> Categorias mais negativadas (Zendesk)</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">Avaliações de toda a equipe agrupadas pela categoria do ticket no Zendesk, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.</div>' +
-        '<table class="tbl"><thead><tr><th>#</th><th>Categoria</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
-      catRank.slice(0, 15).forEach(function(c, i) {
-        var pct        = c.rate * 100;
-        var statusColor = pct >= 30 ? '#CC0000' : pct >= 15 ? '#B45309' : '#15803D';
-        var statusBg    = pct >= 30 ? '#FBEAEA' : pct >= 15 ? '#FBF1E3' : '#E9F5EE';
-        var statusLbl   = pct >= 30 ? 'Crítica'  : pct >= 15 ? 'Atenção'  : 'Saudável';
-        catTable += '<tr>' +
-          '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
-          '<td style="font-weight:500">' + esc(c.category) + '</td>' +
-          '<td style="color:#CC0000;font-weight:700">' + c.bad + '</td>' +
-          '<td style="color:var(--muted)">' + c.total + '</td>' +
-          '<td style="color:' + statusColor + ';font-weight:600">' + pct.toFixed(0) + '%</td>' +
-          '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + statusLbl + '</span></td>' +
-        '</tr>';
-      });
-      catTable += '</tbody></table></div>';
-    }
+    // 2) Módulos mais negativados (Zendesk) — ao lado do técnico. Linhas clicáveis
+    //    (inclui o bucket "Sem módulo") para consultar os tickets.
+    var zdModTable = zdModRank.length
+      ? zdNegTable('Módulos mais negativados (Zendesk)', 'ti-thumb-down',
+          'Módulo', zdModRank.map(function(r) { return { name: r.module || 'Sem módulo', bad: r.bad, total: r.total, rate: r.rate }; }),
+          'App.openZdModuleTickets')
+      : '';
 
-    // Duas colunas quando há ranking de categorias; senão, Módulos ocupa a largura toda.
-    var rankCols = catTable ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
-    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' + modTable + catTable + '</div>';
+    // 3) Categorias mais negativadas (Zendesk)
+    var catTable = catRank.length
+      ? zdNegTable('Categorias mais negativadas (Zendesk)', 'ti-mood-sad',
+          'Categoria', catRank.map(function(r) { return { name: r.category, bad: r.bad, total: r.total, rate: r.rate }; }))
+      : '';
+
+    // 2 colunas quando há qualquer ranking do Zendesk; senão, técnico ocupa tudo.
+    // Ordem: [técnico][módulos Zendesk] na 1ª linha, [categorias] na 2ª.
+    var rankCols = (zdModTable || catTable) ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
+    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' +
+      modTable + zdModTable + catTable + '</div>';
 
     document.getElementById('page-visao').innerHTML = h;
   }

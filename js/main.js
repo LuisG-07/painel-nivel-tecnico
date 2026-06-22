@@ -314,6 +314,16 @@ var App = (function() {
     });
   }
 
+  // Consulta os tickets negativos de um módulo do ranking "Módulos mais
+  // negativados (Zendesk)". Recebe o índice da linha (recalcula o ranking).
+  function openZdModuleTickets(index) {
+    if (!ZendeskSync.moduleRanking) return;
+    var ranking = ZendeskSync.moduleRanking(state.analysts) || [];
+    var row = ranking[index];
+    if (!row) return;
+    UIModals.openModuleTickets(row.module, state.analysts, ZendeskSync.getConfig().subdomain);
+  }
+
   function importFromZendesk() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -492,6 +502,7 @@ var App = (function() {
     toggleModuleDetail: toggleModuleDetail,
     openManageModal:    openManageModal,
     openZendeskTickets: openZendeskTickets,
+    openZdModuleTickets: openZdModuleTickets,
     importFromZendesk:      importFromZendesk,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML

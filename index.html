@@ -348,6 +348,21 @@
   </div>
 </div>
 
+<!-- Zendesk: tickets negativados por módulo (consulta global) -->
+<div id="zdModTktModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="zdModTktTitle">
+  <div class="modal" style="max-width:600px;width:100%">
+    <div class="modal-title" id="zdModTktTitle">
+      <i class="ti ti-thumb-down" style="color:#CC0000" aria-hidden="true"></i>
+      Negativos — <span id="zdModTktName"></span>
+    </div>
+    <div id="zdModTktInfo" style="font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+    <div id="zdModTktBody" style="max-height:460px;overflow-y:auto;padding-right:4px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+      <button class="btn-secondary" onclick="document.getElementById('zdModTktModal').style.display='none'">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Zendesk Score Help Modal -->
 <div id="zdHelpModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="zdHelpTitle">
   <div class="modal" style="max-width:480px">

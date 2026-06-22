@@ -171,6 +171,61 @@ var ZendeskSync = (function() {
     .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
   }
 
+  // Ranking GLOBAL de módulos mais negativados no Zendesk (equipe toda), na mesma
+  // base das notas: positivos por módulo (t.module_good) + negativos por módulo
+  // (bad_tickets com module), honrando o toggle "considerar". Só módulos com
+  // pelo menos uma negativa entram. Retorna [{ module, good, bad, total, rate }].
+  // Chave do bucket de negativos sem módulo identificado.
+  var SEM_MODULO = '';
+  function moduleRanking(analysts) {
+    var good = {}, bad = {};
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      var mg = t.module_good || {};
+      var sumMg = 0;
+      Object.keys(mg).forEach(function(m) { good[m] = (good[m] || 0) + (mg[m] || 0); sumMg += (mg[m] || 0); });
+      // positivos não atribuídos a módulo → entram no bucket "Sem módulo"
+      var leftover = (t.good_count || 0) - sumMg;
+      if (leftover > 0) good[SEM_MODULO] = (good[SEM_MODULO] || 0) + leftover;
+      (t.bad_tickets || []).forEach(function(x) {
+        if (!x.consider) return;            // honra o toggle
+        var m = x.module || SEM_MODULO;     // sem módulo → bucket "Sem módulo"
+        bad[m] = (bad[m] || 0) + 1;
+      });
+    });
+    return Object.keys(bad).map(function(m) {
+      var g = good[m] || 0, b = bad[m] || 0, total = g + b;
+      return { module: m, good: g, bad: b, total: total, rate: total ? b / total : 0 };
+    })
+    .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
+  }
+
+  // Tickets negativados de um módulo (ou "Sem módulo" quando moduleName vazio),
+  // somando toda a equipe — para consulta. Retorna registros com o analista.
+  function negativesForModule(analysts, moduleName) {
+    var target = moduleName || '';
+    var out = [];
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      (t.bad_tickets || []).forEach(function(x) {
+        if ((x.module || '') !== target) return;
+        out.push({
+          analyst:  a.name,
+          id:       x.id,
+          date:     x.date || '',
+          subject:  x.subject || '',
+          comment:  x.comment || '',
+          zdCategory: x.zdCategory || '',
+          category: x.category || '',
+          consider: x.consider !== false
+        });
+      });
+    });
+    return out;
+  }
+
   // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
   // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
   // para a nota refletir o desempenho individual.
@@ -1006,6 +1061,8 @@ var ZendeskSync = (function() {
     moduleScores:   moduleScores,
     getCategoryStats: getCategoryStats,
     categoryRanking: categoryRanking,
+    moduleRanking:  moduleRanking,
+    negativesForModule: negativesForModule,
     detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,

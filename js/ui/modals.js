@@ -964,6 +964,52 @@ var UIModals = (function() {
     };
   }
 
+  // Consulta global: todos os tickets negativos de um módulo (ou "Sem módulo")
+  // somando a equipe toda. Apenas leitura.
+  function openModuleTickets(moduleName, analysts, subdomain) {
+    var modal  = document.getElementById('zdModTktModal');
+    var nameEl = document.getElementById('zdModTktName');
+    var infoEl = document.getElementById('zdModTktInfo');
+    var body   = document.getElementById('zdModTktBody');
+    if (!modal || !body) return;
+
+    var label = moduleName ? moduleName : 'Sem módulo';
+    var list  = (ZendeskSync.negativesForModule(analysts, moduleName) || []).slice();
+    // Mais recentes primeiro (data dd/mm/yyyy)
+    function dInt(s) { var p = String(s || '').split('/'); return p.length === 3 ? (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0]) : 0; }
+    list.sort(function(a, b) { return dInt(b.date) - dInt(a.date); });
+
+    var considered = list.filter(function(t) { return t.consider; }).length;
+    var sub = (subdomain || '').trim();
+
+    if (nameEl) nameEl.textContent = label;
+    if (infoEl) infoEl.textContent = list.length + ' ticket(s) negativo(s)' +
+      (moduleName ? '' : ' sem módulo identificado') + ' · ' + considered + ' considerado(s) na nota';
+
+    body.innerHTML = list.length
+      ? list.map(function(t) {
+          return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#FAFBFD">' +
+            '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+              (sub
+                ? '<a href="https://' + esc(sub) + '.zendesk.com/agent/tickets/' + esc(String(t.id)) + '" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:var(--blue);text-decoration:none">#' + esc(String(t.id)) + ' <i class="ti ti-external-link" style="font-size:9px"></i></a>'
+                : '<span style="font-size:10px;color:var(--muted)">#' + esc(String(t.id)) + '</span>') +
+              '<span style="font-size:10px;color:var(--muted)">' + esc(t.date) + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--ink);font-weight:600;margin-top:4px">' + esc(t.analyst) +
+              (t.zdCategory ? ' <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:#F1F4F8;color:var(--muted);font-weight:400">' + esc(t.zdCategory) + '</span>' : '') +
+              (t.consider ? '' : ' <span style="font-size:10px;color:#B45309;font-weight:400">(comportamental)</span>') +
+            '</div>' +
+            (t.subject ? '<div style="font-size:11px;color:var(--ink);margin-top:3px">' + esc(t.subject) + '</div>' : '') +
+            '<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px">' +
+              (t.comment ? '"' + esc(t.comment.substring(0, 240)) + '"' : '<em>Sem comentário do cliente</em>') +
+            '</div>' +
+          '</div>';
+        }).join('')
+      : '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket negativo neste grupo.</div>';
+
+    modal.style.display = 'flex';
+  }
+
   return {
     openEdit:            openEdit,
     openAdd:             openAdd,
@@ -971,6 +1017,7 @@ var UIModals = (function() {
     openProva:           openProva,
     openManage:          openManage,
     openZendeskTickets:  openZendeskTickets,
+    openModuleTickets:   openModuleTickets,
     init:                init,
     switchModalTab:      switchModalTab,
     _setScore:           setScore,
