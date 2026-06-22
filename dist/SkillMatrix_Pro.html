@@ -2314,16 +2314,17 @@ var UIModals = (function() {
       if (!box) return;
       var entries = Object.keys(modScores)
         .map(function(m) { return { module: m, d: modScores[m] }; })
-        .filter(function(e) { return (e.d.good + e.d.bad) > 0; })
+        .filter(function(e) { return e.d.bad > 0; }) // só módulos com avaliações negativas
         .sort(function(a, b) {
+          if (b.d.bad !== a.d.bad) return b.d.bad - a.d.bad; // mais negativas primeiro
           var sa = a.d.score == null ? 99 : a.d.score, sb = b.d.score == null ? 99 : b.d.score;
-          return sa - sb; // piores primeiro
+          return sa - sb; // empate → pior nota primeiro
         });
       if (!entries.length) {
-        box.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Sem categorias cruzadas com os módulos ainda. Importe do Zendesk para preencher.</div>';
+        box.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum módulo com avaliações negativas neste período.</div>';
         return;
       }
-      var head = '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;font-weight:600">Nota Zendesk por módulo</div>';
+      var head = '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;font-weight:600">Módulos mais negativados (Zendesk)</div>';
       var allBtn = '<button type="button" onclick="UIModals._zdFilterModule(null)" style="font-size:10px;padding:3px 10px;border-radius:99px;border:1px solid ' + (filterModule === null ? 'var(--blue)' : 'var(--border)') + ';background:' + (filterModule === null ? 'var(--blue-soft)' : '#fff') + ';color:' + (filterModule === null ? 'var(--blue)' : 'var(--muted)') + ';cursor:pointer;font-family:inherit;font-weight:600;margin:0 6px 6px 0">Todos</button>';
       var chips = entries.map(function(e) {
         var sel = filterModule === e.module;
