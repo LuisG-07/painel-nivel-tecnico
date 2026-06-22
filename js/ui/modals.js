@@ -618,8 +618,16 @@ var UIModals = (function() {
 
     // Cópia de trabalho. bad_tickets é a lista MESTRE (nunca apagada);
     // o filtro de data apenas oculta itens visualmente, sem remover.
+    // Preserva module_good/category_good/all_tickets ao salvar (senão seriam perdidos,
+    // pois o onSave grava o objeto inteiro de volta).
     var pending = ticketData
-      ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
+      ? {
+          good_count:    ticketData.good_count,
+          bad_tickets:   ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }),
+          module_good:   ticketData.module_good   || {},
+          category_good: ticketData.category_good || {},
+          all_tickets:   ticketData.all_tickets   || []
+        }
       : null;
 
     // Filtro de data (em inteiros YYYYMMDD). null = sem filtro (mostra tudo).

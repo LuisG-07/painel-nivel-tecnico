@@ -253,20 +253,50 @@ var UIOverview = (function() {
     });
     h += '</div>';
 
-    // Module ranking table
-    h += '<div style="margin-top:28px"><div class="sectitle"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
+    // Rankings lado a lado: Módulos (sempre) + Categorias do Zendesk (se houver dados).
+    var catRank = (typeof ZendeskSync !== 'undefined' && ZendeskSync.categoryRanking) ? ZendeskSync.categoryRanking(state.analysts) : [];
+
+    // Coluna 1 — Ranking de Módulos
+    var modTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
       '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
       var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
-      h += '<tr>' +
+      modTable += '<tr>' +
         '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
         '<td style="font-weight:500">' + esc(x.name) + '</td>' +
         '<td style="color:' + statusColor + ';font-weight:700">' + x.avg.toFixed(2) + '</td>' +
         '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
       '</tr>';
     });
-    h += '</tbody></table></div>';
+    modTable += '</tbody></table></div>';
+
+    // Coluna 2 — Categorias do Zendesk mais negativadas (global, na mesma base das notas)
+    var catTable = '';
+    if (catRank.length) {
+      catTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-mood-sad"></i> Categorias mais negativadas (Zendesk)</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">Avaliações de toda a equipe agrupadas pela categoria do ticket no Zendesk, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.</div>' +
+        '<table class="tbl"><thead><tr><th>#</th><th>Categoria</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
+      catRank.slice(0, 15).forEach(function(c, i) {
+        var pct        = c.rate * 100;
+        var statusColor = pct >= 30 ? '#CC0000' : pct >= 15 ? '#B45309' : '#15803D';
+        var statusBg    = pct >= 30 ? '#FBEAEA' : pct >= 15 ? '#FBF1E3' : '#E9F5EE';
+        var statusLbl   = pct >= 30 ? 'Crítica'  : pct >= 15 ? 'Atenção'  : 'Saudável';
+        catTable += '<tr>' +
+          '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
+          '<td style="font-weight:500">' + esc(c.category) + '</td>' +
+          '<td style="color:#CC0000;font-weight:700">' + c.bad + '</td>' +
+          '<td style="color:var(--muted)">' + c.total + '</td>' +
+          '<td style="color:' + statusColor + ';font-weight:600">' + pct.toFixed(0) + '%</td>' +
+          '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + statusLbl + '</span></td>' +
+        '</tr>';
+      });
+      catTable += '</tbody></table></div>';
+    }
+
+    // Duas colunas quando há ranking de categorias; senão, Módulos ocupa a largura toda.
+    var rankCols = catTable ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
+    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' + modTable + catTable + '</div>';
 
     document.getElementById('page-visao').innerHTML = h;
   }

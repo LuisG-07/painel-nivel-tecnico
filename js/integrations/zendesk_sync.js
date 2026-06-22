@@ -129,6 +129,48 @@ var ZendeskSync = (function() {
     } catch (e) {}
   }
 
+  // Estatística GLOBAL de satisfação por categoria de ticket do Zendesk.
+  // Estrutura: { "<categoria>": { good, bad } } — alimenta o ranking de
+  // categorias mais negativadas (toda a equipe, independente de módulo do painel).
+  var CATEGORIES_KEY = 'skm6_zdcategories';
+  function getCategoryStats() {
+    try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveCategoryStats(obj) {
+    try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(obj || {})); } catch (e) {}
+  }
+  // Ranking de categorias por nº de avaliações negativas (pior primeiro).
+  // Calculado a partir dos TICKETS POR ANALISTA — mesma base das notas Zendesk —
+  // honrando o toggle "considerar" de cada negativo (negativos ignorados não contam,
+  // exatamente como na nota). Assim o nº de negativas bate com o painel.
+  // Positivos por categoria vêm de t.category_good (gravado na importação).
+  // Retorna [{ category, good, bad, total, rate }].
+  function categoryRanking(analysts) {
+    var good = {}, bad = {};
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      var cg = t.category_good || {};
+      Object.keys(cg).forEach(function(cat) { good[cat] = (good[cat] || 0) + (cg[cat] || 0); });
+      (t.bad_tickets || []).forEach(function(x) {
+        if (!x.consider) return;            // honra o toggle: ignorado não conta
+        var cat = x.zdCategory || '';
+        if (!cat) return;                   // sem categoria identificada → fora do ranking
+        bad[cat] = (bad[cat] || 0) + 1;
+      });
+    });
+    var seen = {};
+    Object.keys(good).forEach(function(c) { seen[c] = true; });
+    Object.keys(bad).forEach(function(c) { seen[c] = true; });
+    return Object.keys(seen).map(function(cat) {
+      var g = good[cat] || 0, b = bad[cat] || 0, total = g + b;
+      return { category: cat, good: g, bad: b, total: total, rate: total ? b / total : 0 };
+    })
+    .filter(function(e) { return e.total > 0; })
+    .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
+  }
+
   // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
   // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
   // para a nota refletir o desempenho individual.
@@ -229,12 +271,14 @@ var ZendeskSync = (function() {
     ticketFields.forEach(function(f) {
       if (!Array.isArray(f.custom_field_options) || !f.custom_field_options.length) return;
       var valueToModule = {};
+      var valueToName = {};
       var count = 0;
       f.custom_field_options.forEach(function(o) {
+        valueToName[String(o.value)] = o.name || o.value;
         var hit = modByNorm[normalizeName(o.name)] || modByNorm[normalizeName(o.value)];
         if (hit) { valueToModule[String(o.value)] = hit; count++; }
       });
-      if (count > bestCount) { bestCount = count; best = { id: f.id, valueToModule: valueToModule }; }
+      if (count > bestCount) { bestCount = count; best = { id: f.id, valueToModule: valueToModule, valueToName: valueToName }; }
     });
     return bestCount > 0 ? best : null;
   }
@@ -320,12 +364,13 @@ var ZendeskSync = (function() {
             category: t.category || '',
             comment:  t.comment || '',
             module:   t.module || '',
+            zdCategory: t.zdCategory || '',
             consider: prev !== undefined ? prev : true
           };
         });
 
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {} });
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {} });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
 
         // Aplica foto se tiver
@@ -606,7 +651,7 @@ var ZendeskSync = (function() {
         var allIds = {};
         ratings.forEach(function(r) {
           var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
           if (r.ticket_id) allIds[r.ticket_id] = true;
           if (r.score === 'good') {
             agentMap[name].good++;
@@ -628,6 +673,7 @@ var ZendeskSync = (function() {
         var ticketIds = Object.keys(allIds);
         var subjectMap = {};
         var moduleMap  = {};
+        var categoryMap = {}; // ticket_id → nome da categoria (campo Zendesk), independente de módulo
 
         // 4.1 Descobre automaticamente o campo de categoria (casa opções × módulos)
         var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
@@ -658,6 +704,7 @@ var ZendeskSync = (function() {
                     var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(catField.id); })[0];
                     if (cf && cf.value != null && cf.value !== '') {
                       moduleMap[t.id] = catField.valueToModule[String(cf.value)] || '';
+                      categoryMap[t.id] = (catField.valueToName && catField.valueToName[String(cf.value)]) || String(cf.value);
                     }
                   }
                 });
@@ -667,15 +714,33 @@ var ZendeskSync = (function() {
           }
 
           return (ticketIds.length ? fetchInfo(0) : Promise.resolve()).then(function() {
-            // 4.3 Segunda passada: positivos por módulo + tag de módulo nos negativos
+            // 4.3 Segunda passada: positivos por módulo, agregação por categoria (global)
+            // e tag de módulo + categoria nos negativos.
+            var categoryAgg = {}; // { categoria: { good, bad } } — agregado global (referência)
             ratings.forEach(function(r) {
-              var mod = moduleMap[r.ticket_id];
-              if (!mod || r.score !== 'good') return;
               var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-              agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
+              var mod = moduleMap[r.ticket_id];
+              if (mod && r.score === 'good') {
+                agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
+              }
+              var cat = categoryMap[r.ticket_id];
+              if (cat && (r.score === 'good' || r.score === 'bad')) {
+                categoryAgg[cat] = categoryAgg[cat] || { good: 0, bad: 0 };
+                if (r.score === 'good') {
+                  categoryAgg[cat].good++;
+                  // positivos por categoria POR AGENTE → permite ranking na mesma base das notas
+                  agentMap[name].category_good[cat] = (agentMap[name].category_good[cat] || 0) + 1;
+                } else {
+                  categoryAgg[cat].bad++;
+                }
+              }
             });
+            saveCategoryStats(categoryAgg);
             Object.keys(agentMap).forEach(function(n) {
-              agentMap[n].raw.forEach(function(t) { t.module = moduleMap[t.id] || ''; });
+              agentMap[n].raw.forEach(function(t) {
+                t.module     = moduleMap[t.id]   || '';
+                t.zdCategory = categoryMap[t.id] || '';
+              });
             });
 
             // 5. Categoriza com Gemini (texto livre) se chave configurada
@@ -761,8 +826,9 @@ var ZendeskSync = (function() {
             total:       a.good + a.bad,
             photo:       a.photo || null,
             module_good: a.module_good || {},
+            category_good: a.category_good || {},
             bad_tickets: a.raw.map(function(t) {
-              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '' };
+              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '', zdCategory: t.zdCategory || '' };
             })
           };
         });
@@ -938,6 +1004,8 @@ var ZendeskSync = (function() {
     recomputeAllScores: recomputeAllScores,
     getTeamPrior:   getTeamPrior,
     moduleScores:   moduleScores,
+    getCategoryStats: getCategoryStats,
+    categoryRanking: categoryRanking,
     detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,

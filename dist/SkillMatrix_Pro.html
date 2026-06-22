@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SkillMatrix Pro</title>
+<title>GCK</title>
+<link rel="icon" type="image/webp" href="assets/logoGCK.webp">
 
 <!--
   Content Security Policy
@@ -24,139 +25,339 @@
   style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   font-src    https://cdn.jsdelivr.net;
   img-src     'self' data: blob: https://*.zendesk.com;
-  connect-src https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
+  connect-src 'self' https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
   object-src  'none';
   base-uri    'self';
 ">
 <meta name="referrer" content="no-referrer">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5.0.18/index.min.css">
 <style>
+/* ============================================================
+   SkillMatrix Pro — Design System (Light / Premium)
+   Paleta: Navy #001636 · Navy dark #00102C · Blue #0268CD · Red #CC0000
+   ============================================================ */
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--navy:#001636;--navy-dark:#00102C;--blue:#0268CD;--red:#CC0000;--white:#FFFFFF;--navy2:#00204A;--navy3:#001A3D;--muted:#8AADDB;--border:#0E3060;--card:#00204A;--card2:#001A3D}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--white);min-height:100vh}
-.topbar{background:var(--navy-dark);border-bottom:1px solid var(--border);display:flex;align-items:stretch;overflow-x:auto;position:sticky;top:0;z-index:50}
-.logo-area{padding:0 20px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--border);flex-shrink:0}
-.logo-text{font-size:15px;font-weight:600;color:var(--white)}.logo-text span{color:var(--blue)}
-.nav-tab{padding:14px 15px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;flex-shrink:0;transition:color .15s}
-.nav-tab.active{color:var(--white);border-bottom-color:var(--blue);font-weight:500}
-.nav-tab:hover:not(.active){color:var(--white)}
-.stab{padding:14px 15px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;flex-shrink:0;display:flex;align-items:center;gap:6px;transition:color .15s}
-.stab:hover{color:var(--white)}
-.stab.ca{color:#60AAFF;border-bottom-color:#60AAFF;font-weight:500}
-.stab.ta{color:#4ADE80;border-bottom-color:#4ADE80;font-weight:500}
-.stab.na{color:#FCD34D;border-bottom-color:#FCD34D;font-weight:500}
-.sep{width:1px;background:var(--border);margin:8px 4px;flex-shrink:0}
-.container{max-width:1200px;margin:0 auto;padding:24px}
-.page{display:none}.page.active{display:block}
-.bc{background:rgba(2,104,205,.25);color:#60AAFF;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(96,170,255,.3)}
-.bt{background:rgba(74,222,128,.15);color:#4ADE80;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(74,222,128,.3)}
-.bn{background:rgba(252,211,77,.15);color:#FCD34D;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;border:1px solid rgba(252,211,77,.3)}
-.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
-.stat-val{font-size:24px;font-weight:600;color:var(--white)}
-.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-.hbox{background:linear-gradient(135deg,rgba(2,104,205,.2),rgba(0,22,54,.9));border:1px solid rgba(2,104,205,.4);border-radius:14px;padding:18px;margin-bottom:20px}
-.critic-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
-.ccard{background:rgba(204,0,0,.1);border:1.5px solid rgba(204,0,0,.4);border-radius:12px;padding:14px}
-.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
-.acard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;transition:border-color .2s}
-.acard:hover{border-color:var(--blue)}
-.acard.bl-r{border-left:4px solid var(--red)}.acard.bl-a{border-left:4px solid #F59E0B}.acard.bl-g{border-left:4px solid #22C55E}
-.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
+
+:root{
+  /* Marca */
+  --navy:#001636; --navy-dark:#00102C; --blue:#0268CD; --blue-dark:#01529f; --red:#CC0000;
+  /* Texto / superfícies (claro) */
+  --ink:#0F2440;          /* texto primário */
+  --white:#0F2440;        /* compat: inline color:var(--white) → texto escuro */
+  --muted:#64748B;        /* texto secundário */
+  --border:#E8EDF3;       /* hairlines */
+  --bg:#F6F8FB;           /* canvas do app */
+  --card:#FFFFFF; --card2:#FFFFFF;
+  /* Tints semânticos */
+  --blue-soft:#EAF2FC; --green:#15803D; --green-soft:#E9F5EE;
+  --amber:#B45309; --amber-soft:#FBF1E3; --red-soft:#FBEAEA;
+  /* Sombras */
+  --sh-sm:0 1px 2px rgba(15,36,64,.04),0 1px 3px rgba(15,36,64,.06);
+  --sh-md:0 4px 18px rgba(15,36,64,.06),0 1px 4px rgba(15,36,64,.04);
+  --sh-lg:0 24px 60px rgba(8,22,52,.20);
+  --r:16px;
+}
+
+body{
+  font-family:'Inter Variable','Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);min-height:100vh;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  letter-spacing:-.1px;
+}
+
+/* ============================== Layout shell ============================== */
+.app-shell{display:flex;min-height:100vh}
+
+.sidebar{
+  width:250px;flex-shrink:0;
+  background:linear-gradient(180deg,var(--navy-dark) 0%,var(--navy) 100%);
+  display:flex;flex-direction:column;gap:6px;padding:22px 16px;
+  position:sticky;top:0;height:100vh;
+}
+.sidebar-logo{display:flex;align-items:center;gap:11px;padding:6px 8px 20px}
+.logo-mark{
+  width:34px;height:34px;border-radius:10px;background:var(--blue);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;
+  box-shadow:0 6px 16px rgba(2,104,205,.45);flex-shrink:0;
+}
+.logo-badge{
+  display:flex;align-items:center;justify-content:center;
+  width:48px;height:48px;background:#fff;border-radius:13px;padding:7px;
+  box-shadow:0 6px 16px rgba(0,0,0,.28);flex-shrink:0;
+}
+.logo-badge img{width:100%;height:100%;object-fit:contain;display:block}
+.logo-text{font-size:16px;font-weight:600;color:#fff;letter-spacing:-.3px;white-space:nowrap}
+.logo-text span{color:#5AA2EE}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px}
+.sidebar-section{font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:rgba(255,255,255,.38);padding:14px 13px 6px}
+.sidebar-footer{margin-top:auto;padding-top:12px}
+
+.nav-tab{
+  display:flex;align-items:center;gap:11px;width:100%;
+  padding:10px 13px;border-radius:11px;border:none;background:none;
+  color:rgba(255,255,255,.72);font-size:13.5px;font-weight:500;cursor:pointer;
+  font-family:inherit;transition:background .15s,color .15s,box-shadow .15s;text-align:left;white-space:nowrap;
+}
+.nav-tab i{font-size:18px;flex-shrink:0}
+.nav-tab:hover:not(.active){background:rgba(255,255,255,.08);color:#fff}
+.nav-tab.active{background:var(--blue);color:#fff;box-shadow:0 8px 18px rgba(2,104,205,.4)}
+
+.zd-badge{
+  display:flex;align-items:center;gap:9px;font-size:12px;color:rgba(255,255,255,.7);
+  cursor:pointer;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.06);
+  transition:background .15s;
+}
+.zd-badge:hover{background:rgba(255,255,255,.12)}
+.zd-dot{width:7px;height:7px;border-radius:50%;background:#8AADDB;flex-shrink:0}
+
+.main-area{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ============================== Topbar ============================== */
+.topbar{
+  position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:16px;
+  padding:13px 28px;background:rgba(255,255,255,.82);
+  backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.topbar-search{
+  display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);
+  border-radius:11px;padding:9px 13px;width:300px;max-width:30vw;color:var(--muted);
+  transition:border-color .15s,box-shadow .15s;
+}
+.topbar-search:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(2,104,205,.12)}
+.topbar-search i{font-size:16px}
+.topbar-search input{border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%}
+.topbar-search input::placeholder{color:#9AA8BC}
+
+.sector-tabs{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:13px}
+.btn-export{
+  display:inline-flex;align-items:center;gap:7px;background:var(--blue);color:#fff;border:none;
+  padding:9px 17px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  transition:background .15s;box-shadow:0 6px 16px rgba(2,104,205,.28);white-space:nowrap;
+}
+.btn-export:hover{background:var(--blue-dark)}
+.user-avatar{
+  width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#0268CD,#001636);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;
+  flex-shrink:0;box-shadow:var(--sh-sm);
+}
+
+/* Sector pills */
+.stab{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:99px;
+  border:1px solid var(--border);background:#fff;color:var(--muted);font-size:12.5px;font-weight:500;
+  cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;
+}
+.stab:hover{border-color:#CCD8E6;color:var(--ink)}
+.stab.ca{background:var(--blue-soft);border-color:transparent;color:var(--blue);font-weight:600}
+.stab.ta{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
+.stab.na{background:var(--amber-soft);border-color:transparent;color:var(--amber);font-weight:600}
+
+/* ============================== Container / pages ============================== */
+.container{width:100%;max-width:1180px;margin:0 auto;padding:28px 30px 64px}
+.page{display:none}.page.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ============================== Badges (setor) ============================== */
+.bc,.bt,.bn{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600;letter-spacing:.2px;display:inline-block}
+.bc{background:var(--blue-soft);color:var(--blue)}
+.bt{background:var(--green-soft);color:var(--green)}
+.bn{background:var(--amber-soft);color:var(--amber)}
+/* Nível do cargo / Step */
+.lvl{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600;display:inline-flex;align-items:center;gap:4px;background:#EEF2F7;color:#334155}
+.lvl::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.lvl-jr{background:#F1F5F9;color:#64748B}
+.lvl-pl{background:#E7EEFB;color:#1D4ED8}
+.lvl-sr{background:#EDE9FE;color:#6D28D9}
+.stp{font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600;display:inline-block;background:var(--navy);color:#fff}
+
+/* ============================== KPI strip ============================== */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:left;box-shadow:var(--sh-sm);transition:box-shadow .2s,transform .2s}
+.stat-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px)}
+.stat-val{font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-.5px}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:5px;font-weight:500}
+
+/* ============================== Highlight box ============================== */
+.hbox{
+  background:linear-gradient(120deg,#EAF2FC 0%,#FFFFFF 62%);
+  border:1px solid #D6E6FA;border-radius:var(--r);padding:22px;margin-bottom:22px;
+  box-shadow:var(--sh-md);position:relative;overflow:hidden;
+}
+.hbox::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--blue)}
+
+/* ============================== Critical cards ============================== */
+.critic-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.ccard{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:14px;padding:18px;box-shadow:var(--sh-sm)}
+
+/* ============================== Analyst cards ============================== */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px}
+.acard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:box-shadow .2s,transform .2s,border-color .2s;box-shadow:var(--sh-sm)}
+.acard:hover{box-shadow:var(--sh-md);transform:translateY(-3px);border-color:#DCE6F2}
+.acard.bl-r{border-top:3px solid var(--red)}
+.acard.bl-a{border-top:3px solid #D97706}
+.acard.bl-g{border-top:3px solid #16A34A}
+
+.avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
-.av-r{background:rgba(204,0,0,.3);color:#FF8080}.av-a{background:rgba(245,158,11,.2);color:#FCD34D}.av-g{background:rgba(34,197,94,.2);color:#4ADE80}.av-b{background:rgba(2,104,205,.3);color:#60AAFF}
-.score-box{background:rgba(0,16,44,.7);border:1px solid var(--border);border-radius:8px;padding:7px 8px;text-align:center;flex:1}
-.score-box-label{font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
-.score-box-val{font-size:15px;font-weight:600}
-.expand-section{display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.av-r{background:var(--red-soft);color:var(--red)}
+.av-a{background:var(--amber-soft);color:var(--amber)}
+.av-g{background:var(--green-soft);color:var(--green)}
+.av-b{background:var(--blue-soft);color:var(--blue)}
+
+.help-dot{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;padding:0;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;vertical-align:middle;border-radius:50%;transition:color .15s,background .15s}
+.help-dot:hover{color:var(--blue);background:var(--blue-soft)}
+.score-box{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:9px 8px;text-align:center;flex:1}
+.score-box-label{font-size:9px;color:var(--muted);white-space:nowrap;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.score-box-val{font-size:16px;font-weight:700}
+
+.expand-section{display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
 .expand-section.open{display:block}
-.bar-bg{height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;margin-top:2px;margin-bottom:4px}
+.bar-bg{height:5px;background:#EDF1F6;border-radius:99px;overflow:hidden;margin-top:3px;margin-bottom:5px}
 .bar-fill{height:100%;border-radius:99px}
-.fill-r{background:var(--red)}.fill-a{background:#F59E0B}.fill-g{background:#22C55E}
-.tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{text-align:left;font-weight:500;font-size:11px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px;background:rgba(0,16,44,.5)}
-.tbl td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--white)}
-.tbl tr:hover td{background:rgba(2,104,205,.08)}
-.evo-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
-.train-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
-.done-card{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:12px;margin-bottom:8px}
-.sectitle{font-size:14px;font-weight:500;color:var(--white);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.edit-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:3px 5px;border-radius:6px;font-family:inherit;transition:all .15s}
-.edit-btn:hover{background:rgba(2,104,205,.2);color:var(--white)}
-.tag-u{background:rgba(204,0,0,.3);color:#FF8080;font-size:10px;padding:1px 7px;border-radius:99px;border:1px solid rgba(204,0,0,.4)}
-.tag-r{background:rgba(245,158,11,.2);color:#FCD34D;font-size:10px;padding:1px 7px;border-radius:99px;border:1px solid rgba(245,158,11,.3)}
-.mod-detail-block{padding:8px 12px;background:rgba(0,16,44,.8);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:11px}
-/* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,10,30,.8);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
-.modal{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(520px,95vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.modal-title{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--white);display:flex;align-items:center;gap:8px}
+.fill-r{background:var(--red)}.fill-a{background:#D97706}.fill-g{background:#16A34A}
+
+/* ============================== Tables ============================== */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-sm);border:1px solid var(--border)}
+.tbl th{text-align:left;font-weight:600;font-size:11px;color:#fff;padding:12px 14px;text-transform:uppercase;letter-spacing:.4px;background:var(--navy)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--ink)}
+.tbl tbody tr:nth-child(even) td{background:#FAFBFD}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--blue-soft)}
+
+/* ============================== Section cards ============================== */
+.evo-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh-sm)}
+.train-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--sh-sm)}
+.done-card{background:var(--green-soft);border:1px solid #C9E7D4;border-radius:14px;padding:14px;margin-bottom:10px}
+.sectitle{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:8px;letter-spacing:-.2px}
+.sectitle i{color:var(--blue)}
+
+.edit-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:6px 7px;border-radius:8px;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;justify-content:center}
+.edit-btn:hover{background:var(--blue-soft);color:var(--blue)}
+
+.tag-u{background:var(--red-soft);color:var(--red);font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600}
+.tag-r{background:var(--amber-soft);color:var(--amber);font-size:10px;padding:2px 9px;border-radius:99px;font-weight:600}
+.mod-detail-block{padding:10px 14px;background:#F8FAFC;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:11px}
+
+/* ============================== Modal ============================== */
+.modal-overlay{position:fixed;inset:0;background:rgba(8,22,52,.45);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);animation:fadeIn .2s ease}
+.modal{background:#fff;border:1px solid var(--border);border-radius:20px;padding:26px;width:min(520px,95vw);max-height:88vh;overflow-y:auto;box-shadow:var(--sh-lg);animation:popIn .22s cubic-bezier(.16,1,.3,1)}
+@keyframes popIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
+.modal-title{font-size:17px;font-weight:600;margin-bottom:18px;color:var(--ink);display:flex;align-items:center;gap:9px;letter-spacing:-.3px}
 .modal-title i{color:var(--blue)}
-.modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
-.modal-tab{padding:8px 16px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;font-family:inherit;transition:color .15s}
-.modal-tab.active{color:var(--white);border-bottom-color:var(--blue)}
+.modal-tabs{display:flex;gap:4px;background:#F1F4F8;border-radius:11px;padding:4px;margin-bottom:18px}
+.modal-tab{flex:1;padding:8px 16px;font-size:12.5px;cursor:pointer;border:none;background:none;color:var(--muted);border-radius:8px;font-family:inherit;font-weight:500;transition:all .15s}
+.modal-tab.active{color:var(--blue);background:#fff;font-weight:600;box-shadow:var(--sh-sm)}
 .modal-tab-panel{display:none}.modal-tab-panel.active{display:block}
-.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.8);color:var(--white);font-size:13px;margin-bottom:8px;font-family:inherit}
-.form-input:focus{outline:none;border-color:var(--blue)}
-.form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.8);color:var(--white);font-size:13px;font-family:inherit;resize:vertical;min-height:72px}
-.form-textarea:focus{outline:none;border-color:var(--blue)}
-.input-label{font-size:10px;color:var(--muted);margin-bottom:4px;margin-top:10px;text-transform:uppercase;letter-spacing:.5px;display:block}
-.score-btns{display:flex;gap:4px}
-.score-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:rgba(0,16,44,.6);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);font-family:inherit;transition:all .1s}
-.score-btn.s1,.score-btn.s2{background:rgba(204,0,0,.25);color:#FF8080;border-color:rgba(204,0,0,.4)}
-.score-btn.s3{background:rgba(245,158,11,.2);color:#FCD34D;border-color:rgba(245,158,11,.3)}
-.score-btn.s4,.score-btn.s5{background:rgba(34,197,94,.2);color:#4ADE80;border-color:rgba(34,197,94,.3)}
-.mod-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)}
-.btn-primary{background:var(--blue);color:var(--white);border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:background .15s}
-.btn-primary:hover{background:#0358B0}
-.btn-secondary{background:transparent;border:1px solid var(--border);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;transition:all .15s}
-.btn-secondary:hover{border-color:var(--blue);color:var(--white)}
-.btn-danger{background:transparent;border:1px solid rgba(204,0,0,.4);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;color:#FF8080;font-family:inherit;transition:all .15s}
-.btn-danger:hover{background:rgba(204,0,0,.2);color:#FF5555}
-.analyst-checkbox{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.analyst-checkbox label{font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;color:var(--white);padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:rgba(0,16,44,.5)}
-.prova-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)}
-.prova-input{width:65px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:rgba(0,16,44,.8);color:var(--white);font-size:12px;font-family:inherit;text-align:center}
-.prova-input:focus{outline:none;border-color:var(--blue)}
-.photo-preview{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:block;margin-bottom:8px}
+
+.form-input{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);font-size:13px;margin-bottom:8px;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+.form-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(2,104,205,.12)}
+.form-input::placeholder{color:#9AA8BC}
+.form-textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);font-size:13px;font-family:inherit;resize:vertical;min-height:72px;transition:border-color .15s,box-shadow .15s}
+.form-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(2,104,205,.12)}
+.input-label{font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:12px;font-weight:600;display:block}
+
+.score-btns{display:flex;gap:5px}
+.score-btn{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:#F8FAFC;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;transition:all .12s}
+.score-btn:hover{border-color:#CCD8E6}
+.score-btn.s1,.score-btn.s2{background:var(--red-soft);color:var(--red);border-color:transparent}
+.score-btn.s3{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.score-btn.s4,.score-btn.s5{background:var(--green-soft);color:var(--green);border-color:transparent}
+.mod-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
+
+/* ============================== Buttons ============================== */
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s,box-shadow .15s;box-shadow:0 4px 12px rgba(2,104,205,.22)}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-secondary{background:#fff;border:1px solid var(--navy);padding:9px 19px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy);font-family:inherit;transition:all .15s}
+.btn-secondary:hover{background:var(--navy);color:#fff}
+.btn-danger{background:var(--red);border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;color:#fff;font-family:inherit;transition:background .15s}
+.btn-danger:hover{background:#a30000}
+
+.analyst-checkbox{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.analyst-checkbox label{font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;color:var(--ink);padding:6px 10px;border:1px solid var(--border);border-radius:9px;background:#fff;transition:all .15s}
+.analyst-checkbox label:hover{border-color:var(--blue);background:var(--blue-soft)}
+.prova-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--ink)}
+.prova-input{width:68px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);font-size:12px;font-family:inherit;text-align:center;transition:border-color .15s}
+.prova-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(2,104,205,.12)}
+
+.photo-preview{width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:block;margin-bottom:8px}
 .attachment-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.attachment-item{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.attachment-item{position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
 .attachment-item img{width:100%;height:100%;object-fit:cover}
-.attachment-remove{position:absolute;top:2px;right:2px;background:rgba(204,0,0,.8);border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer;padding:2px 4px;line-height:1}
+.attachment-remove{position:absolute;top:3px;right:3px;background:var(--red);border:none;border-radius:6px;color:#fff;font-size:10px;cursor:pointer;padding:2px 5px;line-height:1}
 .comment-counter{font-size:10px;color:var(--muted);text-align:right;margin-top:2px}
-.char-warn{color:#FCD34D}
-.char-over{color:#FF5555}
+.char-warn{color:var(--amber)}
+.char-over{color:var(--red)}
+
+/* ============================== Responsive ============================== */
+@media(max-width:900px){
+  .app-shell{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:sticky;top:0;flex-direction:row;align-items:center;gap:10px;padding:11px 16px;overflow-x:auto;z-index:60}
+  .sidebar-logo{padding:0 6px 0 0}
+  .sidebar-section{display:none}
+  .sidebar-nav{flex-direction:row;gap:4px}
+  .nav-tab{padding:9px 13px}
+  .sidebar-footer{margin-top:0;margin-left:auto;padding-top:0}
+  .container{padding:20px 18px 48px}
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+  .critic-grid{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .topbar{padding:11px 16px;gap:10px}
+  .topbar-search{display:none}
+  .btn-export span{display:none}
+  .nav-tab span{display:none}
+  .sector-tabs{order:3;width:100%}
+}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="logo-area">
-    <i class="ti ti-chart-bar" style="color:var(--blue);font-size:20px" aria-hidden="true"></i>
-    <div class="logo-text">Skill<span>Matrix</span> Pro</div>
-  </div>
-  <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral">Visão Geral</button>
-  <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução">Evolução</button>
-  <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento">Treinamento</button>
-  <div class="sep" aria-hidden="true"></div>
-  <div id="sectorTabsContainer" style="display:contents"></div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px;border-left:1px solid var(--border)">
-    <span id="zdBadge" title="" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05)" onclick="App.openManageModal()" aria-label="Status Zendesk">
-      <span class="zd-dot" style="width:7px;height:7px;border-radius:50%;display:inline-block;background:#888"></span>
-      <span class="zd-label">Zendesk</span>
-    </span>
-    <button onclick="App.exportHTML()" style="background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;white-space:nowrap" aria-label="Exportar HTML">
-      <i class="ti ti-download" aria-hidden="true"></i> Exportar HTML
-    </button>
-  </div>
-</div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-badge"><img src="assets/logoGCK.webp" alt="GCK"></span>
+    </div>
+    <div class="sidebar-section">Painel</div>
+    <nav class="sidebar-nav" aria-label="Navegação principal">
+      <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Visão Geral</span></button>
+      <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução"><i class="ti ti-chart-line" aria-hidden="true"></i><span>Evolução</span></button>
+      <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento"><i class="ti ti-school" aria-hidden="true"></i><span>Treinamento</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <span id="zdBadge" class="zd-badge" title="" style="display:none" onclick="App.openManageModal()" aria-label="Status Zendesk">
+        <span class="zd-dot"></span>
+        <span class="zd-label">Zendesk</span>
+      </span>
+    </div>
+  </aside>
 
-<div class="container">
-  <div id="page-visao"       class="page active"></div>
-  <div id="page-evolucao"    class="page"></div>
-  <div id="page-treinamento" class="page"></div>
+  <div class="main-area">
+    <header class="topbar">
+      <label class="topbar-search">
+        <i class="ti ti-search" aria-hidden="true"></i>
+        <input type="text" id="globalSearch" placeholder="Buscar analista…" oninput="App.setSearch(this.value)" aria-label="Buscar analista">
+      </label>
+      <div id="sectorTabsContainer" class="sector-tabs"></div>
+      <div class="topbar-actions">
+        <button class="btn-export" onclick="App.exportHTML()" aria-label="Exportar HTML">
+          <i class="ti ti-download" aria-hidden="true"></i> <span>Exportar</span>
+        </button>
+        <div class="user-avatar" title="Administrador">AD</div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="page-visao"       class="page active"></div>
+      <div id="page-evolucao"    class="page"></div>
+      <div id="page-treinamento" class="page"></div>
+    </main>
+  </div>
 </div>
 
 <!-- Edit Analyst Modal -->
@@ -174,6 +375,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
       <input type="text" id="editName" class="form-input" placeholder="Nome completo" maxlength="80">
       <span class="input-label" for="editSector">Setor</span>
       <select id="editSector" class="form-input"></select>
+      <span class="input-label" for="editLevel">Nível do cargo</span>
+      <select id="editLevel" class="form-input">
+        <option>Júnior</option><option>Pleno</option><option>Sênior</option>
+      </select>
+      <span class="input-label" for="editStep">Step (1–6)</span>
+      <select id="editStep" class="form-input">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
       <span class="input-label" for="editZendesk">Nota Zendesk (0–10)</span>
       <input type="number" id="editZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
       <span class="input-label" for="editComment">Comentário</span>
@@ -227,6 +436,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
       <input type="text" id="addName" class="form-input" placeholder="Nome completo" maxlength="80">
       <span class="input-label" for="addSector">Setor</span>
       <select id="addSector" class="form-input"></select>
+      <span class="input-label" for="addLevel">Nível do cargo</span>
+      <select id="addLevel" class="form-input">
+        <option>Júnior</option><option>Pleno</option><option>Sênior</option>
+      </select>
+      <span class="input-label" for="addStep">Step (1–6)</span>
+      <select id="addStep" class="form-input">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
       <span class="input-label" for="addZendesk">Nota Zendesk (0–10)</span>
       <input type="number" id="addZendesk" class="form-input" min="0" max="10" step="0.1" placeholder="Ex: 8.5">
       <span class="input-label" for="addComment">Comentário</span>
@@ -321,20 +538,47 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
     </div>
 
     <div class="modal-tab-panel" data-panel="zendesk">
-      <span class="input-label" for="zdSubdomain">Subdomínio do Zendesk</span>
-      <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
-      <span class="input-label" for="zdEmail">E-mail do administrador</span>
-      <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
-      <span class="input-label" for="zdApiToken">Token da API Zendesk</span>
-      <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
-      <span class="input-label" for="zdGeminiKey">Chave Gemini — categorização automática (gratuita)</span>
-      <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza… (aistudio.google.com/app/apikey)">
-      <span class="input-label" for="zdGroupName">Grupo no Zendesk</span>
-      <input type="text" id="zdGroupName" class="form-input" placeholder="suporte n1">
-      <span class="input-label" for="zdDays">Período (dias)</span>
-      <input type="number" id="zdDays" class="form-input" min="7" max="90" step="7" placeholder="30" style="width:100px">
+      <!-- Credenciais ocultas (já salvas) — mantidas no DOM para a importação ler -->
+      <div style="display:none">
+        <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
+        <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
+        <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
+        <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza…">
+      </div>
+      <span class="input-label">Grupos no Zendesk</span>
+      <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;font-weight:500">Selecione os grupos:</span>
+          <button type="button" onclick="document.querySelectorAll('[data-zd-group]').forEach(function(cb){cb.checked=true})" style="font-size:11px;background:none;border:none;color:var(--blue);cursor:pointer;padding:0;font-family:inherit">Marcar todos</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup360001272933" data-zd-group="360001272933" checked style="cursor:pointer">
+            SUP-N1
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup6441506014871" data-zd-group="6441506014871" checked style="cursor:pointer">
+            Suporte (Outros Assuntos)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="zdGroup21198035409559" data-zd-group="21198035409559" checked style="cursor:pointer">
+            Suporte para Nota Fiscal
+          </label>
+        </div>
+      </div>
+      <span class="input-label">Período</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--muted)">De</span>
+          <input type="date" id="zdDateFrom" class="form-input">
+        </div>
+        <div style="flex:1">
+          <span style="font-size:11px;color:var(--muted)">Até</span>
+          <input type="date" id="zdDateTo" class="form-input">
+        </div>
+      </div>
       <div id="zdImportProgress" style="font-size:11px;min-height:16px;margin-top:10px;color:var(--muted)"></div>
-      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px">
+      <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
         <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular nomes do Zendesk aos analistas</div>
         <div id="zdNameMapRows"></div>
         <button onclick="App.saveNameMapAndReimport()" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit">
@@ -346,9 +590,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
           <i class="ti ti-cloud-download" aria-hidden="true"></i> Importar do Zendesk
         </button>
       </div>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-        <span class="input-label" for="zdScriptUrl" style="color:var(--muted)">URL Apps Script (automação agendada — opcional)</span>
-        <input type="url" id="zdScriptUrl" class="form-input" style="opacity:.7" placeholder="https://script.google.com/macros/s/…/exec">
+      <div style="display:none">
+        <input type="url" id="zdScriptUrl" class="form-input" placeholder="https://script.google.com/macros/s/…/exec">
       </div>
     </div>
 
@@ -369,7 +612,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
     <div id="zdTicketsBody" style="max-height:440px;overflow-y:auto;padding-right:4px"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
       <div style="flex:1">
-        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Nota Zendesk</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:5px">Nota Zendesk
+          <button type="button" class="help-dot" onclick="UIModals.openZendeskHelp()" title="Como esta nota é calculada" aria-label="Como esta nota é calculada"><i class="ti ti-help" aria-hidden="true"></i></button>
+        </div>
         <div style="display:flex;align-items:baseline;gap:6px">
           <span id="zdNewScore" style="font-size:24px;font-weight:700;color:var(--white)">—</span>
           <span id="zdScoreLabel" style="font-size:11px;color:var(--muted)"></span>
@@ -377,6 +622,44 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
       </div>
       <button class="btn-secondary" onclick="document.getElementById('zdTicketsModal').style.display='none'">Cancelar</button>
       <button class="btn-primary" id="zdTicketsSaveBtn">Salvar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zendesk Score Help Modal -->
+<div id="zdHelpModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="zdHelpTitle">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title" id="zdHelpTitle"><i class="ti ti-help-circle" aria-hidden="true"></i> Como a nota do Zendesk é calculada</div>
+
+    <p style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px">
+      Cada cliente atendido dá um <b>👍 positivo</b> ou <b>👎 negativo</b>. A nota vai de 0 a 10 — mas com um cuidado importante: <b>a quantidade de avaliações conta</b>.
+    </p>
+
+    <div style="background:var(--blue-soft);border-radius:12px;padding:14px;margin-bottom:12px;font-size:12.5px;color:var(--ink);line-height:1.6">
+      <b>Por que isso importa?</b><br>
+      Quem foi avaliado <b>muitas vezes</b> já tem uma média confiável. Quem foi avaliado <b>poucas vezes</b> ainda não — 1 👍 não prova que é perfeito e 1 👎 não prova que é ruim (é como jogar uma moeda só uma vez).
+    </div>
+
+    <p style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px">
+      Por isso, todo analista <b>começa perto da média da equipe</b> e, conforme recebe mais avaliações, a nota vai virando o <b>desempenho real</b> dele.
+      <br><span style="color:var(--muted)">📚 É como nota de prova: a professora não dá 10 só porque você acertou a 1ª pergunta — ela espera você responder várias.</span>
+    </p>
+
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:11px;font-weight:600;color:#fff;background:var(--navy)">
+        <span>Exemplo (média da equipe = 8.0)</span><span>Nota</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--border)"><span>1 👍 · 0 👎 <span style="color:var(--muted)">(só 1 avaliação)</span></span><b style="color:#15803D">~8.2</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--border)"><span>9 👍 · 1 👎</span><b style="color:#15803D">8.5</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px"><span>900 👍 · 100 👎 <span style="color:var(--muted)">(muito volume)</span></span><b style="color:#15803D">9.0</b></div>
+    </div>
+
+    <p style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px">
+      👉 Assim ninguém é prejudicado ou beneficiado por ter poucas avaliações. Negativos marcados como <b>comportamentais</b> não entram na nota — só os técnicos.
+    </p>
+
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="document.getElementById('zdHelpModal').style.display='none'">Entendi</button>
     </div>
   </div>
 </div>
@@ -506,6 +789,16 @@ var Storage = (function() {
     return true;
   }
 
+  var LEVELS = ['Júnior', 'Pleno', 'Sênior'];
+
+  function clampLevel(v) {
+    return LEVELS.indexOf(v) !== -1 ? v : 'Júnior';
+  }
+  function clampStep(v) {
+    var n = parseInt(v, 10);
+    return (isFinite(n) && n >= 1 && n <= 6) ? n : 1;
+  }
+
   function migrateAnalyst(raw) {
     var zendesk = typeof raw.zendesk === 'number' && isFinite(raw.zendesk)
       ? Math.min(10, Math.max(0, raw.zendesk)) : null;
@@ -520,6 +813,8 @@ var Storage = (function() {
       id:       raw.id,
       name:     (raw.name || '').trim().slice(0, 80),
       sector:   (raw.sector || 'Chat').slice(0, 50),
+      level:    clampLevel(raw.level),
+      step:     clampStep(raw.step),
       zendesk:  zendesk,
       provaAvg: provaAvg,
       photo:    photo,
@@ -662,9 +957,9 @@ var Domain = (function() {
   }
 
   function scoreColor(score) {
-    if (score >= 7) return '#4ADE80';
-    if (score >= 5) return '#FCD34D';
-    return '#FF5555';
+    if (score >= 7) return '#15803D';
+    if (score >= 5) return '#B45309';
+    return '#CC0000';
   }
 
   function scoreBorderClass(score) {
@@ -777,6 +1072,20 @@ var UIOverview = (function() {
     return '<span class="' + cls + '">' + esc(sector) + '</span>';
   }
 
+  function levelBadge(level) {
+    var cls = level === 'Sênior' ? 'lvl-sr' : level === 'Pleno' ? 'lvl-pl' : 'lvl-jr';
+    return '<span class="lvl ' + cls + '">' + esc(level || 'Júnior') + '</span>';
+  }
+
+  // Linha de metadados: setor + nível do cargo + step
+  function metaRow(analyst) {
+    return '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;align-items:center">' +
+      sectorBadge(analyst.sector) +
+      levelBadge(analyst.level) +
+      '<span class="stp">Step ' + (analyst.step || 1) + '</span>' +
+    '</div>';
+  }
+
   function avatarHtml(analyst, sizeClass) {
     var score = D.unifiedScore(analyst);
     var cls = sizeClass || D.scoreAvatarClass(score);
@@ -798,7 +1107,9 @@ var UIOverview = (function() {
         '<div class="score-box-val" style="' + fs + 'color:' + provaColor + '">' +
           (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</div></div>' +
       '<div class="score-box" style="cursor:pointer" onclick="App.openZendeskTickets(' + analyst.id + ')" title="Ver atendimentos negativados">' +
-        '<div class="score-box-label">Zendesk <i class="ti ti-chevron-down" style="font-size:8px;vertical-align:middle;opacity:.5"></i></div>' +
+        '<div class="score-box-label">Zendesk ' +
+          '<button type="button" class="help-dot" onclick="event.stopPropagation();UIModals.openZendeskHelp()" title="Como esta nota é calculada" aria-label="Como a nota do Zendesk é calculada"><i class="ti ti-help"></i></button> ' +
+          '<i class="ti ti-chevron-down" style="font-size:8px;vertical-align:middle;opacity:.5"></i></div>' +
         '<div class="score-box-val" style="' + fs + 'color:' + zColor + '">' +
           (analyst.zendesk != null ? analyst.zendesk.toFixed(1) : '—') +
         '</div>' +
@@ -818,21 +1129,21 @@ var UIOverview = (function() {
           avatarHtml(analyst, 'av-r') +
           '<div>' +
             '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + '</div>' +
-            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+            metaRow(analyst) +
           '</div>' +
           '<div style="margin-left:auto;text-align:right">' +
-            '<div style="font-size:22px;font-weight:700;color:#FF5555">' + u.toFixed(1) + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:#CC0000">' + u.toFixed(1) + '</div>' +
             '<div style="font-size:10px;color:var(--muted)">unificada</div>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
         worst.map(function(x, i) {
-          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(204,0,0,.2);font-size:12px;color:var(--white)">' +
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
             '<span>' +
               '<span style="background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-right:4px">' + (i + 1) + '</span>' +
               esc(x.name) +
             '</span>' +
-            '<span style="color:#FF5555;font-weight:500">Nota ' + x.score + '</span>' +
+            '<span style="color:#CC0000;font-weight:500">Nota ' + x.score + '</span>' +
           '</div>';
         }).join('') +
       '</div>'
@@ -891,7 +1202,7 @@ var UIOverview = (function() {
           avatar +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:13px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(analyst.name) + '</div>' +
-            '<div style="margin-top:3px">' + sectorBadge(analyst.sector) + '</div>' +
+            metaRow(analyst) +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:5px;margin-bottom:10px">' + scoreBoxes(analyst, '13px') + '</div>' +
@@ -902,7 +1213,7 @@ var UIOverview = (function() {
           '</div>' +
           '<div style="display:flex;gap:4px">' +
             '<button class="edit-btn" onclick="App.openEditModal(' + analyst.id + ')" title="Editar" aria-label="Editar ' + esc(analyst.name) + '"><i class="ti ti-pencil"></i></button>' +
-            '<button class="edit-btn" onclick="App.removeAnalyst(' + analyst.id + ')" style="color:#FF5555" title="Remover" aria-label="Remover ' + esc(analyst.name) + '"><i class="ti ti-trash"></i></button>' +
+            '<button class="edit-btn" onclick="App.removeAnalyst(' + analyst.id + ')" style="color:#CC0000" title="Remover" aria-label="Remover ' + esc(analyst.name) + '"><i class="ti ti-trash"></i></button>' +
             '<button class="edit-btn" onclick="App.toggleExpand(' + analyst.id + ')" title="Detalhes" aria-label="Detalhes ' + esc(analyst.name) + '"><i class="ti ti-chevron-down"></i></button>' +
           '</div>' +
         '</div>' +
@@ -921,6 +1232,12 @@ var UIOverview = (function() {
     var filtered = state.currentSector === 'all'
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
+
+    if (state.search) {
+      filtered = filtered.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
 
     var sorted = filtered.slice().sort(function(a, b) {
       return D.unifiedScore(a) - D.unifiedScore(b);
@@ -941,37 +1258,6 @@ var UIOverview = (function() {
 
     var h = '';
 
-    // --- Sector filter tabs ---
-    var sectorDot = function(s) {
-      var cls = D.sectorBadgeClass(s);
-      return cls === 'bc' ? '#60AAFF' : cls === 'bt' ? '#4ADE80' : '#FCD34D';
-    };
-    var allSectors = [{ key: 'all', label: 'Todos', color: '#8AADDB' }].concat(
-      state.sectors.map(function(s) { return { key: s, label: s, color: sectorDot(s) }; })
-    );
-    h += '<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
-    allSectors.forEach(function(tab) {
-      var active = state.currentSector === tab.key;
-      var count  = tab.key === 'all'
-        ? state.analysts.length
-        : state.analysts.filter(function(a) { return a.sector === tab.key; }).length;
-      h += '<button onclick="App.setSector(\'' + esc(tab.key) + '\',this)" style="' +
-        'padding:8px 18px;border-radius:22px;cursor:pointer;font-size:13px;font-family:inherit;' +
-        'font-weight:' + (active ? '600' : '400') + ';' +
-        'border:1.5px solid ' + (active ? tab.color : 'var(--border)') + ';' +
-        'background:' + (active ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.03)') + ';' +
-        'color:' + (active ? tab.color : 'var(--muted)') + ';' +
-        'display:inline-flex;align-items:center;gap:7px;transition:all .15s">' +
-        (tab.key !== 'all'
-          ? '<span style="width:9px;height:9px;border-radius:50%;background:' + tab.color + ';flex-shrink:0"></span>'
-          : '') +
-        esc(tab.label) +
-        '<span style="font-size:11px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,.08);color:' +
-          (active ? tab.color : 'var(--muted)') + '">' + count + '</span>' +
-      '</button>';
-    });
-    h += '</div>';
-
     // Header
     h += '<div style="margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
       '<div>' +
@@ -987,9 +1273,9 @@ var UIOverview = (function() {
     // KPI strip
     h += '<div class="stat-strip">' +
       '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">' + filtered.length + '</div><div class="stat-lbl">Analistas</div></div>' +
-      '<div class="stat-card"><div class="stat-val" style="color:#4ADE80">' + avgTech + '</div><div class="stat-lbl">Média técnica</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#15803D">' + avgTech + '</div><div class="stat-lbl">Média técnica</div></div>' +
       '<div class="stat-card"><div class="stat-val" style="color:var(--red)">' + criticalCount + '</div><div class="stat-lbl">Críticos (&lt;5)</div></div>' +
-      '<div class="stat-card"><div class="stat-val" style="color:#FCD34D;font-size:16px;margin-top:4px">' + esc(mostCriticalModule) + '</div><div class="stat-lbl">Módulo mais crítico</div></div>' +
+      '<div class="stat-card"><div class="stat-val" style="color:#B45309;font-size:15px;margin-top:4px">' + esc(mostCriticalModule) + '</div><div class="stat-lbl">Módulo mais crítico</div></div>' +
     '</div>';
 
     // Highlight card (best analyst — always from all analysts, not filtered)
@@ -1005,7 +1291,7 @@ var UIOverview = (function() {
           '<div>' +
             '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">🏆 Destaque — Maior nota unificada</div>' +
             '<div style="font-size:20px;font-weight:600;color:var(--white);margin-top:2px">' + esc(best.name) + '</div>' +
-            '<div style="margin-top:4px">' + sectorBadge(best.sector) + '</div>' +
+            metaRow(best) +
           '</div>' +
           '<div style="margin-left:auto;text-align:right">' +
             '<div style="font-size:30px;font-weight:700;color:' + D.scoreColor(us) + '">' + us.toFixed(1) + '</div>' +
@@ -1017,7 +1303,7 @@ var UIOverview = (function() {
     }
 
     // Critical highlight
-    h += '<div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-circle"></i> Destaque Crítico</div>' +
+    h += '<div class="sectitle" style="color:#CC0000"><i class="ti ti-alert-circle"></i> Destaque Crítico</div>' +
       '<div class="critic-grid">';
     sorted.slice(0, 2).forEach(function(a) {
       h += criticCard(a, state.modules);
@@ -1032,21 +1318,50 @@ var UIOverview = (function() {
     });
     h += '</div>';
 
-    // Module ranking table
-    h += '<div style="margin-top:28px"><div class="sectitle"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
+    // Rankings lado a lado: Módulos (sempre) + Categorias do Zendesk (se houver dados).
+    var catRank = (typeof ZendeskSync !== 'undefined' && ZendeskSync.categoryRanking) ? ZendeskSync.categoryRanking(state.analysts) : [];
+
+    // Coluna 1 — Ranking de Módulos
+    var modTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-list-numbers"></i> Ranking de Módulos</div>' +
       '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
-      var statusBg   = x.avg < 3 ? 'rgba(204,0,0,.25)'      : x.avg < 4 ? 'rgba(245,158,11,.2)'   : 'rgba(34,197,94,.15)';
-      var statusColor = x.avg < 3 ? '#FF8080'                : x.avg < 4 ? '#FCD34D'               : '#4ADE80';
-      var statusBorder = x.avg < 3 ? 'rgba(204,0,0,.3)'     : x.avg < 4 ? 'rgba(245,158,11,.3)'   : 'rgba(34,197,94,.3)';
-      h += '<tr>' +
+      var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
+      var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
+      modTable += '<tr>' +
         '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
-        '<td>' + esc(x.name) + '</td>' +
-        '<td style="color:' + (x.avg >= 4 ? '#4ADE80' : x.avg >= 3 ? '#FCD34D' : '#FF5555') + ';font-weight:600">' + x.avg.toFixed(2) + '</td>' +
-        '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;padding:2px 10px;border-radius:99px;border:1px solid ' + statusBorder + '">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
+        '<td style="font-weight:500">' + esc(x.name) + '</td>' +
+        '<td style="color:' + statusColor + ';font-weight:700">' + x.avg.toFixed(2) + '</td>' +
+        '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
       '</tr>';
     });
-    h += '</tbody></table></div>';
+    modTable += '</tbody></table></div>';
+
+    // Coluna 2 — Categorias do Zendesk mais negativadas (global, na mesma base das notas)
+    var catTable = '';
+    if (catRank.length) {
+      catTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-mood-sad"></i> Categorias mais negativadas (Zendesk)</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">Avaliações de toda a equipe agrupadas pela categoria do ticket no Zendesk, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.</div>' +
+        '<table class="tbl"><thead><tr><th>#</th><th>Categoria</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
+      catRank.slice(0, 15).forEach(function(c, i) {
+        var pct        = c.rate * 100;
+        var statusColor = pct >= 30 ? '#CC0000' : pct >= 15 ? '#B45309' : '#15803D';
+        var statusBg    = pct >= 30 ? '#FBEAEA' : pct >= 15 ? '#FBF1E3' : '#E9F5EE';
+        var statusLbl   = pct >= 30 ? 'Crítica'  : pct >= 15 ? 'Atenção'  : 'Saudável';
+        catTable += '<tr>' +
+          '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
+          '<td style="font-weight:500">' + esc(c.category) + '</td>' +
+          '<td style="color:#CC0000;font-weight:700">' + c.bad + '</td>' +
+          '<td style="color:var(--muted)">' + c.total + '</td>' +
+          '<td style="color:' + statusColor + ';font-weight:600">' + pct.toFixed(0) + '%</td>' +
+          '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + statusLbl + '</span></td>' +
+        '</tr>';
+      });
+      catTable += '</tbody></table></div>';
+    }
+
+    // Duas colunas quando há ranking de categorias; senão, Módulos ocupa a largura toda.
+    var rankCols = catTable ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
+    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' + modTable + catTable + '</div>';
 
     document.getElementById('page-visao').innerHTML = h;
   }
@@ -1086,9 +1401,15 @@ var UIEvolution = (function() {
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
 
+    if (state.search) {
+      list = list.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
+
     var sectorLabel = state.currentSector === 'all' ? 'Todos' : state.currentSector;
 
-    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Evolução por Analista — ' + esc(sectorLabel) + '</div>';
+    var h = '<div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:18px;letter-spacing:-.3px">Evolução por Analista — ' + esc(sectorLabel) + '</div>';
 
     list.forEach(function(analyst, idx) {
       var u = D.unifiedScore(analyst);
@@ -1103,7 +1424,9 @@ var UIEvolution = (function() {
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
           avatarHtml +
           '<div>' +
-            '<div style="font-size:14px;font-weight:500;color:var(--white)">' + esc(analyst.name) + ' ' + sectorBadge(analyst.sector) + '</div>' +
+            '<div style="font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + esc(analyst.name) + ' ' + sectorBadge(analyst.sector) +
+              ' <span class="lvl ' + (analyst.level === 'Sênior' ? 'lvl-sr' : analyst.level === 'Pleno' ? 'lvl-pl' : 'lvl-jr') + '">' + esc(analyst.level || 'Júnior') + '</span>' +
+              ' <span class="stp">Step ' + (analyst.step || 1) + '</span></div>' +
             '<div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap">' +
               '<span style="font-size:12px;color:var(--muted)">Técnica: <b style="color:' + D.scoreColor(tech) + '">' + tech.toFixed(1) + '</b></span>' +
               '<span style="font-size:12px;color:var(--muted)">Prova: <b style="color:' + provaColor + '">' + (analyst.provaAvg != null ? analyst.provaAvg.toFixed(1) : '—') + '</b></span>' +
@@ -1118,7 +1441,7 @@ var UIEvolution = (function() {
 
     document.getElementById('page-evolucao').innerHTML = h;
 
-    Chart.defaults.color = '#8AADDB';
+    Chart.defaults.color = '#64748B';
 
     list.forEach(function(analyst, idx) {
       var ctx = document.getElementById('evo-' + analyst.id);
@@ -1152,13 +1475,13 @@ var UIEvolution = (function() {
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              ticks: { color: '#8AADDB', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
-              grid: { color: 'rgba(14,48,96,.4)' }
+              ticks: { color: '#64748B', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
+              grid: { color: 'rgba(2,104,205,.08)' }
             },
             y: {
               min: 0, max: 5,
-              ticks: { stepSize: 1, color: '#8AADDB', font: { size: 10 } },
-              grid: { color: 'rgba(14,48,96,.4)' }
+              ticks: { stepSize: 1, color: '#64748B', font: { size: 10 } },
+              grid: { color: 'rgba(2,104,205,.08)' }
             }
           }
         }
@@ -1185,15 +1508,21 @@ var UITraining = (function() {
       ? state.analysts
       : state.analysts.filter(function(a) { return a.sector === state.currentSector; });
 
+    if (state.search) {
+      filtered = filtered.filter(function(a) {
+        return a.name.toLowerCase().indexOf(state.search) !== -1;
+      });
+    }
+
     var modAvgs = D.moduleAverages(state.modules, filtered);
 
-    var h = '<div style="font-size:18px;font-weight:600;color:var(--white);margin-bottom:18px">Painel de Treinamentos</div>';
+    var h = '<div style="font-size:20px;font-weight:600;color:var(--ink);margin-bottom:18px;letter-spacing:-.3px">Painel de Treinamentos</div>';
 
     // Critical vs mastered modules
     h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">';
 
     // Most critical
-    h += '<div><div class="sectitle" style="color:#FF5555"><i class="ti ti-alert-triangle"></i> Módulos mais críticos</div>';
+    h += '<div><div class="sectitle" style="color:#CC0000"><i class="ti ti-alert-triangle"></i> Módulos mais críticos</div>';
     modAvgs.slice(0, 5).forEach(function(x) {
       var safeId = 'md_' + x.name.replace(/[^a-z0-9]/gi, '_');
       var needTraining = filtered.filter(function(a) {
@@ -1203,9 +1532,9 @@ var UITraining = (function() {
         return (a.scores[x.name] || 0) - (b.scores[x.name] || 0);
       });
 
-      h += '<div onclick="App.toggleModuleDetail(\'' + safeId + '\')" style="cursor:pointer;padding:9px 12px;border:1px solid rgba(204,0,0,.3);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:rgba(204,0,0,.1);color:var(--white);transition:border-color .15s">' +
+      h += '<div onclick="App.toggleModuleDetail(\'' + safeId + '\')" style="cursor:pointer;padding:9px 12px;border:1px solid #F2C4C4;border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;align-items:center;background:#FBEAEA;color:var(--white);transition:border-color .15s">' +
         '<span>' + esc(x.name) + '</span>' +
-        '<span style="color:#FF5555;font-weight:500">' + x.avg.toFixed(2) + ' <i class="ti ti-chevron-down" style="font-size:11px"></i></span>' +
+        '<span style="color:#CC0000;font-weight:500">' + x.avg.toFixed(2) + ' <i class="ti ti-chevron-down" style="font-size:11px"></i></span>' +
       '</div>' +
       '<div id="' + safeId + '" style="display:none;" class="mod-detail-block">' +
         '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Precisam de treinamento</div>' +
@@ -1221,11 +1550,11 @@ var UITraining = (function() {
     h += '</div>';
 
     // Most mastered
-    h += '<div><div class="sectitle" style="color:#4ADE80"><i class="ti ti-star"></i> Módulos dominados</div>';
+    h += '<div><div class="sectitle" style="color:#15803D"><i class="ti ti-star"></i> Módulos dominados</div>';
     modAvgs.slice(-5).reverse().forEach(function(x) {
-      h += '<div style="padding:9px 12px;border:1px solid rgba(34,197,94,.25);border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;background:rgba(34,197,94,.08);color:var(--white)">' +
+      h += '<div style="padding:9px 12px;border:1px solid #C9E7D4;border-radius:10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;background:#E9F5EE;color:var(--white)">' +
         '<span>' + esc(x.name) + '</span>' +
-        '<span style="color:#4ADE80;font-weight:500">' + x.avg.toFixed(2) + '</span>' +
+        '<span style="color:#15803D;font-weight:500">' + x.avg.toFixed(2) + '</span>' +
       '</div>';
     });
     h += '</div></div>';
@@ -1251,13 +1580,13 @@ var UITraining = (function() {
               (t.obs ? '<div style="font-size:12px;color:var(--muted)">' + esc(t.obs) + '</div>' : '') +
               '<div style="font-size:12px;color:var(--muted);margin-top:3px">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
               (provaEntries.length
-                ? '<div style="font-size:12px;color:#60AAFF;margin-top:5px"><i class="ti ti-clipboard-check"></i> ' +
+                ? '<div style="font-size:12px;color:#0268CD;margin-top:5px"><i class="ti ti-clipboard-check"></i> ' +
                     provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1]; }).join(' · ') +
                   '</div>'
                 : '') +
             '</div>' +
             '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
-              '<button class="btn-secondary" style="font-size:11px;padding:5px 10px;border-color:var(--blue);color:#60AAFF" onclick="App.openProvaModal(' + idx + ')"><i class="ti ti-clipboard-check"></i> Nota prova</button>' +
+              '<button class="btn-secondary" style="font-size:11px;padding:5px 10px;border-color:var(--blue);color:#0268CD" onclick="App.openProvaModal(' + idx + ')"><i class="ti ti-clipboard-check"></i> Nota prova</button>' +
               '<button class="btn-primary" style="font-size:11px;padding:5px 10px;background:#15803D;border-color:#15803D" onclick="App.finishTraining(' + idx + ')"><i class="ti ti-check"></i> Finalizar</button>' +
             '</div>' +
           '</div>' +
@@ -1268,15 +1597,15 @@ var UITraining = (function() {
     }
 
     if (done.length) {
-      h += '<div class="sectitle" style="margin-top:20px;color:#4ADE80"><i class="ti ti-checks"></i> Finalizados</div>';
+      h += '<div class="sectitle" style="margin-top:20px;color:#15803D"><i class="ti ti-checks"></i> Finalizados</div>';
       done.forEach(function(t) {
         var provaEntries = t.provas ? Object.entries(t.provas) : [];
         h += '<div class="done-card">' +
-          '<div style="font-size:13px;font-weight:500;color:#4ADE80">✅ ' + esc(t.module) + '</div>' +
-          '<div style="font-size:12px;color:#4ADE80;margin-top:3px">' + esc(t.date) + ' · ' + esc(t.leader) + '</div>' +
-          '<div style="font-size:12px;color:#4ADE80">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
+          '<div style="font-size:13px;font-weight:500;color:#15803D">✅ ' + esc(t.module) + '</div>' +
+          '<div style="font-size:12px;color:#15803D;margin-top:3px">' + esc(t.date) + ' · ' + esc(t.leader) + '</div>' +
+          '<div style="font-size:12px;color:#15803D">Participantes: ' + esc((t.analysts || []).join(', ') || '—') + '</div>' +
           (provaEntries.length
-            ? '<div style="font-size:12px;color:#60AAFF;margin-top:4px">Notas: ' +
+            ? '<div style="font-size:12px;color:#0268CD;margin-top:4px">Notas: ' +
                 provaEntries.map(function(e) { return esc(e[0]) + ': ' + e[1] + '/10'; }).join(' · ') +
               '</div>'
             : '') +
@@ -1309,6 +1638,8 @@ var UIModals = (function() {
     secSel.innerHTML = sectors.map(function(s) {
       return '<option' + (analyst.sector === s ? ' selected' : '') + '>' + esc(s) + '</option>';
     }).join('');
+    document.getElementById('editLevel').value = analyst.level || 'Júnior';
+    document.getElementById('editStep').value = String(analyst.step || 1);
     document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
     document.getElementById('editComment').value = analyst.comment || '';
     updateCommentCounter();
@@ -1386,6 +1717,8 @@ var UIModals = (function() {
       var name = document.getElementById('editName').value.trim();
       if (!name) { alert('O nome não pode ser vazio.'); return; }
       var sector = document.getElementById('editSector').value;
+      var level = document.getElementById('editLevel').value;
+      var step = parseInt(document.getElementById('editStep').value, 10) || 1;
       var zv = parseFloat(document.getElementById('editZendesk').value);
       var comment = document.getElementById('editComment').value.slice(0, 500);
 
@@ -1404,6 +1737,8 @@ var UIModals = (function() {
         id:       analyst.id,
         name:     name,
         sector:   sector,
+        level:    level,
+        step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
         comment:  comment,
         photo:    pendingPhoto,
@@ -1427,6 +1762,8 @@ var UIModals = (function() {
     secSel.innerHTML = sectors.map(function(s) {
       return '<option>' + esc(s) + '</option>';
     }).join('');
+    document.getElementById('addLevel').value = 'Júnior';
+    document.getElementById('addStep').value = '1';
     document.getElementById('addZendesk').value = '';
     document.getElementById('addComment').value = '';
     document.getElementById('addPhotoPreview').style.display = 'none';
@@ -1478,6 +1815,8 @@ var UIModals = (function() {
       var name = document.getElementById('addName').value.trim();
       if (!name) { alert('Digite o nome do analista.'); return; }
       var sector = document.getElementById('addSector').value;
+      var level = document.getElementById('addLevel').value;
+      var step = parseInt(document.getElementById('addStep').value, 10) || 1;
       var zv = parseFloat(document.getElementById('addZendesk').value);
       var comment = document.getElementById('addComment').value.slice(0, 500);
 
@@ -1498,6 +1837,8 @@ var UIModals = (function() {
         id:       Date.now(),
         name:     name,
         sector:   sector,
+        level:    level,
+        step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
         provaAvg: null,
         comment:  comment,
@@ -1586,19 +1927,40 @@ var UIModals = (function() {
     var zdSubEl   = document.getElementById('zdSubdomain');
     var zdEmailEl = document.getElementById('zdEmail');
     var zdTokEl   = document.getElementById('zdApiToken');
-    var zdGemEl   = document.getElementById('zdGeminiKey');
-    var zdUrlEl   = document.getElementById('zdScriptUrl');
-    var zdGrpEl   = document.getElementById('zdGroupName');
-    var zdDaysEl  = document.getElementById('zdDays');
-    var zdProgEl  = document.getElementById('zdImportProgress');
-    if (zdSubEl)   zdSubEl.value   = zdCfg.subdomain  || '';
-    if (zdEmailEl) zdEmailEl.value = zdCfg.email      || '';
-    if (zdTokEl)   zdTokEl.value   = zdCfg.apiToken   || '';
-    if (zdGemEl)   zdGemEl.value   = zdCfg.geminiKey  || '';
-    if (zdUrlEl)   zdUrlEl.value   = zdCfg.scriptUrl  || '';
-    if (zdGrpEl)   zdGrpEl.value   = zdCfg.groupName  || 'suporte n1';
-    if (zdDaysEl)  zdDaysEl.value  = zdCfg.days        || 30;
-    if (zdProgEl)  zdProgEl.textContent = '';
+    var zdGemEl     = document.getElementById('zdGeminiKey');
+    var zdUrlEl     = document.getElementById('zdScriptUrl');
+    var zdGrpEl     = document.getElementById('zdGroupName');
+    var zdDateFromEl = document.getElementById('zdDateFrom');
+    var zdDateToEl   = document.getElementById('zdDateTo');
+    var zdProgEl    = document.getElementById('zdImportProgress');
+    if (zdSubEl)      zdSubEl.value   = zdCfg.subdomain  || '';
+    if (zdEmailEl)    zdEmailEl.value = zdCfg.email      || '';
+    if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
+    if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
+    if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
+    // Popula checkboxes de grupos
+    var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
+    if (typeof selectedIds === 'string') selectedIds = [selectedIds];
+    document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+      cb.checked = selectedIds.indexOf(cb.getAttribute('data-zd-group')) !== -1;
+    });
+    // Datas padrão: De = dia 01 do mês vigente, Até = hoje
+    if (zdDateFromEl) {
+      zdDateFromEl.value = zdCfg.dateFrom || (function() {
+        var today = new Date();
+        return today.getFullYear() + '-' +
+               String(today.getMonth() + 1).padStart(2, '0') + '-01';
+      })();
+    }
+    if (zdDateToEl) {
+      zdDateToEl.value = zdCfg.dateTo || (function() {
+        var today = new Date();
+        return today.getFullYear() + '-' +
+               String(today.getMonth() + 1).padStart(2, '0') + '-' +
+               String(today.getDate()).padStart(2, '0');
+      })();
+    }
+    if (zdProgEl)     zdProgEl.textContent = '';
 
     switchManageTab('modules');
     modal.style.display = 'flex';
@@ -1649,8 +2011,15 @@ var UIModals = (function() {
           apiToken:  g('zdApiToken'),
           geminiKey: g('zdGeminiKey'),
           scriptUrl: g('zdScriptUrl'),
-          groupName: g('zdGroupName') || 'suporte n1',
-          days:      parseInt(g('zdDays')) || 30
+          groupIds:  (function() {
+            var checked = [];
+            document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+              if (cb.checked) checked.push(cb.getAttribute('data-zd-group'));
+            });
+            return checked.length ? checked : ['6441506014871', '21198035409559', '360001272933'];
+          })(),
+          dateFrom:  g('zdDateFrom') || '',
+          dateTo:    g('zdDateTo') || ''
         }
       });
       modal.style.display = 'none';
@@ -1664,16 +2033,27 @@ var UIModals = (function() {
       var rows      = document.getElementById('zdNameMapRows');
       if (!container || !rows || !found.length) return;
 
+      // Filtra apenas nomes que ainda não foram vinculados
+      var unmapped = found.filter(function(zdName) {
+        return !nameMap[zdName] || nameMap[zdName] === '';
+      });
+
+      // Se todos já foram vinculados, esconde o container
+      if (!unmapped.length) {
+        container.style.display = 'none';
+        return;
+      }
+
       var sectorList = (sectors && sectors.length) ? sectors : ['Chat','Telefone','Notas'];
-      var selStyle   = 'background:#1e1e2e;border:1px solid var(--border);color:#e2e2e2;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
-      var optStyle   = 'background:#1e1e2e;color:#e2e2e2';
+      var selStyle   = 'background:#fff;border:1px solid var(--border);color:#0F2440;border-radius:5px;padding:3px 6px;font-size:11px;font-family:inherit';
+      var optStyle   = 'background:#fff;color:#0F2440';
       var sectorOpts = sectorList.map(function(s) { return '<option style="' + optStyle + '">' + D.escapeHtml(s) + '</option>'; }).join('');
 
-      rows.innerHTML = found.map(function(zdName) {
+      rows.innerHTML = unmapped.map(function(zdName) {
         var current = nameMap[zdName] || '';
         var isNew   = current === '__NEW__';
-        var options = '<option value="" style="' + optStyle + ';color:#888">— não vincular —</option>' +
-          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#1e1e2e;color:#4ADE80;font-weight:600">+ Cadastrar novo analista</option>' +
+        var options = '<option value="" style="' + optStyle + ';color:#9AA8BC">— não vincular —</option>' +
+          '<option value="__NEW__"' + (isNew ? ' selected' : '') + ' style="background:#fff;color:#15803D;font-weight:600">+ Cadastrar novo analista</option>' +
           analystNames.map(function(n) {
             return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
           }).join('');
@@ -1685,7 +2065,7 @@ var UIModals = (function() {
         '</div>';
       }).join('');
 
-      container.style.display = 'block';
+      container.style.display = unmapped.length ? 'block' : 'none';
     };
 
     UIModals._zdMapChange = function(sel) {
@@ -1708,13 +2088,13 @@ var UIModals = (function() {
           var count = Object.keys(data.agents || {}).length;
           if (resEl) {
             resEl.textContent = '✓ Conectado — ' + count + ' analistas na planilha';
-            resEl.style.color = '#4ADE80';
+            resEl.style.color = '#15803D';
           }
         })
         .catch(function(err) {
           if (resEl) {
             resEl.textContent = '✗ ' + err.message;
-            resEl.style.color = '#FF5555';
+            resEl.style.color = '#CC0000';
           }
         })
         .finally(function() {
@@ -1727,7 +2107,7 @@ var UIModals = (function() {
       document.getElementById('modulesList').innerHTML = list.map(function(m, i) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
           '<span>' + esc(m) + '</span>' +
-          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'modules\')" title="Remover"><i class="ti ti-x"></i></button>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'modules\')" title="Remover"><i class="ti ti-x"></i></button>' +
         '</div>';
       }).join('');
     }
@@ -1736,7 +2116,7 @@ var UIModals = (function() {
       document.getElementById('sectorsList').innerHTML = list.map(function(s, i) {
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
           '<span>' + esc(s) + '</span>' +
-          '<button class="edit-btn" style="color:#FF8080" onclick="UIModals._removeListItem(' + i + ',\'sectors\')" title="Remover"><i class="ti ti-x"></i></button>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'sectors\')" title="Remover"><i class="ti ti-x"></i></button>' +
         '</div>';
       }).join('');
     }
@@ -1845,9 +2225,11 @@ var UIModals = (function() {
 
   // --- Zendesk Tickets Modal ---
 
-  function openZendeskTickets(analyst, ticketData, onSave) {
+  function openZendeskTickets(analyst, ticketData, modules, onSave) {
     var modal = document.getElementById('zdTicketsModal');
     if (!modal) return;
+    if (typeof modules === 'function') { onSave = modules; modules = []; }
+    modules = modules || [];
 
     var zdSubdomain = (ZendeskSync.getConfig().subdomain || '').trim();
 
@@ -1857,41 +2239,103 @@ var UIModals = (function() {
     var scoreEl   = document.getElementById('zdNewScore');
     var scoreLbl  = document.getElementById('zdScoreLabel');
 
-    // Working copy — mutated in-place on toggle
+    // Cópia de trabalho. bad_tickets é a lista MESTRE (nunca apagada);
+    // o filtro de data apenas oculta itens visualmente, sem remover.
+    // Preserva module_good/category_good/all_tickets ao salvar (senão seriam perdidos,
+    // pois o onSave grava o objeto inteiro de volta).
     var pending = ticketData
-      ? { good_count: ticketData.good_count, bad_tickets: ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }) }
+      ? {
+          good_count:    ticketData.good_count,
+          bad_tickets:   ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }),
+          module_good:   ticketData.module_good   || {},
+          category_good: ticketData.category_good || {},
+          all_tickets:   ticketData.all_tickets   || []
+        }
       : null;
 
-    // Filtro de data — padrão: sem filtro (exibe todos)
-    function toInputVal(d) {
-      var m   = String(d.getMonth() + 1).padStart(2, '0');
-      var day = String(d.getDate()).padStart(2, '0');
-      return d.getFullYear() + '-' + m + '-' + day;
-    }
-    var filterFrom   = null;
-    var filterTo     = null;
-    var _defaultFrom = '';
-    var _defaultTo   = '';
+    // Filtro de data (em inteiros YYYYMMDD). null = sem filtro (mostra tudo).
+    var filterFromInt = null;
+    var filterToInt   = null;
+    var filterModule  = null; // null = todos os módulos
+    var allTickets    = (ticketData && ticketData.all_tickets) || []; // todos os atendimentos (não só avaliados)
+    var viewMode      = 'csat'; // 'csat' = avaliados/negativos · 'all' = todos os atendimentos
 
-    // Converte 'dd/mm/yyyy' ou 'dd/mm' → inteiro YYYYMMDD para comparação
-    function dateToInt(d) {
-      return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    // Notas do Zendesk por módulo (calculado da cópia de trabalho → reflete toggles)
+    var modScores = {};
+    function computeModScores() {
+      var mg = (ticketData && ticketData.module_good) || {};
+      var out = {};
+      (modules || []).forEach(function(m) {
+        var good = mg[m] || 0;
+        var badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        out[m] = { good: good, bad: badArr.length, score: ZendeskSync.recalcScore(good, badArr) };
+      });
+      return out;
     }
-    function parseTicketDate(str) {
+
+    // Pré-preenche os campos com o período importado (se houver), mas NÃO aplica
+    // o filtro automaticamente — ao abrir, todos os tickets aparecem.
+    var cfg          = ZendeskSync.getConfig();
+    var _defaultFrom = cfg.dateFrom || '';
+    var _defaultTo   = cfg.dateTo   || '';
+
+    // 'yyyy-mm-dd' (input date) → inteiro YYYYMMDD
+    function inputToInt(str) {
+      if (!str) return null;
+      var p = str.split('-');
+      if (p.length !== 3) return null;
+      return (+p[0]) * 10000 + (+p[1]) * 100 + (+p[2]);
+    }
+    // 'dd/mm/yyyy' ou 'dd/mm' (data do ticket) → inteiro YYYYMMDD
+    function ticketDateToInt(str) {
       if (!str) return null;
       var p = str.split('/');
-      if (p.length === 3) return new Date(+p[2], +p[1] - 1, +p[0]);
-      if (p.length === 2) return new Date(2026, +p[1] - 1, +p[0]);
+      if (p.length === 3) return (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0]);
+      if (p.length === 2) return 2026 * 10000 + (+p[1]) * 100 + (+p[0]);
       return null;
     }
     function ticketVisible(ticket) {
-      if (!filterFrom && !filterTo) return true;
-      var d = parseTicketDate(ticket.date);
-      if (!d) return true;
-      var n = dateToInt(d);
-      if (filterFrom && n < dateToInt(filterFrom)) return false;
-      if (filterTo   && n > dateToInt(filterTo))   return false;
+      if (filterModule !== null && (ticket.module || '') !== filterModule) return false;
+      if (filterFromInt === null && filterToInt === null) return true;
+      var n = ticketDateToInt(ticket.date);
+      if (n === null) return true; // sem data → sempre mostra
+      if (filterFromInt !== null && n < filterFromInt) return false;
+      if (filterToInt   !== null && n > filterToInt)   return false;
       return true;
+    }
+
+    function scoreHex(s) {
+      return s == null ? 'var(--muted)' : s >= 7 ? '#15803D' : s >= 5 ? '#B45309' : '#CC0000';
+    }
+
+    // Painel "Nota Zendesk por módulo" — clicar filtra os tickets do módulo
+    function renderModuleScores() {
+      var box = document.getElementById('zdModuleScores');
+      if (!box) return;
+      var entries = Object.keys(modScores)
+        .map(function(m) { return { module: m, d: modScores[m] }; })
+        .filter(function(e) { return (e.d.good + e.d.bad) > 0; })
+        .sort(function(a, b) {
+          var sa = a.d.score == null ? 99 : a.d.score, sb = b.d.score == null ? 99 : b.d.score;
+          return sa - sb; // piores primeiro
+        });
+      if (!entries.length) {
+        box.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0">Sem categorias cruzadas com os módulos ainda. Importe do Zendesk para preencher.</div>';
+        return;
+      }
+      var head = '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;font-weight:600">Nota Zendesk por módulo</div>';
+      var allBtn = '<button type="button" onclick="UIModals._zdFilterModule(null)" style="font-size:10px;padding:3px 10px;border-radius:99px;border:1px solid ' + (filterModule === null ? 'var(--blue)' : 'var(--border)') + ';background:' + (filterModule === null ? 'var(--blue-soft)' : '#fff') + ';color:' + (filterModule === null ? 'var(--blue)' : 'var(--muted)') + ';cursor:pointer;font-family:inherit;font-weight:600;margin:0 6px 6px 0">Todos</button>';
+      var chips = entries.map(function(e) {
+        var sel = filterModule === e.module;
+        var sc = e.d.score == null ? '—' : e.d.score.toFixed(1);
+        return '<button type="button" onclick="UIModals._zdFilterModule(\'' + esc(e.module).replace(/'/g, "\\'") + '\')" ' +
+          'style="font-size:11px;padding:5px 11px;border-radius:10px;border:1px solid ' + (sel ? 'var(--blue)' : 'var(--border)') + ';background:' + (sel ? 'var(--blue-soft)' : '#fff') + ';cursor:pointer;font-family:inherit;margin:0 6px 6px 0;display:inline-flex;align-items:center;gap:7px">' +
+          '<span style="color:var(--ink);font-weight:500">' + esc(e.module) + '</span>' +
+          '<b style="color:' + scoreHex(e.d.score) + '">' + sc + '</b>' +
+          '<span style="color:var(--muted);font-size:10px">(' + e.d.good + '👍/' + e.d.bad + '👎)</span>' +
+        '</button>';
+      }).join('');
+      box.innerHTML = head + '<div style="display:flex;flex-wrap:wrap;align-items:center">' + allBtn + chips + '</div>';
     }
 
     function updateScoreDisplay() {
@@ -1903,20 +2347,59 @@ var UIModals = (function() {
       if (scoreEl) {
         scoreEl.textContent = newScore !== null ? newScore.toFixed(1) : '—';
         scoreEl.style.color = newScore === null ? 'var(--muted)'
-          : newScore >= 7 ? '#4ADE80' : newScore >= 5 ? '#FCD34D' : '#FF5555';
+          : newScore >= 7 ? '#15803D' : newScore >= 5 ? '#B45309' : '#CC0000';
       }
       if (scoreLbl && orig !== null && newScore !== null) {
         var diff = parseFloat((newScore - orig).toFixed(1));
         scoreLbl.textContent = diff > 0 ? '(+' + diff + ' excluindo comportamentais)'
           : diff < 0 ? '(' + diff + ')' : '';
-        scoreLbl.style.color = diff > 0 ? '#4ADE80' : diff < 0 ? '#FF5555' : 'var(--muted)';
+        scoreLbl.style.color = diff > 0 ? '#15803D' : diff < 0 ? '#CC0000' : 'var(--muted)';
       }
+    }
+
+    function dateInRange(dStr) {
+      if (filterFromInt === null && filterToInt === null) return true;
+      var n = ticketDateToInt(dStr);
+      if (n === null) return true;
+      if (filterFromInt !== null && n < filterFromInt) return false;
+      if (filterToInt   !== null && n > filterToInt)   return false;
+      return true;
     }
 
     // Atualiza apenas a lista de tickets (sem sobrescrever o filtro de data)
     function renderList() {
       var listEl = document.getElementById('zdTicketList');
       if (!listEl) return;
+
+      // Modo "Todos os atendimentos" — lista completa (avaliados ou não)
+      if (viewMode === 'all') {
+        var vis = allTickets.filter(function(t) {
+          if (filterModule !== null && (t.module || '') !== filterModule) return false;
+          return dateInRange(t.date);
+        });
+        listEl.innerHTML =
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
+            vis.length + ' de ' + allTickets.length + ' atendimentos' + (filterModule ? ' · módulo: ' + esc(filterModule) : '') +
+          '</div>' +
+          (vis.length === 0
+            ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum atendimento nesse filtro.</div>'
+            : vis.map(function(t) {
+                return '<div style="border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:7px;background:#FAFBFD">' +
+                  '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+                    (zdSubdomain
+                      ? '<a href="https://' + esc(zdSubdomain) + '.zendesk.com/agent/tickets/' + esc(String(t.id)) + '" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:var(--blue);text-decoration:none">#' + esc(String(t.id)) + ' <i class="ti ti-external-link" style="font-size:9px"></i></a>'
+                      : '<span style="font-size:10px;color:var(--muted)">#' + esc(String(t.id)) + '</span>') +
+                    '<span style="font-size:10px;color:var(--muted)">' + esc(t.date) + '</span>' +
+                  '</div>' +
+                  (t.subject ? '<div style="font-size:11px;color:var(--ink);font-weight:500;margin-top:4px">' + esc(t.subject) + '</div>' : '') +
+                  '<div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+                    (t.module ? '<span class="bc">' + esc(t.module) + '</span>' : '<span style="font-size:10px;color:var(--muted)">sem módulo</span>') +
+                    (t.status ? '<span style="font-size:10px;color:var(--muted)">· ' + esc(t.status) + '</span>' : '') +
+                  '</div>' +
+                '</div>';
+              }).join(''));
+        return;
+      }
 
       if (!pending) {
         listEl.innerHTML =
@@ -1937,18 +2420,18 @@ var UIModals = (function() {
       listEl.innerHTML =
         '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
           good + ' positivos · ' + consBad + '/' + pending.bad_tickets.length + ' considerados · total: ' + total +
-          (filtered ? ' <span style="color:#FCD34D">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
+          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
         '</div>' +
         (visible.length === 0
           ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket nesse período.</div>'
           : visible.map(function(ticket) {
               var idx        = pending.bad_tickets.indexOf(ticket);
               var isConsider = ticket.consider;
-              var borderCol  = isConsider ? 'rgba(255,85,85,.4)' : 'var(--border)';
-              var tagBg      = isConsider ? 'rgba(255,85,85,.15)' : 'rgba(255,255,255,.05)';
-              var tagColor   = isConsider ? '#FF8080' : 'var(--muted)';
+              var borderCol  = isConsider ? '#F2C4C4' : 'var(--border)';
+              var tagBg      = isConsider ? '#FBEAEA' : '#F1F4F8';
+              var tagColor   = isConsider ? '#CC0000' : 'var(--muted)';
               return (
-                '<div style="border:1px solid ' + borderCol + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;background:rgba(0,0,0,.15)">' +
+                '<div style="border:1px solid ' + borderCol + ';border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#FAFBFD">' +
                   '<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">' +
                     '<div style="flex:1;min-width:0">' +
                       (zdSubdomain
@@ -1957,7 +2440,7 @@ var UIModals = (function() {
                       '<span style="font-size:10px;color:var(--muted)"> · ' + esc(ticket.date) + '</span>' +
                       (ticket.category ? ' <span style="font-size:10px;padding:1px 7px;border-radius:4px;background:' + tagBg + ';color:' + tagColor + '">' + esc(ticket.category) + '</span>' : '') +
                     '</div>' +
-                    '<button style="flex-shrink:0;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid ' + (isConsider ? '#FF5555' : 'var(--border)') + ';background:' + (isConsider ? 'rgba(255,85,85,.2)' : 'rgba(255,255,255,.05)') + ';color:' + (isConsider ? '#FF8080' : 'var(--muted)') + ';cursor:pointer;white-space:nowrap;font-family:inherit" ' +
+                    '<button style="flex-shrink:0;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid ' + (isConsider ? '#CC0000' : 'var(--border)') + ';background:' + (isConsider ? '#FBEAEA' : '#F1F4F8') + ';color:' + (isConsider ? '#CC0000' : 'var(--muted)') + ';cursor:pointer;white-space:nowrap;font-family:inherit;font-weight:500" ' +
                       'onclick="UIModals._zdToggle(' + idx + ')">' +
                       (isConsider ? '<i class="ti ti-x" style="font-size:9px"></i> Técnico' : '<i class="ti ti-check" style="font-size:9px"></i> Comportamental') +
                     '</button>' +
@@ -1975,47 +2458,87 @@ var UIModals = (function() {
 
     // Monta o corpo do modal uma única vez (filtro + container da lista)
     function setupBody() {
-      var inputStyle = 'background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--white);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;color-scheme:dark';
+      var inputStyle = 'background:#fff;border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:6px 9px;font-size:11px;font-family:inherit;color-scheme:light';
+      var btnBase = 'font-size:11px;padding:6px 12px;border-radius:9px;cursor:pointer;font-family:inherit';
+      var toggleHtml = allTickets.length
+        ? '<div style="display:flex;gap:6px;margin-bottom:12px">' +
+            '<button id="zdViewCsat" type="button" onclick="UIModals._zdSetView(\'csat\')" style="' + btnBase + ';border:1px solid var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:600">Avaliados (CSAT)</button>' +
+            '<button id="zdViewAll" type="button" onclick="UIModals._zdSetView(\'all\')" style="' + btnBase + ';border:1px solid var(--border);background:#fff;color:var(--muted);font-weight:500">Todos os atendimentos (' + allTickets.length + ')</button>' +
+          '</div>'
+        : '';
       body.innerHTML =
-        '<div style="background:rgba(252,211,77,.07);border:1px solid rgba(252,211,77,.25);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:11px;color:#FCD34D;line-height:1.5">' +
+        '<div id="zdModuleScores" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)"></div>' +
+        toggleHtml +
+        '<div style="background:#FBF1E3;border:1px solid #F1DFBE;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:11px;color:#B45309;line-height:1.5">' +
           '<i class="ti ti-info-circle"></i> <strong>Marque apenas questões técnicas</strong> para compor a nota. Comportamentais ficam com a supervisão.' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">' +
           '<i class="ti ti-calendar-search" style="color:var(--muted);font-size:14px"></i>' +
           '<span style="font-size:11px;color:var(--muted)">De</span>' +
-          '<input type="date" id="zdDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
+          '<input type="date" id="zdTktDateFrom" value="' + _defaultFrom + '" style="' + inputStyle + ';cursor:pointer">' +
           '<span style="font-size:11px;color:var(--muted)">até</span>' +
-          '<input type="date" id="zdDateTo" value="' + _defaultTo + '" style="' + inputStyle + '" onchange="UIModals._zdApplyFilter()">' +
-          '<button onclick="UIModals._zdClearFilter()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
+          '<input type="date" id="zdTktDateTo" value="' + _defaultTo + '" style="' + inputStyle + ';cursor:pointer">' +
+          '<button id="zdApplyFilterBtn" type="button" style="font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--blue);background:rgba(59,130,246,.15);color:var(--blue);cursor:pointer;font-family:inherit;font-weight:500">🔍 Filtrar</button>' +
+          '<button id="zdClearFilterBtn" type="button" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit">Limpar</button>' +
         '</div>' +
         '<div id="zdTicketList"></div>';
+
+      // Event listeners diretos — acesso por closure às variáveis do filtro.
+      var applyBtn = document.getElementById('zdApplyFilterBtn');
+      var clearBtn = document.getElementById('zdClearFilterBtn');
+
+      applyBtn.onclick = function() {
+        var fromEl = document.getElementById('zdTktDateFrom');
+        var toEl   = document.getElementById('zdTktDateTo');
+        filterFromInt = inputToInt(fromEl && fromEl.value);
+        filterToInt   = inputToInt(toEl   && toEl.value);
+        renderList();
+      };
+
+      clearBtn.onclick = function() {
+        filterFromInt = null;
+        filterToInt   = null;
+        var fromEl = document.getElementById('zdTktDateFrom');
+        var toEl   = document.getElementById('zdTktDateTo');
+        if (fromEl) fromEl.value = '';
+        if (toEl)   toEl.value = '';
+        renderList();
+      };
     }
 
     UIModals._zdToggle = function(idx) {
       if (!pending) return;
       pending.bad_tickets[idx].consider = !pending.bad_tickets[idx].consider;
+      modScores = computeModScores(); // reflete o toggle na nota por módulo
+      renderModuleScores();
       renderList();
     };
 
-    UIModals._zdApplyFilter = function() {
-      var fromEl = document.getElementById('zdDateFrom');
-      var toEl   = document.getElementById('zdDateTo');
-      filterFrom = fromEl && fromEl.value ? new Date(fromEl.value) : null;
-      filterTo   = toEl   && toEl.value   ? new Date(toEl.value)   : null;
+    UIModals._zdFilterModule = function(mod) {
+      filterModule = mod;
+      renderModuleScores();
       renderList();
     };
 
-    UIModals._zdClearFilter = function() {
-      filterFrom = null; filterTo = null;
-      var f = document.getElementById('zdDateFrom');
-      var t = document.getElementById('zdDateTo');
-      if (f) f.value = '';
-      if (t) t.value = '';
+    UIModals._zdSetView = function(mode) {
+      viewMode = mode;
+      var a = document.getElementById('zdViewCsat'), b = document.getElementById('zdViewAll');
+      function style(btn, on) {
+        if (!btn) return;
+        btn.style.background  = on ? 'var(--blue-soft)' : '#fff';
+        btn.style.borderColor = on ? 'var(--blue)' : 'var(--border)';
+        btn.style.color       = on ? 'var(--blue)' : 'var(--muted)';
+        btn.style.fontWeight  = on ? '600' : '500';
+      }
+      style(a, mode === 'csat'); style(b, mode === 'all');
       renderList();
     };
 
     setupBody();
-    renderList();
+    modScores = computeModScores();
+    renderModuleScores();
+    renderList(); // Mostra todos os tickets ao abrir (sem filtro aplicado)
+
     modal.style.display = 'flex';
 
     document.getElementById('zdTicketsSaveBtn').onclick = function() {
@@ -2038,7 +2561,13 @@ var UIModals = (function() {
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
-    _zdToggle:           function() {}
+    _zdToggle:           function() {},
+    _zdFilterModule:     function() {},
+    _zdSetView:          function() {},
+    openZendeskHelp:     function() {
+      var m = document.getElementById('zdHelpModal');
+      if (m) m.style.display = 'flex';
+    }
   };
 })();
 
@@ -2050,9 +2579,10 @@ var ZendeskSync = (function() {
   var STATUS_KEY  = 'skm6_zdstatus';
   var TICKETS_KEY = 'skm6_zdtickets';
   var AGENTS_KEY  = 'skm6_zdagents'; // foto + score de todos os agentes do Zendesk
+  var PHOTOS_KEY  = 'skm6_zdphotos'; // cache persistente de fotos de analistas
 
   // Public (non-sensitive) defaults — stored in localStorage
-  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', days: 30, scriptUrl: '', nameMap: {
+  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', groupIds: ['6441506014871', '21198035409559', '360001272933'], days: 30, dateFrom: '', dateTo: '', scriptUrl: '', categoryFieldId: '', nameMap: {
     'Bruno Henrique Ferreira da Silva': 'Bruno',
     'Henrique Rodrigues Costa Sérgio': 'Henrique Sergio',
     'Mário Diniz':                    'Mario Diniz',
@@ -2112,11 +2642,17 @@ var ZendeskSync = (function() {
   }
 
   function saveConfig(c) {
+    var groupIds = c.groupIds || ['6441506014871', '21198035409559', '360001272933'];
+    if (!Array.isArray(groupIds)) groupIds = [groupIds];
     var pub = {
       subdomain: typeof c.subdomain === 'string' ? c.subdomain.slice(0, 63)  : '',
       groupName: typeof c.groupName === 'string' ? c.groupName.slice(0, 100) : 'suporte n1',
+      groupIds:  groupIds.map(function(id) { return typeof id === 'string' ? id.slice(0, 20) : ''; }).filter(function(id) { return id; }),
       days:      typeof c.days      === 'number' ? Math.min(Math.max(c.days, 1), 365) : 30,
+      dateFrom:  typeof c.dateFrom  === 'string' ? c.dateFrom.slice(0, 10) : '',
+      dateTo:    typeof c.dateTo    === 'string' ? c.dateTo.slice(0, 10) : '',
       scriptUrl: typeof c.scriptUrl === 'string' && isAllowedScriptUrl(c.scriptUrl) ? c.scriptUrl : '',
+      categoryFieldId: typeof c.categoryFieldId === 'string' ? c.categoryFieldId.slice(0, 30) : (c.categoryFieldId != null ? String(c.categoryFieldId).slice(0, 30) : ''),
       nameMap:   (c.nameMap && typeof c.nameMap === 'object' && !Array.isArray(c.nameMap)) ? c.nameMap : {}
     };
     localStorage.setItem(CFG_KEY, JSON.stringify(pub));
@@ -2139,6 +2675,21 @@ var ZendeskSync = (function() {
     try { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentStore)); } catch(e) {}
   }
 
+  // Cache persistente de fotos de analistas
+  function getPhotoCache() {
+    try { return JSON.parse(localStorage.getItem(PHOTOS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function savePhotoCache(photos) {
+    try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); }
+    catch (e) { console.error('Erro ao salvar cache de fotos'); }
+  }
+  function addPhotoToCache(analystName, photoBase64) {
+    var cache = getPhotoCache();
+    cache[analystName.toLowerCase()] = photoBase64;
+    savePhotoCache(cache);
+  }
+
   function getTickets(analystId) {
     try {
       var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
@@ -2153,11 +2704,172 @@ var ZendeskSync = (function() {
     } catch (e) {}
   }
 
-  // Nota 0-10 contando apenas tickets com consider:true como negativos
+  // Estatística GLOBAL de satisfação por categoria de ticket do Zendesk.
+  // Estrutura: { "<categoria>": { good, bad } } — alimenta o ranking de
+  // categorias mais negativadas (toda a equipe, independente de módulo do painel).
+  var CATEGORIES_KEY = 'skm6_zdcategories';
+  function getCategoryStats() {
+    try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveCategoryStats(obj) {
+    try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(obj || {})); } catch (e) {}
+  }
+  // Ranking de categorias por nº de avaliações negativas (pior primeiro).
+  // Calculado a partir dos TICKETS POR ANALISTA — mesma base das notas Zendesk —
+  // honrando o toggle "considerar" de cada negativo (negativos ignorados não contam,
+  // exatamente como na nota). Assim o nº de negativas bate com o painel.
+  // Positivos por categoria vêm de t.category_good (gravado na importação).
+  // Retorna [{ category, good, bad, total, rate }].
+  function categoryRanking(analysts) {
+    var good = {}, bad = {};
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      var cg = t.category_good || {};
+      Object.keys(cg).forEach(function(cat) { good[cat] = (good[cat] || 0) + (cg[cat] || 0); });
+      (t.bad_tickets || []).forEach(function(x) {
+        if (!x.consider) return;            // honra o toggle: ignorado não conta
+        var cat = x.zdCategory || '';
+        if (!cat) return;                   // sem categoria identificada → fora do ranking
+        bad[cat] = (bad[cat] || 0) + 1;
+      });
+    });
+    var seen = {};
+    Object.keys(good).forEach(function(c) { seen[c] = true; });
+    Object.keys(bad).forEach(function(c) { seen[c] = true; });
+    return Object.keys(seen).map(function(cat) {
+      var g = good[cat] || 0, b = bad[cat] || 0, total = g + b;
+      return { category: cat, good: g, bad: b, total: total, rate: total ? b / total : 0 };
+    })
+    .filter(function(e) { return e.total > 0; })
+    .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
+  }
+
+  // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
+  // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
+  // para a nota refletir o desempenho individual.
+  var BAYES_K = 10;
+  var DEFAULT_PRIOR = 0.8; // fallback quando não há dados da equipe
+
+  // Média de satisfação da equipe (proporção 0–1), a partir dos tickets salvos.
+  // C = total de positivos / (positivos + negativos técnicos) de TODOS os analistas.
+  function getTeamPrior() {
+    try {
+      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
+      var good = 0, bad = 0;
+      Object.keys(all).forEach(function(id) {
+        var t = all[id];
+        if (!t) return;
+        good += t.good_count || 0;
+        bad  += (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
+      });
+      return (good + bad) > 0 ? good / (good + bad) : DEFAULT_PRIOR;
+    } catch (e) { return DEFAULT_PRIOR; }
+  }
+
+  // Nota 0–10 com MÉDIA SUAVIZADA (Bayesiana), contando apenas negativos técnicos.
+  //   nota = ( positivos + C·k ) / ( positivos + negativos + k ) × 10
+  // Amostra pequena → nota perto da média da equipe (C); muita avaliação → nota real.
+  // Sem avaliações (n = 0) → null (não inventa nota; não entra na unificada).
+  function bayesianScore(goodCount, consideredBad, prior) {
+    var n = goodCount + consideredBad;
+    if (n === 0) return null;
+    var adjusted = (goodCount + prior * BAYES_K) / (n + BAYES_K);
+    return parseFloat((adjusted * 10).toFixed(1));
+  }
+
   function recalcScore(goodCount, badTickets) {
     var consideredBad = badTickets.filter(function(t) { return t.consider; }).length;
-    var total = goodCount + consideredBad;
-    return total > 0 ? parseFloat(((goodCount / total) * 10).toFixed(1)) : null;
+    return bayesianScore(goodCount, consideredBad, getTeamPrior());
+  }
+
+  // Recalcula a nota Zendesk de todos os analistas usando o MESMO prior da equipe.
+  // Preserva analistas que têm nota manual e não possuem tickets importados.
+  function recomputeAllScores(analysts) {
+    if (!Array.isArray(analysts)) return;
+    var prior = getTeamPrior();
+    analysts.forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return; // sem tickets → mantém nota manual (se houver)
+      var consideredBad = (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
+      a.zendesk = bayesianScore(t.good_count || 0, consideredBad, prior);
+    });
+  }
+
+  // Normaliza nomes para comparação (sem acento, minúsculo, separadores → espaço)
+  function normalizeName(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  // Casamento PRECISO entre nome de agente (Zendesk) e nome de analista (painel).
+  // Regra: nomes iguais, OU o nome do analista é prefixo EXATO (palavra a palavra)
+  // do nome do agente — ex.: "Bruno" ⊂ "Bruno Henrique Silva". NUNCA casa só pelo
+  // primeiro nome quando os demais divergem (ex.: "João Pedro S." ✗ "João Vitor Almeida").
+  function agentMatchesAnalyst(agentName, analystName) {
+    var a = normalizeName(agentName).split(' ').filter(Boolean);
+    var b = normalizeName(analystName).split(' ').filter(Boolean);
+    if (!a.length || !b.length) return false;
+    if (a.join(' ') === b.join(' ')) return true;       // iguais
+    if (b.length > a.length) return false;               // analista mais longo → não é prefixo
+    for (var i = 0; i < b.length; i++) {                 // todas as palavras do analista batem com as primeiras do agente
+      if (b[i] !== a[i]) return false;
+    }
+    return true;
+  }
+
+  // Nota Zendesk POR MÓDULO de um analista (mesma média suavizada).
+  // Retorna { "Módulo": { good, bad, score } } para cada módulo informado.
+  function moduleScores(analystId, modules) {
+    var out = {};
+    var t = getTickets(analystId);
+    if (!t || !Array.isArray(modules)) return out;
+    var prior = getTeamPrior();
+    var mg = t.module_good || {};
+    modules.forEach(function(m) {
+      var good = mg[m] || 0;
+      var bad = (t.bad_tickets || []).filter(function(x) { return x.module === m && x.consider; }).length;
+      out[m] = { good: good, bad: bad, score: bayesianScore(good, bad, prior) };
+    });
+    return out;
+  }
+
+  // Escolhe, entre os campos de ticket (dropdowns), aquele cujas opções mais
+  // batem com os módulos do painel. Retorna { id, valueToModule } ou null.
+  function pickCategoryField(ticketFields, modules) {
+    if (!Array.isArray(ticketFields) || !Array.isArray(modules) || !modules.length) return null;
+    var modByNorm = {};
+    modules.forEach(function(m) { modByNorm[normalizeName(m)] = m; });
+
+    var best = null, bestCount = 0;
+    ticketFields.forEach(function(f) {
+      if (!Array.isArray(f.custom_field_options) || !f.custom_field_options.length) return;
+      var valueToModule = {};
+      var valueToName = {};
+      var count = 0;
+      f.custom_field_options.forEach(function(o) {
+        valueToName[String(o.value)] = o.name || o.value;
+        var hit = modByNorm[normalizeName(o.name)] || modByNorm[normalizeName(o.value)];
+        if (hit) { valueToModule[String(o.value)] = hit; count++; }
+      });
+      if (count > bestCount) { bestCount = count; best = { id: f.id, valueToModule: valueToModule, valueToName: valueToName }; }
+    });
+    return bestCount > 0 ? best : null;
+  }
+
+  // Encontra o analista do painel correspondente a um nome de agente do Zendesk
+  // (usa o nameMap manual/auto e, como fallback, casamento por nome normalizado).
+  function findAnalystForAgent(agentName, analysts, nameMap) {
+    if (!Array.isArray(analysts)) return null;
+    var mapped = (nameMap && nameMap[agentName]) || '';
+    if (mapped) {
+      var target = normalizeName(mapped);
+      var byMap = analysts.filter(function(a) { return normalizeName(a.name) === target; })[0];
+      if (byMap) return byMap;
+    }
+    // sem mapeamento manual → casamento preciso (igual ou prefixo exato)
+    return analysts.filter(function(a) { return agentMatchesAnalyst(agentName, a.name); })[0] || null;
   }
 
   function getFoundNames() {
@@ -2168,6 +2880,20 @@ var ZendeskSync = (function() {
     localStorage.setItem(FOUND_KEY, JSON.stringify(names));
   }
 
+  // Auto-match Zendesk agent names com analistas cadastrados (casamento PRECISO)
+  function autoMatchNames(zdNames, analysts) {
+    var nameMap = getConfig().nameMap || {};
+    zdNames.forEach(function(zdName) {
+      if (nameMap[zdName]) return; // já mapeado manualmente
+      var found = analysts.filter(function(a) { return agentMatchesAnalyst(zdName, a.name); })[0];
+      if (found) {
+        nameMap[zdName] = found.name;
+        console.log('✓ Auto-vinculado: "' + zdName + '" → "' + found.name + '"');
+      }
+    });
+    return nameMap;
+  }
+
   // Processa resposta da API (Apps Script doGet) e atualiza analysts in-place
   function applyAgentData(analysts, agentMap) {
     var updated  = 0;
@@ -2175,15 +2901,26 @@ var ZendeskSync = (function() {
     var found    = Object.keys(agentMap);
     saveFoundNames(found);
 
+    // Track which agentes foram já vinculados para evitar duplicatas
+    var usedAgents = {};
+
     analysts.forEach(function(analyst) {
-      var key = analyst.name.trim().toLowerCase();
       Object.keys(agentMap).forEach(function(agentName) {
-        // Tenta: mapeamento manual → correspondência exata → sem match
+        if (usedAgents[agentName]) return; // já foi vinculado, pula
+
+        // Mapeamento manual tem prioridade; senão, casamento PRECISO (igual/prefixo exato)
         var mapped  = nameMap[agentName];
         var matches = mapped
-          ? mapped.trim().toLowerCase() === key
-          : agentName.trim().toLowerCase() === key;
+          ? normalizeName(mapped) === normalizeName(analyst.name)
+          : agentMatchesAnalyst(agentName, analyst.name);
+
         if (!matches) return;
+
+        // Auto-preenche nameMap se encontrou correspondência automática
+        if (!mapped) {
+          nameMap[agentName] = analyst.name;
+          console.log('✓ Auto-vinculado: ' + agentName + ' → ' + analyst.name);
+        }
         var data = agentMap[agentName];
         var score = data.score;
         if (score === null || score === undefined || isNaN(parseFloat(score))) return;
@@ -2201,17 +2938,39 @@ var ZendeskSync = (function() {
             date:     t.date || '',
             category: t.category || '',
             comment:  t.comment || '',
+            module:   t.module || '',
+            zdCategory: t.zdCategory || '',
             consider: prev !== undefined ? prev : true
           };
         });
 
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets });
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {} });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
+
+        // Aplica foto se tiver
+        if (data.photo && !analyst.photo) {
+          analyst.photo = data.photo;
+          addPhotoToCache(analyst.name, data.photo);
+        }
+
+        usedAgents[agentName] = true; // marca como usado para evitar duplicata
         updated++;
       });
     });
-    return updated;
+
+    // Restaura fotos do cache para analistas
+    var photoCache = getPhotoCache();
+    analysts.forEach(function(analyst) {
+      if (!analyst.photo) {
+        var cached = photoCache[analyst.name.toLowerCase()];
+        if (cached) {
+          analyst.photo = cached;
+        }
+      }
+    });
+
+    return { updated: updated, nameMap: nameMap };
   }
 
   function sync(analysts, callback) {
@@ -2226,9 +2985,9 @@ var ZendeskSync = (function() {
       .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(data) {
         if (data.error) throw new Error(data.error);
-        var updated = applyAgentData(analysts, data.agents || {});
-        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
-        callback && callback(updated, null, 'ok');
+        var result = applyAgentData(analysts, data.agents || {});
+        saveStatus({ ok: true, at: new Date().toISOString(), updated: result.updated });
+        callback && callback(result.updated, null, 'ok');
       })
       .catch(function(err) {
         saveStatus({ ok: false, at: new Date().toISOString(), error: err.message });
@@ -2239,8 +2998,67 @@ var ZendeskSync = (function() {
   // ---------------------------------------------------------------------------
   // Importação direta do Zendesk via browser (sem Apps Script)
   // ---------------------------------------------------------------------------
-  function importDirect(analysts, onProgress, callback) {
+  // Cria uma função zdFetch (auth + proxy local) a partir da config.
+  function buildZdFetch(cfg) {
+    var base    = 'https://' + cfg.subdomain + '.zendesk.com';
+    var headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
+    // Sempre via proxy relativo: local = Express (server.js); web = Cloud Function (rewrite /zdproxy/**)
+    var proxyBase = '/zdproxy/' + cfg.subdomain;
+    function toUrl(path) {
+      if (path.indexOf('http') === 0) return path.replace(base, proxyBase);
+      return proxyBase + path;
+    }
+    return function zdFetch(path) {
+      return fetch(toUrl(path), { headers: headers }).then(function(r) {
+        return r.text().then(function(body) {
+          if (!r.ok) {
+            var hint = r.status === 404 ? 'verifique o subdomínio.'
+                     : r.status === 401 ? 'verifique e-mail e token da API.'
+                     : r.status === 403 ? 'token sem permissão na API.'
+                     : 'erro inesperado.';
+            var detail = '';
+            try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
+            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
+          }
+          return JSON.parse(body);
+        });
+      });
+    };
+  }
+
+  // Detecta os campos personalizados de ticket (dropdowns) para o usuário escolher
+  // qual é a "categoria do atendimento". callback(fields, errorMessage).
+  function detectTicketFields(callback) {
     var cfg = getConfig();
+    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
+      callback(null, 'Preencha subdomínio, e-mail e token antes de detectar.');
+      return;
+    }
+    if (!isValidSubdomain(cfg.subdomain)) {
+      callback(null, 'Subdomínio inválido.');
+      return;
+    }
+    buildZdFetch(cfg)('/api/v2/ticket_fields.json')
+      .then(function(data) {
+        var fields = (data.ticket_fields || [])
+          .filter(function(f) { return Array.isArray(f.custom_field_options) && f.custom_field_options.length; })
+          .map(function(f) {
+            return {
+              id:      f.id,
+              title:   f.title || f.raw_title || ('Campo ' + f.id),
+              type:    f.type,
+              options: f.custom_field_options.map(function(o) { return { name: o.name, value: o.value }; })
+            };
+          });
+        callback(fields, null);
+      })
+      .catch(function(err) { callback(null, err.message); });
+  }
+
+  function importDirect(analysts, modules, onProgress, callback) {
+    var cfg = getConfig();
+    var moduleList = Array.isArray(modules) ? modules : [];
+    var detectedField = null; // campo de categoria (definido na detecção) — usado também na busca de todos os tickets
     if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
       callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
       return;
@@ -2253,21 +3071,37 @@ var ZendeskSync = (function() {
     var base      = 'https://' + cfg.subdomain + '.zendesk.com';
     var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
     var headers   = { 'Authorization': auth };
-    var startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
+
+    // Calcula startTime e endTime baseado em dateFrom/dateTo ou usa período em dias
+    var startTime, endTime;
+    var now = Math.floor(Date.now() / 1000);
+    var twoMinutesAgo = now - 120;
+    if (cfg.dateFrom && cfg.dateTo) {
+      startTime = Math.floor(new Date(cfg.dateFrom).getTime() / 1000);
+      endTime   = Math.floor(new Date(cfg.dateTo).getTime() / 1000) + 86399; // até o final do dia
+      // Se end_time for no futuro, ajusta para 2 minutos atrás
+      if (endTime > twoMinutesAgo) {
+        endTime = twoMinutesAgo;
+      }
+    } else {
+      startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
+      endTime   = twoMinutesAgo; // sempre 2 minutos atrás para garantir
+    }
     var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
 
-    // Quando rodando em localhost, usa proxy local para evitar bloqueio CORS do Zendesk
-    var isLocal   = typeof window !== 'undefined' &&
-                    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    // Include subdomain in proxy path so the server knows where to route the request
-    var proxyBase = isLocal ? (window.location.origin + '/zdproxy/' + cfg.subdomain) : null;
+    // Proxy relativo sempre: local = Express; web = Cloud Function (rewrite /zdproxy/**)
+    var proxyBase = '/zdproxy/' + cfg.subdomain;
 
     function toUrl(path) {
       if (path.startsWith('http')) {
-        // next_page URLs are absolute — replace the Zendesk origin with the proxy origin
-        return proxyBase ? path.replace(base, proxyBase) : path;
+        // Imagens de CDN: passa a URL completa como parâmetro
+        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path)) {
+          return proxyBase + '?url=' + encodeURIComponent(path);
+        }
+        // APIs: substitui o domínio pelo proxy
+        return path.replace(base, proxyBase);
       }
-      return (proxyBase || base) + path;
+      return proxyBase + path;
     }
 
     function zdFetch(path) {
@@ -2290,31 +3124,77 @@ var ZendeskSync = (function() {
 
     onProgress('Conectando ao Zendesk...');
 
-    // 1. Encontra o grupo
-    zdFetch('/api/v2/groups.json?per_page=100')
-      .then(function(data) {
-        var group = (data.groups || []).filter(function(g) {
-          return g.name.trim().toLowerCase() === groupName;
-        })[0];
-        if (!group) throw new Error('Grupo "' + cfg.groupName + '" não encontrado.');
-        onProgress('Grupo "' + group.name + '" encontrado. Buscando avaliações...');
-        return group.id;
-      })
+    // 1. Define os grupos a importar (por ID) - usa config ou usa padrão
+    var groupIdMap = {
+      '360001272933': 'SUP-N1',
+      '6441506014871': 'Suporte (Outros Assuntos)',
+      '21198035409559': 'Suporte para Nota Fiscal'
+    };
+    var groupIds = (cfg.groupIds && cfg.groupIds.length) ? cfg.groupIds : ['6441506014871', '21198035409559', '360001272933'];
+    var groupNames = groupIds.map(function(id) { return groupIdMap[id] || 'Grupo ' + id; });
 
-      // 2. Busca avaliações filtrando por group_id na própria API
-      //    (evita paginação de todos os grupos e o limite de 100 páginas offset)
-      .then(function(groupId) {
-        var all = [];
-        function fetchPage(url) {
-          return zdFetch(url).then(function(data) {
-            var batch = data.satisfaction_ratings || [];
-            all = all.concat(batch);
-            onProgress('Avaliações encontradas: ' + all.length + '...');
-            if (data.next_page && all.length < 5000) return fetchPage(data.next_page);
-            return all;
+    // 2. Busca avaliações de todos os grupos (sequencial com delay para evitar rate limit)
+    function delay(ms) {
+      return new Promise(function(resolve) { setTimeout(resolve, ms); });
+    }
+
+    // Próxima página — suporta paginação por OFFSET (next_page) e por CURSOR
+    // (meta.has_more + links.next). O Zendesk migrou várias APIs para cursor,
+    // então sem isso só vinha a 1ª página (~100 registros).
+    function nextPageUrl(data) {
+      if (data && data.meta && typeof data.meta.has_more === 'boolean') {
+        return (data.meta.has_more && data.links && data.links.next) ? data.links.next : null;
+      }
+      return (data && data.next_page) || null;
+    }
+
+    function fetchGroupRatings(idx) {
+      if (idx >= groupIds.length) return Promise.resolve([]);
+      var groupId = groupIds[idx];
+      var all = [];
+      function fetchPage(url) {
+        return zdFetch(url).then(function(data) {
+          var batch = data.satisfaction_ratings || [];
+          all = all.concat(batch);
+          onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
+          var next = nextPageUrl(data);
+          if (next && all.length < 8000) return delay(500).then(function() { return fetchPage(next); });
+          return all;
+        });
+      }
+      return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&end_time=' + endTime + '&group_id=' + groupId)
+        .then(function(ratings) {
+          return delay(1000).then(function() {
+            return fetchGroupRatings(idx + 1).then(function(nextRatings) {
+              return [ratings].concat(nextRatings);
+            });
           });
-        }
-        return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&group_id=' + groupId);
+        });
+    }
+
+    fetchGroupRatings(0)
+      .then(function(allRatingsArrays) {
+        var consolidated = [];
+        allRatingsArrays.forEach(function(ratings) {
+          consolidated = consolidated.concat(ratings);
+        });
+
+        // Deduplica por TICKET (um ticket pode ter várias avaliações — reavaliação —
+        // ou vir repetido entre grupos). Mantém a avaliação mais recente de cada ticket,
+        // para a contagem bater com os tickets reais do Zendesk.
+        var byTicket = {};
+        consolidated.forEach(function(r) {
+          var key = (r.ticket_id != null) ? ('t' + r.ticket_id) : ('r' + r.id);
+          var prev = byTicket[key];
+          if (!prev) { byTicket[key] = r; return; }
+          var prevT = new Date(prev.updated_at || prev.created_at || 0).getTime();
+          var curT  = new Date(r.updated_at || r.created_at || 0).getTime();
+          if (curT >= prevT) byTicket[key] = r;
+        });
+        var unique = Object.keys(byTicket).map(function(k) { return byTicket[k]; });
+
+        onProgress('Avaliações: ' + consolidated.length + ' (tickets únicos: ' + unique.length + ')');
+        return unique;
       })
 
       // 3. Resolve nomes e fotos dos agentes
@@ -2339,12 +3219,15 @@ var ZendeskSync = (function() {
         });
       })
 
-      // 4. Agrupa por agente (captura photoUrl)
+      // 4. Agrupa por agente (captura photoUrl) e coleta todos os ticket_ids avaliados
       .then(function(result) {
+        var ratings = result.ratings;
         var agentMap = {};
-        result.ratings.forEach(function(r) {
+        var allIds = {};
+        ratings.forEach(function(r) {
           var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], photoUrl: result.photoMap[r.assignee_id] || null };
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
+          if (r.ticket_id) allIds[r.ticket_id] = true;
           if (r.score === 'good') {
             agentMap[name].good++;
           } else if (r.score === 'bad') {
@@ -2356,64 +3239,149 @@ var ZendeskSync = (function() {
                        (d.getMonth()+1).toString().padStart(2,'0') + '/' +
                        d.getFullYear(),
               comment: r.comment || '',
-              category: ''
+              category: '',
+              module:  ''
             });
           }
         });
 
-        var badAll = [];
-        Object.keys(agentMap).forEach(function(n) {
-          agentMap[n].raw.forEach(function(t) { badAll.push(t); });
-        });
-
-        // 4.5 Busca assunto dos tickets negativos em lotes de 100
+        var ticketIds = Object.keys(allIds);
         var subjectMap = {};
-        function fetchSubjects(ids, i) {
-          if (i >= ids.length) return Promise.resolve(subjectMap);
-          var batch = ids.slice(i, i + 100).join(',');
-          onProgress('Buscando assuntos dos tickets negativos... (' + Math.min(i + 100, ids.length) + '/' + ids.length + ')');
-          return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
-            .then(function(d) {
-              (d.tickets || []).forEach(function(t) { subjectMap[t.id] = t.subject || ''; });
-            })
-            .catch(function() {})
-            .then(function() { return fetchSubjects(ids, i + 100); });
-        }
+        var moduleMap  = {};
+        var categoryMap = {}; // ticket_id → nome da categoria (campo Zendesk), independente de módulo
 
-        var allBadIds = badAll.map(function(t) { return t.id; });
-        var subjectPromise = allBadIds.length ? fetchSubjects(allBadIds, 0) : Promise.resolve(subjectMap);
+        // 4.1 Descobre automaticamente o campo de categoria (casa opções × módulos)
+        var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
+          .then(function(fd) {
+            var f = pickCategoryField(fd.ticket_fields || [], moduleList);
+            detectedField = f;
+            if (f) {
+              try { var c = getConfig(); c.categoryFieldId = String(f.id); saveConfig(c); } catch (e) {}
+              onProgress('Campo de categoria detectado (ID ' + f.id + ').');
+            } else {
+              onProgress('Nenhum campo de categoria batendo com os módulos — seguindo sem cruzar módulos.');
+            }
+            return f;
+          })
+          .catch(function() { return null; });
 
-        // 5. Categoriza com Gemini se chave configurada
-        var catPromise = (cfg.geminiKey && badAll.length)
-          ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
-          : Promise.resolve({});
+        return fieldPromise.then(function(catField) {
+          // 4.2 Busca assunto + categoria de TODOS os tickets avaliados (lotes de 100)
+          function fetchInfo(i) {
+            if (i >= ticketIds.length) return Promise.resolve();
+            var batch = ticketIds.slice(i, i + 100).join(',');
+            onProgress('Lendo categorias dos tickets... (' + Math.min(i + 100, ticketIds.length) + '/' + ticketIds.length + ')');
+            return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
+              .then(function(d) {
+                (d.tickets || []).forEach(function(t) {
+                  subjectMap[t.id] = t.subject || '';
+                  if (catField) {
+                    var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(catField.id); })[0];
+                    if (cf && cf.value != null && cf.value !== '') {
+                      moduleMap[t.id] = catField.valueToModule[String(cf.value)] || '';
+                      categoryMap[t.id] = (catField.valueToName && catField.valueToName[String(cf.value)]) || String(cf.value);
+                    }
+                  }
+                });
+              })
+              .catch(function() {})
+              .then(function() { return delay(500).then(function() { return fetchInfo(i + 100); }); });
+          }
 
-        return Promise.all([subjectPromise, catPromise]).then(function(results) {
-          return { agentMap: agentMap, cats: results[1], subjectMap: results[0] || subjectMap };
+          return (ticketIds.length ? fetchInfo(0) : Promise.resolve()).then(function() {
+            // 4.3 Segunda passada: positivos por módulo, agregação por categoria (global)
+            // e tag de módulo + categoria nos negativos.
+            var categoryAgg = {}; // { categoria: { good, bad } } — agregado global (referência)
+            ratings.forEach(function(r) {
+              var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
+              var mod = moduleMap[r.ticket_id];
+              if (mod && r.score === 'good') {
+                agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
+              }
+              var cat = categoryMap[r.ticket_id];
+              if (cat && (r.score === 'good' || r.score === 'bad')) {
+                categoryAgg[cat] = categoryAgg[cat] || { good: 0, bad: 0 };
+                if (r.score === 'good') {
+                  categoryAgg[cat].good++;
+                  // positivos por categoria POR AGENTE → permite ranking na mesma base das notas
+                  agentMap[name].category_good[cat] = (agentMap[name].category_good[cat] || 0) + 1;
+                } else {
+                  categoryAgg[cat].bad++;
+                }
+              }
+            });
+            saveCategoryStats(categoryAgg);
+            Object.keys(agentMap).forEach(function(n) {
+              agentMap[n].raw.forEach(function(t) {
+                t.module     = moduleMap[t.id]   || '';
+                t.zdCategory = categoryMap[t.id] || '';
+              });
+            });
+
+            // 5. Categoriza com Gemini (texto livre) se chave configurada
+            var badAll = [];
+            Object.keys(agentMap).forEach(function(n) { agentMap[n].raw.forEach(function(t) { badAll.push(t); }); });
+            var catPromise = (cfg.geminiKey && badAll.length)
+              ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
+              : Promise.resolve({});
+
+            return catPromise.then(function(cats) {
+              return { agentMap: agentMap, cats: cats, subjectMap: subjectMap };
+            });
+          });
         });
       })
 
       // 5.5 Baixa fotos dos agentes como base64
       .then(function(result) {
-        var names    = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
+        var withPhoto = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
+        var withoutPhoto = Object.keys(result.agentMap).filter(function(n) { return !result.agentMap[n].photoUrl; });
+        console.log('Agentes COM foto:', withPhoto.length, withPhoto);
+        console.log('Agentes SEM foto:', withoutPhoto.length);
+
+        var names    = withPhoto;
         var total    = names.length;
-        if (!total) return result;
+        if (!total) { onProgress('⚠️ Nenhum agente com foto disponível'); return result; }
         onProgress('Baixando fotos (' + total + ' agentes)...');
 
         var fetches = names.map(function(name) {
-          var url = toUrl(result.agentMap[name].photoUrl); // usa proxy para evitar bloqueio CORS
-          return fetch(url, { headers: headers })
-            .then(function(r) { return r.ok ? r.blob() : null; })
+          var photoUrl = result.agentMap[name].photoUrl;
+          // Foto via proxy (relativo) — funciona local e na web
+          var url = '/zdproxy/' + cfg.subdomain + '?url=' + encodeURIComponent(photoUrl);
+
+          return fetch(url)
+            .then(function(r) {
+              if (!r.ok) {
+                console.error('Erro ao baixar foto de ' + name + ': HTTP ' + r.status);
+                throw new Error('HTTP ' + r.status);
+              }
+              return r.blob();
+            })
             .then(function(blob) {
-              if (!blob) return;
+              if (!blob || blob.size === 0) {
+                console.warn('Blob vazio para foto de ' + name);
+                return Promise.resolve();
+              }
               return new Promise(function(resolve) {
                 var reader = new FileReader();
-                reader.onload  = function(e) { result.agentMap[name].photo = e.target.result; resolve(); };
-                reader.onerror = function()  { resolve(); };
+                reader.onload  = function(e) {
+                  result.agentMap[name].photo = e.target.result;
+                  console.log('✓ Foto de ' + name + ' salva (' + Math.round(e.target.result.length / 1024) + 'KB)');
+                  onProgress('Foto de ' + name + ' salva...');
+                  resolve();
+                };
+                reader.onerror = function() {
+                  console.error('Erro ao ler foto de ' + name);
+                  onProgress('Erro ao ler foto de ' + name);
+                  resolve();
+                };
                 reader.readAsDataURL(blob);
               });
             })
-            .catch(function() {});
+            .catch(function(err) {
+              console.error('Erro ao baixar foto de ' + name + ':', err);
+              onProgress('⚠️ Foto de ' + name + ' não disponível');
+            });
         });
 
         return Promise.all(fetches).then(function() { return result; });
@@ -2432,8 +3400,10 @@ var ZendeskSync = (function() {
             bad_count:   a.bad,
             total:       a.good + a.bad,
             photo:       a.photo || null,
+            module_good: a.module_good || {},
+            category_good: a.category_good || {},
             bad_tickets: a.raw.map(function(t) {
-              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '' };
+              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '', zdCategory: t.zdCategory || '' };
             })
           };
         });
@@ -2445,11 +3415,25 @@ var ZendeskSync = (function() {
         });
         saveAgents(agentStore);
 
+        // Auto-vincula nomes do Zendesk com analistas cadastrados
+        var zdNames = Object.keys(finalMap);
+        var autoNameMap = autoMatchNames(zdNames, analysts);
+
         // Aplica scores e tickets
-        var updated = applyAgentData(analysts, finalMap);
+        var result = applyAgentData(analysts, finalMap);
+        var updated = result.updated;
+        var nameMap = result.nameMap;
+
+        // Mescla auto-matching com resultado do applyAgentData
+        Object.assign(nameMap, autoNameMap);
+
+        // Salva o nameMap atualizado na config
+        var cfg = getConfig();
+        cfg.nameMap = nameMap;
+        saveConfig(cfg);
 
         // Aplica fotos: só preenche se o analista ainda não tiver foto
-        var nameMap = getConfig().nameMap || {};
+        var photoCount = 0;
         analysts.forEach(function(analyst) {
           var key = analyst.name.trim().toLowerCase();
           if (analyst.photo) return; // não sobrescreve foto existente
@@ -2460,13 +3444,89 @@ var ZendeskSync = (function() {
               : zdName.trim().toLowerCase() === key;
             if (matches && finalMap[zdName].photo) {
               analyst.photo = finalMap[zdName].photo;
+              photoCount++;
+              console.log('✓ Foto aplicada a ' + analyst.name);
             }
           });
         });
+        console.log('Total de fotos aplicadas: ' + photoCount);
 
-        saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
-        onProgress('✓ ' + updated + ' analistas atualizados com dados reais!');
-        callback(updated, null);
+        // Recalcula todas as notas com o prior final da equipe (consistente)
+        recomputeAllScores(analysts);
+
+        // 7. Busca TODOS os atendimentos do período (não só os avaliados) por analista
+        function ymd(ts) {
+          var d = new Date(ts * 1000);
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+        function fetchAllTickets() {
+          var startYmd = ymd(startTime), endYmd = ymd(endTime);
+          var raw = [], assigneeIds = {}, seen = {};
+          function fieldModule(t) {
+            if (!detectedField) return '';
+            var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(detectedField.id); })[0];
+            return (cf && cf.value != null && cf.value !== '') ? (detectedField.valueToModule[String(cf.value)] || '') : '';
+          }
+          function fetchGroup(gi) {
+            if (gi >= groupIds.length) return Promise.resolve();
+            var query = 'type:ticket group:' + groupIds[gi] + ' created>=' + startYmd + ' created<=' + endYmd;
+            var collected = 0;
+            function page(url) {
+              return zdFetch(url).then(function(d) {
+                (d.results || []).forEach(function(t) {
+                  if (t.id == null || seen[t.id]) return;
+                  seen[t.id] = true;
+                  if (t.assignee_id) assigneeIds[t.assignee_id] = true;
+                  raw.push({ assignee_id: t.assignee_id, id: t.id, subject: (t.subject || '').slice(0, 120), created_at: t.created_at, status: t.status || '', module: fieldModule(t) });
+                  collected++;
+                });
+                onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
+                var next = nextPageUrl(d);
+                if (next && collected < 3000) return delay(500).then(function() { return page(next); });
+                return null;
+              }).catch(function() { return null; });
+            }
+            return page(base + '/api/v2/search.json?per_page=100&query=' + encodeURIComponent(query))
+              .then(function() { return delay(1000).then(function() { return fetchGroup(gi + 1); }); });
+          }
+          onProgress('Buscando todos os atendimentos no período...');
+          return fetchGroup(0).then(function() {
+            var ids = Object.keys(assigneeIds), nameById = {};
+            function resolve(i) {
+              if (i >= ids.length) return Promise.resolve();
+              return zdFetch('/api/v2/users/show_many.json?ids=' + ids.slice(i, i + 100).join(','))
+                .then(function(d) { (d.users || []).forEach(function(u) { nameById[u.id] = u.name; }); })
+                .catch(function() {})
+                .then(function() { return delay(300).then(function() { return resolve(i + 100); }); });
+            }
+            return (ids.length ? resolve(0) : Promise.resolve()).then(function() {
+              var byAnalyst = {};
+              raw.forEach(function(t) {
+                var agentName = nameById[t.assignee_id] || ('Agente-' + t.assignee_id);
+                var an = findAnalystForAgent(agentName, analysts, nameMap);
+                if (!an) return;
+                var d = new Date(t.created_at);
+                var rec = {
+                  id: t.id, subject: t.subject, status: t.status, module: t.module,
+                  date: d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear()
+                };
+                (byAnalyst[an.id] = byAnalyst[an.id] || []).push(rec);
+              });
+              Object.keys(byAnalyst).forEach(function(aid) {
+                var stored = getTickets(aid) || {};
+                stored.all_tickets = byAnalyst[aid].slice(0, 1000);
+                saveTickets(aid, stored);
+              });
+              onProgress('Atendimentos por analista atualizados.');
+            });
+          });
+        }
+
+        return fetchAllTickets().catch(function() {}).then(function() {
+          saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
+          onProgress('✓ ' + updated + ' analistas atualizados (avaliações + atendimentos)!');
+          callback(updated, null);
+        });
       })
 
       .catch(function(err) {
@@ -2516,13 +3576,20 @@ var ZendeskSync = (function() {
     sync:           sync,
     importDirect:   importDirect,
     recalcScore:    recalcScore,
+    recomputeAllScores: recomputeAllScores,
+    getTeamPrior:   getTeamPrior,
+    moduleScores:   moduleScores,
+    getCategoryStats: getCategoryStats,
+    categoryRanking: categoryRanking,
+    detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,
     getAgentData:   getAgentData,
     getConfig:      getConfig,
     saveConfig:     saveConfig,
     getStatus:      getStatus,
-    getFoundNames:  getFoundNames
+    getFoundNames:  getFoundNames,
+    getPhotoCache:  getPhotoCache
   };
 })();
 
@@ -2537,8 +3604,15 @@ var App = (function() {
     trainings:     [],
     history:       {},
     currentPage:   'visao',
-    currentSector: 'all'
+    currentSector: 'all',
+    search:        ''
   };
+
+  // --- Global search ---
+  function setSearch(value) {
+    state.search = (value || '').trim().toLowerCase();
+    render();
+  }
 
   // --- Persistence ---
   function persist() {
@@ -2784,6 +3858,11 @@ var App = (function() {
 
     Domain.applyTrainingScores(state.analysts, state.trainings);
 
+    // Recalcula notas do Zendesk com a métrica atual (média suavizada),
+    // garantindo consistência mesmo para dados importados antes da mudança.
+    ZendeskSync.recomputeAllScores(state.analysts);
+    persist();
+
     UIModals.init();
     renderSectorTabs();
     render();
@@ -2824,7 +3903,7 @@ var App = (function() {
   function openZendeskTickets(analystId) {
     var analyst = state.analysts.find(function(a) { return a.id === analystId; });
     if (!analyst) return;
-    UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), function(newScore, updatedData) {
+    UIModals.openZendeskTickets(analyst, ZendeskSync.getTickets(analystId), state.modules, function(newScore, updatedData) {
       analyst.zendesk = newScore;
       ZendeskSync.saveTickets(analystId, updatedData);
       persist();
@@ -2836,21 +3915,47 @@ var App = (function() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var cfg = ZendeskSync.getConfig();
+    var groupIds = (function() {
+      var checked = [];
+      document.querySelectorAll('[data-zd-group]').forEach(function(cb) {
+        if (cb.checked) checked.push(cb.getAttribute('data-zd-group'));
+      });
+      return checked.length ? checked : cfg.groupIds;
+    })();
+    var subdomain = g('zdSubdomain')
+      .replace(/^https?:\/\//, '')        // Remove https:// ou http://
+      .replace(/^www\./, '')               // Remove www.
+      .replace(/\.zendesk\.com.*/i, '')    // Remove .zendesk.com e tudo depois
+      || cfg.subdomain;
+
     ZendeskSync.saveConfig(Object.assign({}, cfg, {
-      subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain,
+      subdomain: subdomain,
       email:     g('zdEmail')    || cfg.email,
       apiToken:  g('zdApiToken') || cfg.apiToken,
       geminiKey: g('zdGeminiKey')|| cfg.geminiKey,
-      groupName: g('zdGroupName')|| cfg.groupName,
-      days:      parseInt(g('zdDays')) || cfg.days
+      groupIds:  groupIds,
+      dateFrom:  g('zdDateFrom') || cfg.dateFrom,
+      dateTo:    g('zdDateTo')   || cfg.dateTo,
+      nameMap:   cfg.nameMap
     }));
+
+    // Restaura fotos do cache antes de reimportar para não perder dados
+    var photoCache = ZendeskSync.getPhotoCache();
+    state.analysts.forEach(function(analyst) {
+      if (!analyst.photo) {
+        var cached = photoCache[analyst.name.toLowerCase()];
+        if (cached) {
+          analyst.photo = cached;
+        }
+      }
+    });
 
     var btn     = document.getElementById('zdImportBtn');
     var progEl  = document.getElementById('zdImportProgress');
     if (btn)    { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Importando...'; }
     if (progEl) progEl.style.color = 'var(--muted)';
 
-    ZendeskSync.importDirect(state.analysts,
+    ZendeskSync.importDirect(state.analysts, state.modules,
       function(msg) {
         if (progEl) progEl.textContent = msg;
       },
@@ -2862,9 +3967,10 @@ var App = (function() {
         }
         if (progEl) progEl.style.color = '#4ADE80';
         if (count > 0) {
-          persist();
           render();
+          persist(); // Salva fotos e dados no localStorage
           updateZendeskBadge('ok');
+          if (progEl) progEl.textContent = '✓ Fotos e dados salvos!';
           // Mostra tabela de mapeamento para vincular nomes não reconhecidos
           var analystNames = state.analysts.map(function(a) { return a.name; });
           UIModals.renderNameMap && UIModals.renderNameMap(analystNames, state.sectors);
@@ -2934,7 +4040,9 @@ var App = (function() {
     });
 
     var cfg = ZendeskSync.getConfig();
-    ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nameMap }));
+    var previousNameMap = cfg.nameMap || {};
+    var mergedNameMap = Object.assign({}, previousNameMap, nameMap);
+    ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: mergedNameMap }));
 
     // Aplica fotos do cache (skm6_zdagents) para analistas vinculados agora
     state.analysts.forEach(function(analyst) {
@@ -2954,6 +4062,14 @@ var App = (function() {
     persist(); // salva fotos imediatamente antes do reimport
     state.analysts.forEach(function(a) { a.zendesk = null; });
     localStorage.removeItem('skm6_zdtickets');
+
+    // Mostra mensagem de sucesso
+    var progEl = document.getElementById('zdImportProgress');
+    if (progEl) {
+      progEl.textContent = '✓ Vinculação salva! Reimportando dados...';
+      progEl.style.color = '#4ADE80';
+    }
+
     importFromZendesk();
   }
 
@@ -2962,6 +4078,7 @@ var App = (function() {
     init:               init,
     switchPage:         switchPage,
     setSector:          setSector,
+    setSearch:          setSearch,
     openEditModal:      openEditModal,
     openAddAnalystModal: openAddAnalystModal,
     removeAnalyst:      removeAnalyst,
