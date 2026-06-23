@@ -328,6 +328,37 @@ var App = (function() {
     );
   }
 
+  // Testa as credenciais digitadas direto na API do Zendesk (via proxy) e salva.
+  function testZendeskCreds() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var resEl = document.getElementById('zdTestCredsResult');
+    var btn   = document.getElementById('zdTestCredsBtn');
+    var cfg   = ZendeskSync.getConfig();
+    var sub   = g('zdSubdomain').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain;
+    var email = g('zdEmail')    || cfg.email;
+    var token = g('zdApiToken') || cfg.apiToken;
+    function say(msg, color) { if (resEl) { resEl.textContent = msg; resEl.style.color = color; } }
+    if (!sub || !email || !token) { say('Preencha subdomínio, e-mail e token.', '#CC0000'); return; }
+
+    // Salva para a importação usar as mesmas credenciais
+    ZendeskSync.saveConfig(Object.assign({}, cfg, { subdomain: sub, email: email, apiToken: token, geminiKey: g('zdGeminiKey') || cfg.geminiKey }));
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…'; }
+    say('Testando…', 'var(--muted)');
+    fetch('/zdproxy/' + sub + '/api/v2/users/me.json', { headers: { Authorization: 'Basic ' + btoa(email + '/token:' + token) } })
+      .then(function(r) { return r.text().then(function(b) { return { ok: r.ok, status: r.status, body: b }; }); })
+      .then(function(res) {
+        if (res.ok) {
+          var name = ''; try { name = JSON.parse(res.body).user.name; } catch (e) {}
+          say('✓ Autenticado' + (name ? ' como ' + name : '') + '. Pode importar.', '#15803D');
+        } else {
+          say('✗ HTTP ' + res.status + (res.status === 401 ? ' — e-mail/token inválidos.' : res.status === 404 ? ' — subdomínio inválido.' : ' — falha.'), '#CC0000');
+        }
+      })
+      .catch(function(err) { say('✗ ' + err.message, '#CC0000'); })
+      .then(function() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar credenciais'; } });
+  }
+
   function importFromZendesk() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -508,6 +539,7 @@ var App = (function() {
     openZendeskTickets: openZendeskTickets,
     openZdCategoryTickets: openZdCategoryTickets,
     importFromZendesk:      importFromZendesk,
+    testZendeskCreds:       testZendeskCreds,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML
   };

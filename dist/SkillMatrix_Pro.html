@@ -538,12 +538,18 @@ body{
     </div>
 
     <div class="modal-tab-panel" data-panel="zendesk">
-      <!-- Credenciais ocultas (já salvas) — mantidas no DOM para a importação ler -->
-      <div style="display:none">
-        <input type="text" id="zdSubdomain" class="form-input" placeholder="minhaempresa">
-        <input type="email" id="zdEmail" class="form-input" placeholder="admin@empresa.com">
-        <input type="password" id="zdApiToken" class="form-input" placeholder="Token de acesso (Admin → Apps → API)">
-        <input type="text" id="zdGeminiKey" class="form-input" placeholder="AIza…">
+      <!-- Credenciais da API do Zendesk -->
+      <span class="input-label">Credenciais do Zendesk</span>
+      <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px">
+        <div id="zdCredsSummary" style="font-size:11px;color:var(--muted);line-height:1.5"></div>
+        <input type="text" id="zdSubdomain" class="form-input" placeholder="Subdomínio (ex.: minhaempresa)">
+        <input type="email" id="zdEmail" class="form-input" autocomplete="off" placeholder="Novo e-mail (em branco mantém o atual)">
+        <input type="password" id="zdApiToken" class="form-input" autocomplete="off" placeholder="Novo token (em branco mantém o atual)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button type="button" id="zdTestCredsBtn" onclick="App.testZendeskCreds()" class="btn-secondary" style="font-size:12px;padding:6px 12px"><i class="ti ti-plug-connected"></i> Testar credenciais</button>
+          <span id="zdTestCredsResult" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <input type="password" id="zdGeminiKey" class="form-input" autocomplete="off" placeholder="Nova chave Gemini (opcional; em branco mantém)">
       </div>
       <span class="input-label">Grupos no Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
@@ -1335,11 +1341,10 @@ var UIOverview = (function() {
     });
     h += '</div>';
 
-    // Rankings: módulos (técnico) + módulos negativados (Zendesk) lado a lado;
-    // categorias negativadas (Zendesk) na sequência. Os do Zendesk só com dados.
+    // Rankings: módulos (técnico) + categorias negativadas (Zendesk) lado a lado.
+    // O ranking do Zendesk é por CATEGORIA do ticket (só com dados importados).
     var zdReady   = typeof ZendeskSync !== 'undefined';
     var catRank   = (zdReady && ZendeskSync.categoryRanking) ? ZendeskSync.categoryRanking(state.analysts) : [];
-    var zdModRank = (zdReady && ZendeskSync.moduleRanking)   ? ZendeskSync.moduleRanking(state.analysts)   : [];
 
     // Helper de status (Zendesk) por % de negativas
     function zdStatus(pct) {
@@ -1351,9 +1356,10 @@ var UIOverview = (function() {
     // clickFn (opcional): nome de função global chamada com o índice da linha,
     // tornando as linhas clicáveis para consultar os tickets.
     function zdNegTable(title, icon, label, rows, clickFn) {
-      var hintClick = clickFn ? ' Clique numa linha para ver os tickets.' : '';
-      var t = '<div><div class="sectitle" style="margin-top:0"><i class="ti ' + icon + '"></i> ' + title + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin:-6px 0 12px">Avaliações de toda a equipe, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.' + hintClick + '</div>' +
+      var info = 'Avaliações de toda a equipe, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.' +
+        (clickFn ? ' Clique numa linha para ver os tickets.' : '');
+      var help = ' <span title="' + esc(info) + '" style="cursor:help;color:var(--muted);font-size:12px;vertical-align:middle" aria-label="Sobre este ranking"><i class="ti ti-help-circle"></i></span>';
+      var t = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
         '<table class="tbl"><thead><tr><th>#</th><th>' + label + '</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
       rows.slice(0, 15).forEach(function(r, i) {
         var pct = r.rate * 100, st = zdStatus(pct);
@@ -1371,8 +1377,8 @@ var UIOverview = (function() {
     }
 
     // 1) Ranking de Módulos (técnico, média 1–5)
-    var modTable = '<div><div class="sectitle" style="margin-top:0"><i class="ti ti-list-numbers"></i> Ranking de Módulos (técnico)</div>' +
-      '<table class="tbl"><thead><tr><th>#</th><th>Módulo</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
+    var modTable = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
+      '<table class="tbl"><thead><tr><th>#</th><th>Categoria</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
       var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
@@ -1385,25 +1391,18 @@ var UIOverview = (function() {
     });
     modTable += '</tbody></table></div>';
 
-    // 2) Módulos mais negativados (Zendesk) — ao lado do técnico. Linhas clicáveis
-    //    (inclui o bucket "Sem módulo") para consultar os tickets.
-    var zdModTable = zdModRank.length
-      ? zdNegTable('Módulos mais negativados (Zendesk)', 'ti-thumb-down',
-          'Módulo', zdModRank.map(function(r) { return { name: r.module || 'Sem módulo', bad: r.bad, total: r.total, rate: r.rate }; }),
-          'App.openZdModuleTickets')
-      : '';
-
-    // 3) Categorias mais negativadas (Zendesk)
+    // 2) Categorias mais negativadas (Zendesk) — ao lado do técnico. Linhas
+    //    clicáveis: abrem o modal com os tickets daquela categoria, para consulta.
     var catTable = catRank.length
       ? zdNegTable('Categorias mais negativadas (Zendesk)', 'ti-mood-sad',
-          'Categoria', catRank.map(function(r) { return { name: r.category, bad: r.bad, total: r.total, rate: r.rate }; }))
+          'Categoria', catRank.map(function(r) { return { name: r.category, bad: r.bad, total: r.total, rate: r.rate }; }),
+          'App.openZdCategoryTickets')
       : '';
 
-    // 2 colunas quando há qualquer ranking do Zendesk; senão, técnico ocupa tudo.
-    // Ordem: [técnico][módulos Zendesk] na 1ª linha, [categorias] na 2ª.
-    var rankCols = (zdModTable || catTable) ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
+    // 2 colunas quando há ranking de categorias; senão, técnico ocupa tudo.
+    var rankCols = catTable ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
     h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' +
-      modTable + zdModTable + catTable + '</div>';
+      modTable + catTable + '</div>';
 
     document.getElementById('page-visao').innerHTML = h;
   }
@@ -1976,10 +1975,32 @@ var UIModals = (function() {
     var zdDateToEl   = document.getElementById('zdDateTo');
     var zdProgEl    = document.getElementById('zdImportProgress');
     if (zdSubEl)      zdSubEl.value   = zdCfg.subdomain  || '';
-    if (zdEmailEl)    zdEmailEl.value = zdCfg.email      || '';
-    if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
-    if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
+    // Credenciais sensíveis: NÃO pré-preenche (evita expor no DOM). Mostra resumo
+    // mascarado; campos em branco = mantém o que está salvo.
+    if (zdEmailEl)    zdEmailEl.value = '';
+    if (zdTokEl)      zdTokEl.value   = '';
+    if (zdGemEl)      zdGemEl.value   = '';
     if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
+    var zdSummaryEl = document.getElementById('zdCredsSummary');
+    if (zdSummaryEl) {
+      function maskMid(v, keepStart, keepEnd) {
+        v = String(v || '');
+        if (!v) return '—';
+        if (v.length <= keepStart + keepEnd) return '••••';
+        return v.slice(0, keepStart) + '••••' + v.slice(v.length - keepEnd);
+      }
+      function maskEmail(e) {
+        e = String(e || '');
+        var at = e.indexOf('@');
+        if (at < 1) return e ? maskMid(e, 2, 0) : '—';
+        var dot = e.lastIndexOf('.');
+        return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
+      }
+      zdSummaryEl.innerHTML = (zdCfg.email || zdCfg.apiToken)
+        ? 'Salvos: e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
+          ' · Gemini <b>' + (zdCfg.geminiKey ? esc(maskMid(zdCfg.geminiKey, 0, 4)) : '—') + '</b><br>Deixe os campos em branco para manter; preencha para trocar.'
+        : 'Nenhuma credencial salva — preencha abaixo.';
+    }
     // Popula checkboxes de grupos
     var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
     if (typeof selectedIds === 'string') selectedIds = [selectedIds];
@@ -2629,17 +2650,16 @@ var UIModals = (function() {
     };
   }
 
-  // Consulta global: todos os tickets negativos de um módulo (ou "Sem módulo")
-  // somando a equipe toda. Apenas leitura.
-  function openModuleTickets(moduleName, analysts, subdomain) {
+  // Consulta global: todos os tickets negativos de um grupo (categoria/módulo),
+  // somando a equipe toda. Recebe a lista pronta. Apenas leitura.
+  function openNegativesModal(label, list, subdomain) {
     var modal  = document.getElementById('zdModTktModal');
     var nameEl = document.getElementById('zdModTktName');
     var infoEl = document.getElementById('zdModTktInfo');
     var body   = document.getElementById('zdModTktBody');
     if (!modal || !body) return;
 
-    var label = moduleName ? moduleName : 'Sem módulo';
-    var list  = (ZendeskSync.negativesForModule(analysts, moduleName) || []).slice();
+    list = (list || []).slice();
     // Mais recentes primeiro (data dd/mm/yyyy)
     function dInt(s) { var p = String(s || '').split('/'); return p.length === 3 ? (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0]) : 0; }
     list.sort(function(a, b) { return dInt(b.date) - dInt(a.date); });
@@ -2647,9 +2667,8 @@ var UIModals = (function() {
     var considered = list.filter(function(t) { return t.consider; }).length;
     var sub = (subdomain || '').trim();
 
-    if (nameEl) nameEl.textContent = label;
-    if (infoEl) infoEl.textContent = list.length + ' ticket(s) negativo(s)' +
-      (moduleName ? '' : ' sem módulo identificado') + ' · ' + considered + ' considerado(s) na nota';
+    if (nameEl) nameEl.textContent = label || '—';
+    if (infoEl) infoEl.textContent = list.length + ' ticket(s) negativo(s) · ' + considered + ' considerado(s) na nota';
 
     body.innerHTML = list.length
       ? list.map(function(t) {
@@ -2682,7 +2701,7 @@ var UIModals = (function() {
     openProva:           openProva,
     openManage:          openManage,
     openZendeskTickets:  openZendeskTickets,
-    openModuleTickets:   openModuleTickets,
+    openNegativesModal:  openNegativesModal,
     init:                init,
     switchModalTab:      switchModalTab,
     _setScore:           setScore,
@@ -2921,6 +2940,32 @@ var ZendeskSync = (function() {
           comment:  x.comment || '',
           zdCategory: x.zdCategory || '',
           category: x.category || '',
+          consider: x.consider !== false
+        });
+      });
+    });
+    return out;
+  }
+
+  // Tickets negativados de uma categoria do Zendesk (zdCategory), somando toda
+  // a equipe — para consulta a partir do ranking de categorias.
+  function negativesForCategory(analysts, categoryName) {
+    var target = categoryName || '';
+    var out = [];
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      (t.bad_tickets || []).forEach(function(x) {
+        if ((x.zdCategory || '') !== target) return;
+        out.push({
+          analyst:  a.name,
+          id:       x.id,
+          date:     x.date || '',
+          subject:  x.subject || '',
+          comment:  x.comment || '',
+          zdCategory: x.zdCategory || '',
+          category: x.category || '',
+          module:   x.module || '',
           consider: x.consider !== false
         });
       });
@@ -3765,6 +3810,7 @@ var ZendeskSync = (function() {
     categoryRanking: categoryRanking,
     moduleRanking:  moduleRanking,
     negativesForModule: negativesForModule,
+    negativesForCategory: negativesForCategory,
     detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,
@@ -4095,14 +4141,49 @@ var App = (function() {
     });
   }
 
-  // Consulta os tickets negativos de um módulo do ranking "Módulos mais
-  // negativados (Zendesk)". Recebe o índice da linha (recalcula o ranking).
-  function openZdModuleTickets(index) {
-    if (!ZendeskSync.moduleRanking) return;
-    var ranking = ZendeskSync.moduleRanking(state.analysts) || [];
+  // Consulta os tickets negativos de uma categoria do ranking "Categorias mais
+  // negativadas (Zendesk)". Recebe o índice da linha (recalcula o ranking).
+  function openZdCategoryTickets(index) {
+    if (!ZendeskSync.categoryRanking) return;
+    var ranking = ZendeskSync.categoryRanking(state.analysts) || [];
     var row = ranking[index];
     if (!row) return;
-    UIModals.openModuleTickets(row.module, state.analysts, ZendeskSync.getConfig().subdomain);
+    UIModals.openNegativesModal(
+      row.category,
+      ZendeskSync.negativesForCategory(state.analysts, row.category),
+      ZendeskSync.getConfig().subdomain
+    );
+  }
+
+  // Testa as credenciais digitadas direto na API do Zendesk (via proxy) e salva.
+  function testZendeskCreds() {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var resEl = document.getElementById('zdTestCredsResult');
+    var btn   = document.getElementById('zdTestCredsBtn');
+    var cfg   = ZendeskSync.getConfig();
+    var sub   = g('zdSubdomain').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain;
+    var email = g('zdEmail')    || cfg.email;
+    var token = g('zdApiToken') || cfg.apiToken;
+    function say(msg, color) { if (resEl) { resEl.textContent = msg; resEl.style.color = color; } }
+    if (!sub || !email || !token) { say('Preencha subdomínio, e-mail e token.', '#CC0000'); return; }
+
+    // Salva para a importação usar as mesmas credenciais
+    ZendeskSync.saveConfig(Object.assign({}, cfg, { subdomain: sub, email: email, apiToken: token, geminiKey: g('zdGeminiKey') || cfg.geminiKey }));
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…'; }
+    say('Testando…', 'var(--muted)');
+    fetch('/zdproxy/' + sub + '/api/v2/users/me.json', { headers: { Authorization: 'Basic ' + btoa(email + '/token:' + token) } })
+      .then(function(r) { return r.text().then(function(b) { return { ok: r.ok, status: r.status, body: b }; }); })
+      .then(function(res) {
+        if (res.ok) {
+          var name = ''; try { name = JSON.parse(res.body).user.name; } catch (e) {}
+          say('✓ Autenticado' + (name ? ' como ' + name : '') + '. Pode importar.', '#15803D');
+        } else {
+          say('✗ HTTP ' + res.status + (res.status === 401 ? ' — e-mail/token inválidos.' : res.status === 404 ? ' — subdomínio inválido.' : ' — falha.'), '#CC0000');
+        }
+      })
+      .catch(function(err) { say('✗ ' + err.message, '#CC0000'); })
+      .then(function() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar credenciais'; } });
   }
 
   function importFromZendesk() {
@@ -4283,8 +4364,9 @@ var App = (function() {
     toggleModuleDetail: toggleModuleDetail,
     openManageModal:    openManageModal,
     openZendeskTickets: openZendeskTickets,
-    openZdModuleTickets: openZdModuleTickets,
+    openZdCategoryTickets: openZdCategoryTickets,
     importFromZendesk:      importFromZendesk,
+    testZendeskCreds:       testZendeskCreds,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML
   };
