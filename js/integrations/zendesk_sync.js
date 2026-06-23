@@ -664,7 +664,8 @@ var ZendeskSync = (function() {
           all = all.concat(batch);
           onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
           var next = nextPageUrl(data);
-          if (next && all.length < 8000) return delay(500).then(function() { return fetchPage(next); });
+          // Teto de segurança alto só para evitar loop; quem limita é o período (start/end).
+          if (next && all.length < 100000) return delay(500).then(function() { return fetchPage(next); });
           return all;
         });
       }
@@ -988,7 +989,8 @@ var ZendeskSync = (function() {
                 });
                 onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
                 var next = nextPageUrl(d);
-                if (next && collected < 3000) return delay(500).then(function() { return page(next); });
+                // Teto de segurança alto; na prática a Search API do Zendesk já limita ~1000/consulta.
+                if (next && collected < 20000) return delay(500).then(function() { return page(next); });
                 return null;
               }).catch(function() { return null; });
             }
