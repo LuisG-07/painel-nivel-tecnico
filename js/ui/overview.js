@@ -271,8 +271,9 @@ var UIOverview = (function() {
       var info = 'Avaliações de toda a equipe, na mesma base das notas (negativos ignorados não contam). Ordenado por nº de avaliações negativas.' +
         (clickFn ? ' Clique numa linha para ver os tickets.' : '');
       var help = ' <span title="' + esc(info) + '" style="cursor:help;color:var(--muted);font-size:12px;vertical-align:middle" aria-label="Sobre este ranking"><i class="ti ti-help-circle"></i></span>';
+      var nw = ' style="white-space:nowrap"';
       var t = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
-        '<table class="tbl"><thead><tr><th>#</th><th>' + label + '</th><th>Negativas</th><th>Avaliações</th><th>% negativa</th><th>Status</th></tr></thead><tbody>';
+        '<table class="tbl"><thead><tr><th' + nw + '>#</th><th' + nw + '>' + label + '</th><th' + nw + '>Negativas</th><th' + nw + '>Avaliações</th><th' + nw + '>% neg.</th><th' + nw + '>Status</th></tr></thead><tbody>';
       rows.slice(0, 15).forEach(function(r, i) {
         var pct = r.rate * 100, st = zdStatus(pct);
         var trAttr = clickFn ? ' onclick="' + clickFn + '(' + i + ')" style="cursor:pointer" title="Ver tickets"' : '';
@@ -290,7 +291,7 @@ var UIOverview = (function() {
 
     // 1) Ranking de Módulos (técnico, média 1–5)
     var modTable = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
-      '<table class="tbl"><thead><tr><th>#</th><th>Categoria</th><th>Média (1–5)</th><th>Status</th></tr></thead><tbody>';
+      '<table class="tbl"><thead><tr><th style="white-space:nowrap">#</th><th style="white-space:nowrap">Categoria</th><th style="white-space:nowrap">Média (1–5)</th><th style="white-space:nowrap">Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
       var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
