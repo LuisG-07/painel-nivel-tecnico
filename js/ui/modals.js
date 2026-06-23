@@ -684,6 +684,7 @@ var UIModals = (function() {
           bad_tickets:   ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }),
           module_good:   ticketData.module_good   || {},
           category_good: ticketData.category_good || {},
+          good_tickets:  ticketData.good_tickets  || [],
           all_tickets:   ticketData.all_tickets   || []
         }
       : null;
@@ -699,10 +700,19 @@ var UIModals = (function() {
     var modScores = {};
     function computeModScores() {
       var mg = (ticketData && ticketData.module_good) || {};
+      // Positivos com data → permite filtrar por período. Sem eles (dados antigos),
+      // usa o agregado module_good e não aplica filtro de data (comportamento antigo).
+      var gt = (pending && pending.good_tickets && pending.good_tickets.length) ? pending.good_tickets : null;
       var out = {};
       (modules || []).forEach(function(m) {
-        var good = mg[m] || 0;
-        var badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        var good, badArr;
+        if (gt) {
+          good   = gt.filter(function(x) { return (x.module || '') === m && dateInRange(x.date); }).length;
+          badArr = pending.bad_tickets.filter(function(x) { return x.module === m && x.consider && dateInRange(x.date); });
+        } else {
+          good   = mg[m] || 0;
+          badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        }
         out[m] = { good: good, bad: badArr.length, score: ZendeskSync.recalcScore(good, badArr) };
       });
       return out;
@@ -848,15 +858,25 @@ var UIModals = (function() {
       }
 
       var visible  = pending.bad_tickets.filter(ticketVisible);
-      var good     = pending.good_count;
-      var consBad  = pending.bad_tickets.filter(function(t) { return t.consider; }).length;
-      var total    = good + pending.bad_tickets.length;
-      var filtered = visible.length < pending.bad_tickets.length;
+      // Positivos com data → contam dentro do período do filtro. Sem eles (dados
+      // antigos), usa o total agregado e não filtra por data.
+      var hasGT    = pending.good_tickets && pending.good_tickets.length;
+      var good, badScope;
+      if (hasGT) {
+        good     = pending.good_tickets.filter(function(x) { return dateInRange(x.date); }).length;
+        badScope = pending.bad_tickets.filter(function(t) { return dateInRange(t.date); });
+      } else {
+        good     = pending.good_count;
+        badScope = pending.bad_tickets;
+      }
+      var consBad  = badScope.filter(function(t) { return t.consider; }).length;
+      var total    = good + badScope.length;
+      var filtered = visible.length < badScope.length;
 
       listEl.innerHTML =
         '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
-          good + ' positivos · ' + consBad + '/' + pending.bad_tickets.length + ' considerados · total: ' + total +
-          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
+          good + ' positivos · ' + consBad + '/' + badScope.length + ' considerados · total: ' + total +
+          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + badScope.length + ' exibidos</span>' : '') +
         '</div>' +
         (visible.length === 0
           ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket nesse período.</div>'
@@ -928,6 +948,8 @@ var UIModals = (function() {
         var toEl   = document.getElementById('zdTktDateTo');
         filterFromInt = inputToInt(fromEl && fromEl.value);
         filterToInt   = inputToInt(toEl   && toEl.value);
+        modScores = computeModScores(); // positivos/negativos por módulo no período
+        renderModuleScores();
         renderList();
       };
 
@@ -938,6 +960,8 @@ var UIModals = (function() {
         var toEl   = document.getElementById('zdTktDateTo');
         if (fromEl) fromEl.value = '';
         if (toEl)   toEl.value = '';
+        modScores = computeModScores();
+        renderModuleScores();
         renderList();
       };
     }

@@ -451,7 +451,7 @@ var ZendeskSync = (function() {
         });
 
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {} });
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {}, good_tickets: data.good_tickets || [] });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
 
         // Aplica foto se tiver
@@ -733,10 +733,18 @@ var ZendeskSync = (function() {
         var allIds = {};
         ratings.forEach(function(r) {
           var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], good_raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
           if (r.ticket_id) allIds[r.ticket_id] = true;
           if (r.score === 'good') {
             agentMap[name].good++;
+            var dg = new Date(r.created_at);
+            agentMap[name].good_raw.push({
+              id:   r.ticket_id,
+              date: dg.getDate().toString().padStart(2,'0') + '/' +
+                    (dg.getMonth()+1).toString().padStart(2,'0') + '/' +
+                    dg.getFullYear(),
+              module: '', zdCategory: ''
+            });
           } else if (r.score === 'bad') {
             agentMap[name].bad++;
             var d = new Date(r.created_at);
@@ -820,6 +828,10 @@ var ZendeskSync = (function() {
             saveCategoryStats(categoryAgg);
             Object.keys(agentMap).forEach(function(n) {
               agentMap[n].raw.forEach(function(t) {
+                t.module     = moduleMap[t.id]   || '';
+                t.zdCategory = categoryMap[t.id] || '';
+              });
+              agentMap[n].good_raw.forEach(function(t) {
                 t.module     = moduleMap[t.id]   || '';
                 t.zdCategory = categoryMap[t.id] || '';
               });
@@ -911,6 +923,10 @@ var ZendeskSync = (function() {
             category_good: a.category_good || {},
             bad_tickets: a.raw.map(function(t) {
               return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '', zdCategory: t.zdCategory || '' };
+            }),
+            // Positivos individuais com data (para o filtro por período contar certo)
+            good_tickets: a.good_raw.map(function(t) {
+              return { id: t.id, date: t.date, module: t.module || '', zdCategory: t.zdCategory || '' };
             })
           };
         });

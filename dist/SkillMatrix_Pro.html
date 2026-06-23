@@ -539,17 +539,20 @@ body{
 
     <div class="modal-tab-panel" data-panel="zendesk">
       <!-- Credenciais da API do Zendesk -->
-      <span class="input-label">Credenciais do Zendesk</span>
+      <span class="input-label">Conexão Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px">
         <div id="zdCredsSummary" style="font-size:11px;color:var(--muted);line-height:1.5"></div>
-        <input type="text" id="zdSubdomain" class="form-input" placeholder="Subdomínio (ex.: minhaempresa)">
-        <input type="email" id="zdEmail" class="form-input" autocomplete="off" placeholder="Novo e-mail (em branco mantém o atual)">
-        <input type="password" id="zdApiToken" class="form-input" autocomplete="off" placeholder="Novo token (em branco mantém o atual)">
+        <!-- Credenciais preenchidas automaticamente (config) e mantidas ocultas no DOM para a importação ler -->
+        <div style="display:none">
+          <input type="text" id="zdSubdomain" autocomplete="off">
+          <input type="email" id="zdEmail" autocomplete="off">
+          <input type="password" id="zdApiToken" autocomplete="off">
+          <input type="password" id="zdGeminiKey" autocomplete="off">
+        </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button type="button" id="zdTestCredsBtn" onclick="App.testZendeskCreds()" class="btn-secondary" style="font-size:12px;padding:6px 12px"><i class="ti ti-plug-connected"></i> Testar credenciais</button>
           <span id="zdTestCredsResult" style="font-size:11px;color:var(--muted)"></span>
         </div>
-        <input type="password" id="zdGeminiKey" class="form-input" autocomplete="off" placeholder="Nova chave Gemini (opcional; em branco mantém)">
       </div>
       <span class="input-label">Grupos no Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
@@ -1975,12 +1978,11 @@ var UIModals = (function() {
     var zdDateFromEl = document.getElementById('zdDateFrom');
     var zdDateToEl   = document.getElementById('zdDateTo');
     var zdProgEl    = document.getElementById('zdImportProgress');
+    // Preenche automaticamente (campos ficam ocultos no DOM); a importação lê esses values.
     if (zdSubEl)      zdSubEl.value   = zdCfg.subdomain  || '';
-    // Credenciais sensíveis: NÃO pré-preenche (evita expor no DOM). Mostra resumo
-    // mascarado; campos em branco = mantém o que está salvo.
-    if (zdEmailEl)    zdEmailEl.value = '';
-    if (zdTokEl)      zdTokEl.value   = '';
-    if (zdGemEl)      zdGemEl.value   = '';
+    if (zdEmailEl)    zdEmailEl.value = zdCfg.email      || '';
+    if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
+    if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
     if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
     var zdSummaryEl = document.getElementById('zdCredsSummary');
     if (zdSummaryEl) {
@@ -1998,9 +2000,9 @@ var UIModals = (function() {
         return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
       }
       zdSummaryEl.innerHTML = (zdCfg.email || zdCfg.apiToken)
-        ? 'Salvos: e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
-          ' · Gemini <b>' + (zdCfg.geminiKey ? esc(maskMid(zdCfg.geminiKey, 0, 4)) : '—') + '</b><br>Deixe os campos em branco para manter; preencha para trocar.'
-        : 'Nenhuma credencial salva — preencha abaixo.';
+        ? 'Credenciais preenchidas automaticamente · e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
+          ' · subdomínio <b>' + esc(zdCfg.subdomain || '—') + '</b><br>Use “Testar credenciais” para validar a conexão.'
+        : 'Nenhuma credencial configurada.';
     }
     // Popula checkboxes de grupos
     var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
@@ -2350,6 +2352,7 @@ var UIModals = (function() {
           bad_tickets:   ticketData.bad_tickets.map(function(t) { return Object.assign({}, t); }),
           module_good:   ticketData.module_good   || {},
           category_good: ticketData.category_good || {},
+          good_tickets:  ticketData.good_tickets  || [],
           all_tickets:   ticketData.all_tickets   || []
         }
       : null;
@@ -2365,10 +2368,19 @@ var UIModals = (function() {
     var modScores = {};
     function computeModScores() {
       var mg = (ticketData && ticketData.module_good) || {};
+      // Positivos com data → permite filtrar por período. Sem eles (dados antigos),
+      // usa o agregado module_good e não aplica filtro de data (comportamento antigo).
+      var gt = (pending && pending.good_tickets && pending.good_tickets.length) ? pending.good_tickets : null;
       var out = {};
       (modules || []).forEach(function(m) {
-        var good = mg[m] || 0;
-        var badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        var good, badArr;
+        if (gt) {
+          good   = gt.filter(function(x) { return (x.module || '') === m && dateInRange(x.date); }).length;
+          badArr = pending.bad_tickets.filter(function(x) { return x.module === m && x.consider && dateInRange(x.date); });
+        } else {
+          good   = mg[m] || 0;
+          badArr = pending ? pending.bad_tickets.filter(function(x) { return x.module === m && x.consider; }) : [];
+        }
         out[m] = { good: good, bad: badArr.length, score: ZendeskSync.recalcScore(good, badArr) };
       });
       return out;
@@ -2514,15 +2526,25 @@ var UIModals = (function() {
       }
 
       var visible  = pending.bad_tickets.filter(ticketVisible);
-      var good     = pending.good_count;
-      var consBad  = pending.bad_tickets.filter(function(t) { return t.consider; }).length;
-      var total    = good + pending.bad_tickets.length;
-      var filtered = visible.length < pending.bad_tickets.length;
+      // Positivos com data → contam dentro do período do filtro. Sem eles (dados
+      // antigos), usa o total agregado e não filtra por data.
+      var hasGT    = pending.good_tickets && pending.good_tickets.length;
+      var good, badScope;
+      if (hasGT) {
+        good     = pending.good_tickets.filter(function(x) { return dateInRange(x.date); }).length;
+        badScope = pending.bad_tickets.filter(function(t) { return dateInRange(t.date); });
+      } else {
+        good     = pending.good_count;
+        badScope = pending.bad_tickets;
+      }
+      var consBad  = badScope.filter(function(t) { return t.consider; }).length;
+      var total    = good + badScope.length;
+      var filtered = visible.length < badScope.length;
 
       listEl.innerHTML =
         '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' +
-          good + ' positivos · ' + consBad + '/' + pending.bad_tickets.length + ' considerados · total: ' + total +
-          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + pending.bad_tickets.length + ' exibidos</span>' : '') +
+          good + ' positivos · ' + consBad + '/' + badScope.length + ' considerados · total: ' + total +
+          (filtered ? ' <span style="color:#B45309">· ' + visible.length + ' de ' + badScope.length + ' exibidos</span>' : '') +
         '</div>' +
         (visible.length === 0
           ? '<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Nenhum ticket nesse período.</div>'
@@ -2594,6 +2616,8 @@ var UIModals = (function() {
         var toEl   = document.getElementById('zdTktDateTo');
         filterFromInt = inputToInt(fromEl && fromEl.value);
         filterToInt   = inputToInt(toEl   && toEl.value);
+        modScores = computeModScores(); // positivos/negativos por módulo no período
+        renderModuleScores();
         renderList();
       };
 
@@ -2604,6 +2628,8 @@ var UIModals = (function() {
         var toEl   = document.getElementById('zdTktDateTo');
         if (fromEl) fromEl.value = '';
         if (toEl)   toEl.value = '';
+        modScores = computeModScores();
+        renderModuleScores();
         renderList();
       };
     }
@@ -3173,7 +3199,7 @@ var ZendeskSync = (function() {
         });
 
         var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {} });
+        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {}, good_tickets: data.good_tickets || [] });
         analyst.zendesk = recalcScore(goodCount, bad_tickets);
 
         // Aplica foto se tiver
@@ -3455,10 +3481,18 @@ var ZendeskSync = (function() {
         var allIds = {};
         ratings.forEach(function(r) {
           var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
+          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], good_raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
           if (r.ticket_id) allIds[r.ticket_id] = true;
           if (r.score === 'good') {
             agentMap[name].good++;
+            var dg = new Date(r.created_at);
+            agentMap[name].good_raw.push({
+              id:   r.ticket_id,
+              date: dg.getDate().toString().padStart(2,'0') + '/' +
+                    (dg.getMonth()+1).toString().padStart(2,'0') + '/' +
+                    dg.getFullYear(),
+              module: '', zdCategory: ''
+            });
           } else if (r.score === 'bad') {
             agentMap[name].bad++;
             var d = new Date(r.created_at);
@@ -3542,6 +3576,10 @@ var ZendeskSync = (function() {
             saveCategoryStats(categoryAgg);
             Object.keys(agentMap).forEach(function(n) {
               agentMap[n].raw.forEach(function(t) {
+                t.module     = moduleMap[t.id]   || '';
+                t.zdCategory = categoryMap[t.id] || '';
+              });
+              agentMap[n].good_raw.forEach(function(t) {
                 t.module     = moduleMap[t.id]   || '';
                 t.zdCategory = categoryMap[t.id] || '';
               });
@@ -3633,6 +3671,10 @@ var ZendeskSync = (function() {
             category_good: a.category_good || {},
             bad_tickets: a.raw.map(function(t) {
               return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '', zdCategory: t.zdCategory || '' };
+            }),
+            // Positivos individuais com data (para o filtro por período contar certo)
+            good_tickets: a.good_raw.map(function(t) {
+              return { id: t.id, date: t.date, module: t.module || '', zdCategory: t.zdCategory || '' };
             })
           };
         });
