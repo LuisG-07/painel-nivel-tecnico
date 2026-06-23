@@ -3386,7 +3386,8 @@ var ZendeskSync = (function() {
           all = all.concat(batch);
           onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
           var next = nextPageUrl(data);
-          if (next && all.length < 8000) return delay(500).then(function() { return fetchPage(next); });
+          // Teto de segurança alto só para evitar loop; quem limita é o período (start/end).
+          if (next && all.length < 100000) return delay(500).then(function() { return fetchPage(next); });
           return all;
         });
       }
@@ -3710,7 +3711,8 @@ var ZendeskSync = (function() {
                 });
                 onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
                 var next = nextPageUrl(d);
-                if (next && collected < 3000) return delay(500).then(function() { return page(next); });
+                // Teto de segurança alto; na prática a Search API do Zendesk já limita ~1000/consulta.
+                if (next && collected < 20000) return delay(500).then(function() { return page(next); });
                 return null;
               }).catch(function() { return null; });
             }
@@ -4171,19 +4173,35 @@ var App = (function() {
     // Salva para a importação usar as mesmas credenciais
     ZendeskSync.saveConfig(Object.assign({}, cfg, { subdomain: sub, email: email, apiToken: token, geminiKey: g('zdGeminiKey') || cfg.geminiKey }));
 
+    // E-mail mascarado, pra mostrar QUAL e-mail está sendo usado (sem expor tudo)
+    var maskedEmail = (function(e) {
+      var at = e.indexOf('@'); if (at < 1) return e.slice(0, 2) + '•••';
+      var dot = e.lastIndexOf('.');
+      return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
+    })(email);
+
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…'; }
-    say('Testando…', 'var(--muted)');
+    say('Testando… (e-mail ' + maskedEmail + ')', 'var(--muted)');
     fetch('/zdproxy/' + sub + '/api/v2/users/me.json', { headers: { Authorization: 'Basic ' + btoa(email + '/token:' + token) } })
       .then(function(r) { return r.text().then(function(b) { return { ok: r.ok, status: r.status, body: b }; }); })
       .then(function(res) {
+        // Extrai a mensagem exata do Zendesk do corpo da resposta
+        var detail = '';
+        try {
+          var j = JSON.parse(res.body);
+          var e2 = j.error;
+          detail = (e2 && typeof e2 === 'object') ? (e2.message || e2.title || JSON.stringify(e2))
+                 : (e2 || j.description || j.message || '');
+        } catch (e) {}
         if (res.ok) {
           var name = ''; try { name = JSON.parse(res.body).user.name; } catch (e) {}
-          say('✓ Autenticado' + (name ? ' como ' + name : '') + '. Pode importar.', '#15803D');
+          say('✓ Autenticado' + (name ? ' como ' + name : '') + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub + '. Pode importar.', '#15803D');
         } else {
-          say('✗ HTTP ' + res.status + (res.status === 401 ? ' — e-mail/token inválidos.' : res.status === 404 ? ' — subdomínio inválido.' : ' — falha.'), '#CC0000');
+          say('✗ HTTP ' + res.status + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub +
+              (detail ? ' · Zendesk: "' + detail + '"' : ''), '#CC0000');
         }
       })
-      .catch(function(err) { say('✗ ' + err.message, '#CC0000'); })
+      .catch(function(err) { say('✗ ' + err.message + ' (e-mail ' + maskedEmail + ')', '#CC0000'); })
       .then(function() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar credenciais'; } });
   }
 
