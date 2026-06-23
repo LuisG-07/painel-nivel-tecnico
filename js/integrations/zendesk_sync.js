@@ -226,6 +226,32 @@ var ZendeskSync = (function() {
     return out;
   }
 
+  // Tickets negativados de uma categoria do Zendesk (zdCategory), somando toda
+  // a equipe — para consulta a partir do ranking de categorias.
+  function negativesForCategory(analysts, categoryName) {
+    var target = categoryName || '';
+    var out = [];
+    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
+      var t = getTickets(a.id);
+      if (!t) return;
+      (t.bad_tickets || []).forEach(function(x) {
+        if ((x.zdCategory || '') !== target) return;
+        out.push({
+          analyst:  a.name,
+          id:       x.id,
+          date:     x.date || '',
+          subject:  x.subject || '',
+          comment:  x.comment || '',
+          zdCategory: x.zdCategory || '',
+          category: x.category || '',
+          module:   x.module || '',
+          consider: x.consider !== false
+        });
+      });
+    });
+    return out;
+  }
+
   // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
   // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
   // para a nota refletir o desempenho individual.
@@ -1063,6 +1089,7 @@ var ZendeskSync = (function() {
     categoryRanking: categoryRanking,
     moduleRanking:  moduleRanking,
     negativesForModule: negativesForModule,
+    negativesForCategory: negativesForCategory,
     detectTicketFields: detectTicketFields,
     getTickets:     getTickets,
     saveTickets:    saveTickets,

@@ -964,17 +964,16 @@ var UIModals = (function() {
     };
   }
 
-  // Consulta global: todos os tickets negativos de um módulo (ou "Sem módulo")
-  // somando a equipe toda. Apenas leitura.
-  function openModuleTickets(moduleName, analysts, subdomain) {
+  // Consulta global: todos os tickets negativos de um grupo (categoria/módulo),
+  // somando a equipe toda. Recebe a lista pronta. Apenas leitura.
+  function openNegativesModal(label, list, subdomain) {
     var modal  = document.getElementById('zdModTktModal');
     var nameEl = document.getElementById('zdModTktName');
     var infoEl = document.getElementById('zdModTktInfo');
     var body   = document.getElementById('zdModTktBody');
     if (!modal || !body) return;
 
-    var label = moduleName ? moduleName : 'Sem módulo';
-    var list  = (ZendeskSync.negativesForModule(analysts, moduleName) || []).slice();
+    list = (list || []).slice();
     // Mais recentes primeiro (data dd/mm/yyyy)
     function dInt(s) { var p = String(s || '').split('/'); return p.length === 3 ? (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0]) : 0; }
     list.sort(function(a, b) { return dInt(b.date) - dInt(a.date); });
@@ -982,9 +981,8 @@ var UIModals = (function() {
     var considered = list.filter(function(t) { return t.consider; }).length;
     var sub = (subdomain || '').trim();
 
-    if (nameEl) nameEl.textContent = label;
-    if (infoEl) infoEl.textContent = list.length + ' ticket(s) negativo(s)' +
-      (moduleName ? '' : ' sem módulo identificado') + ' · ' + considered + ' considerado(s) na nota';
+    if (nameEl) nameEl.textContent = label || '—';
+    if (infoEl) infoEl.textContent = list.length + ' ticket(s) negativo(s) · ' + considered + ' considerado(s) na nota';
 
     body.innerHTML = list.length
       ? list.map(function(t) {
@@ -1017,7 +1015,7 @@ var UIModals = (function() {
     openProva:           openProva,
     openManage:          openManage,
     openZendeskTickets:  openZendeskTickets,
-    openModuleTickets:   openModuleTickets,
+    openNegativesModal:  openNegativesModal,
     init:                init,
     switchModalTab:      switchModalTab,
     _setScore:           setScore,

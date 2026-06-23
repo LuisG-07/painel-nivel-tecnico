@@ -314,14 +314,18 @@ var App = (function() {
     });
   }
 
-  // Consulta os tickets negativos de um módulo do ranking "Módulos mais
-  // negativados (Zendesk)". Recebe o índice da linha (recalcula o ranking).
-  function openZdModuleTickets(index) {
-    if (!ZendeskSync.moduleRanking) return;
-    var ranking = ZendeskSync.moduleRanking(state.analysts) || [];
+  // Consulta os tickets negativos de uma categoria do ranking "Categorias mais
+  // negativadas (Zendesk)". Recebe o índice da linha (recalcula o ranking).
+  function openZdCategoryTickets(index) {
+    if (!ZendeskSync.categoryRanking) return;
+    var ranking = ZendeskSync.categoryRanking(state.analysts) || [];
     var row = ranking[index];
     if (!row) return;
-    UIModals.openModuleTickets(row.module, state.analysts, ZendeskSync.getConfig().subdomain);
+    UIModals.openNegativesModal(
+      row.category,
+      ZendeskSync.negativesForCategory(state.analysts, row.category),
+      ZendeskSync.getConfig().subdomain
+    );
   }
 
   function importFromZendesk() {
@@ -502,7 +506,7 @@ var App = (function() {
     toggleModuleDetail: toggleModuleDetail,
     openManageModal:    openManageModal,
     openZendeskTickets: openZendeskTickets,
-    openZdModuleTickets: openZdModuleTickets,
+    openZdCategoryTickets: openZdCategoryTickets,
     importFromZendesk:      importFromZendesk,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML
