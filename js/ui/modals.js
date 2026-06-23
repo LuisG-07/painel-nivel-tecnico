@@ -316,26 +316,6 @@ var UIModals = (function() {
     if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
     if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
     if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
-    var zdSummaryEl = document.getElementById('zdCredsSummary');
-    if (zdSummaryEl) {
-      function maskMid(v, keepStart, keepEnd) {
-        v = String(v || '');
-        if (!v) return '—';
-        if (v.length <= keepStart + keepEnd) return '••••';
-        return v.slice(0, keepStart) + '••••' + v.slice(v.length - keepEnd);
-      }
-      function maskEmail(e) {
-        e = String(e || '');
-        var at = e.indexOf('@');
-        if (at < 1) return e ? maskMid(e, 2, 0) : '—';
-        var dot = e.lastIndexOf('.');
-        return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
-      }
-      zdSummaryEl.innerHTML = (zdCfg.email || zdCfg.apiToken)
-        ? 'Credenciais preenchidas automaticamente · e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
-          ' · subdomínio <b>' + esc(zdCfg.subdomain || '—') + '</b><br>Use “Testar credenciais” para validar a conexão.'
-        : 'Nenhuma credencial configurada.';
-    }
     // Popula checkboxes de grupos
     var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
     if (typeof selectedIds === 'string') selectedIds = [selectedIds];

@@ -328,53 +328,6 @@ var App = (function() {
     );
   }
 
-  // Testa as credenciais digitadas direto na API do Zendesk (via proxy) e salva.
-  function testZendeskCreds() {
-    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    var resEl = document.getElementById('zdTestCredsResult');
-    var btn   = document.getElementById('zdTestCredsBtn');
-    var cfg   = ZendeskSync.getConfig();
-    var sub   = g('zdSubdomain').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain;
-    var email = g('zdEmail')    || cfg.email;
-    var token = g('zdApiToken') || cfg.apiToken;
-    function say(msg, color) { if (resEl) { resEl.textContent = msg; resEl.style.color = color; } }
-    if (!sub || !email || !token) { say('Preencha subdomínio, e-mail e token.', '#CC0000'); return; }
-
-    // Salva para a importação usar as mesmas credenciais
-    ZendeskSync.saveConfig(Object.assign({}, cfg, { subdomain: sub, email: email, apiToken: token, geminiKey: g('zdGeminiKey') || cfg.geminiKey }));
-
-    // E-mail mascarado, pra mostrar QUAL e-mail está sendo usado (sem expor tudo)
-    var maskedEmail = (function(e) {
-      var at = e.indexOf('@'); if (at < 1) return e.slice(0, 2) + '•••';
-      var dot = e.lastIndexOf('.');
-      return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
-    })(email);
-
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…'; }
-    say('Testando… (e-mail ' + maskedEmail + ')', 'var(--muted)');
-    fetch('/zdproxy/' + sub + '/api/v2/users/me.json', { headers: { Authorization: 'Basic ' + btoa(email + '/token:' + token) } })
-      .then(function(r) { return r.text().then(function(b) { return { ok: r.ok, status: r.status, body: b }; }); })
-      .then(function(res) {
-        // Extrai a mensagem exata do Zendesk do corpo da resposta
-        var detail = '';
-        try {
-          var j = JSON.parse(res.body);
-          var e2 = j.error;
-          detail = (e2 && typeof e2 === 'object') ? (e2.message || e2.title || JSON.stringify(e2))
-                 : (e2 || j.description || j.message || '');
-        } catch (e) {}
-        if (res.ok) {
-          var name = ''; try { name = JSON.parse(res.body).user.name; } catch (e) {}
-          say('✓ Autenticado' + (name ? ' como ' + name : '') + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub + '. Pode importar.', '#15803D');
-        } else {
-          say('✗ HTTP ' + res.status + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub +
-              (detail ? ' · Zendesk: "' + detail + '"' : ''), '#CC0000');
-        }
-      })
-      .catch(function(err) { say('✗ ' + err.message + ' (e-mail ' + maskedEmail + ')', '#CC0000'); })
-      .then(function() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar credenciais'; } });
-  }
-
   function importFromZendesk() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -555,7 +508,6 @@ var App = (function() {
     openZendeskTickets: openZendeskTickets,
     openZdCategoryTickets: openZdCategoryTickets,
     importFromZendesk:      importFromZendesk,
-    testZendeskCreds:       testZendeskCreds,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML
   };

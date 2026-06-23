@@ -539,20 +539,12 @@ body{
 
     <div class="modal-tab-panel" data-panel="zendesk">
       <!-- Credenciais da API do Zendesk -->
-      <span class="input-label">Conexão Zendesk</span>
-      <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px">
-        <div id="zdCredsSummary" style="font-size:11px;color:var(--muted);line-height:1.5"></div>
-        <!-- Credenciais preenchidas automaticamente (config) e mantidas ocultas no DOM para a importação ler -->
-        <div style="display:none">
-          <input type="text" id="zdSubdomain" autocomplete="off">
-          <input type="email" id="zdEmail" autocomplete="off">
-          <input type="password" id="zdApiToken" autocomplete="off">
-          <input type="password" id="zdGeminiKey" autocomplete="off">
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button type="button" id="zdTestCredsBtn" onclick="App.testZendeskCreds()" class="btn-secondary" style="font-size:12px;padding:6px 12px"><i class="ti ti-plug-connected"></i> Testar credenciais</button>
-          <span id="zdTestCredsResult" style="font-size:11px;color:var(--muted)"></span>
-        </div>
+      <!-- Credenciais ocultas (preenchidas automaticamente) — mantidas no DOM para a importação ler -->
+      <div style="display:none">
+        <input type="text" id="zdSubdomain" autocomplete="off">
+        <input type="email" id="zdEmail" autocomplete="off">
+        <input type="password" id="zdApiToken" autocomplete="off">
+        <input type="password" id="zdGeminiKey" autocomplete="off">
       </div>
       <span class="input-label">Grupos no Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">
@@ -1984,26 +1976,6 @@ var UIModals = (function() {
     if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
     if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
     if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
-    var zdSummaryEl = document.getElementById('zdCredsSummary');
-    if (zdSummaryEl) {
-      function maskMid(v, keepStart, keepEnd) {
-        v = String(v || '');
-        if (!v) return '—';
-        if (v.length <= keepStart + keepEnd) return '••••';
-        return v.slice(0, keepStart) + '••••' + v.slice(v.length - keepEnd);
-      }
-      function maskEmail(e) {
-        e = String(e || '');
-        var at = e.indexOf('@');
-        if (at < 1) return e ? maskMid(e, 2, 0) : '—';
-        var dot = e.lastIndexOf('.');
-        return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
-      }
-      zdSummaryEl.innerHTML = (zdCfg.email || zdCfg.apiToken)
-        ? 'Credenciais preenchidas automaticamente · e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
-          ' · subdomínio <b>' + esc(zdCfg.subdomain || '—') + '</b><br>Use “Testar credenciais” para validar a conexão.'
-        : 'Nenhuma credencial configurada.';
-    }
     // Popula checkboxes de grupos
     var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
     if (typeof selectedIds === 'string') selectedIds = [selectedIds];
@@ -4200,53 +4172,6 @@ var App = (function() {
     );
   }
 
-  // Testa as credenciais digitadas direto na API do Zendesk (via proxy) e salva.
-  function testZendeskCreds() {
-    var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
-    var resEl = document.getElementById('zdTestCredsResult');
-    var btn   = document.getElementById('zdTestCredsBtn');
-    var cfg   = ZendeskSync.getConfig();
-    var sub   = g('zdSubdomain').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\.zendesk\.com.*/i, '') || cfg.subdomain;
-    var email = g('zdEmail')    || cfg.email;
-    var token = g('zdApiToken') || cfg.apiToken;
-    function say(msg, color) { if (resEl) { resEl.textContent = msg; resEl.style.color = color; } }
-    if (!sub || !email || !token) { say('Preencha subdomínio, e-mail e token.', '#CC0000'); return; }
-
-    // Salva para a importação usar as mesmas credenciais
-    ZendeskSync.saveConfig(Object.assign({}, cfg, { subdomain: sub, email: email, apiToken: token, geminiKey: g('zdGeminiKey') || cfg.geminiKey }));
-
-    // E-mail mascarado, pra mostrar QUAL e-mail está sendo usado (sem expor tudo)
-    var maskedEmail = (function(e) {
-      var at = e.indexOf('@'); if (at < 1) return e.slice(0, 2) + '•••';
-      var dot = e.lastIndexOf('.');
-      return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
-    })(email);
-
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testando…'; }
-    say('Testando… (e-mail ' + maskedEmail + ')', 'var(--muted)');
-    fetch('/zdproxy/' + sub + '/api/v2/users/me.json', { headers: { Authorization: 'Basic ' + btoa(email + '/token:' + token) } })
-      .then(function(r) { return r.text().then(function(b) { return { ok: r.ok, status: r.status, body: b }; }); })
-      .then(function(res) {
-        // Extrai a mensagem exata do Zendesk do corpo da resposta
-        var detail = '';
-        try {
-          var j = JSON.parse(res.body);
-          var e2 = j.error;
-          detail = (e2 && typeof e2 === 'object') ? (e2.message || e2.title || JSON.stringify(e2))
-                 : (e2 || j.description || j.message || '');
-        } catch (e) {}
-        if (res.ok) {
-          var name = ''; try { name = JSON.parse(res.body).user.name; } catch (e) {}
-          say('✓ Autenticado' + (name ? ' como ' + name : '') + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub + '. Pode importar.', '#15803D');
-        } else {
-          say('✗ HTTP ' + res.status + ' · e-mail ' + maskedEmail + ' · subdomínio ' + sub +
-              (detail ? ' · Zendesk: "' + detail + '"' : ''), '#CC0000');
-        }
-      })
-      .catch(function(err) { say('✗ ' + err.message + ' (e-mail ' + maskedEmail + ')', '#CC0000'); })
-      .then(function() { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-plug-connected"></i> Testar credenciais'; } });
-  }
-
   function importFromZendesk() {
     // Salva o que estiver nos campos antes de importar
     var g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -4427,7 +4352,6 @@ var App = (function() {
     openZendeskTickets: openZendeskTickets,
     openZdCategoryTickets: openZdCategoryTickets,
     importFromZendesk:      importFromZendesk,
-    testZendeskCreds:       testZendeskCreds,
     saveNameMapAndReimport: saveNameMapAndReimport,
     exportHTML:         exportHTML
   };
