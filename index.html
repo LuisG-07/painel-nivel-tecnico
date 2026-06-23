@@ -259,17 +259,20 @@
 
     <div class="modal-tab-panel" data-panel="zendesk">
       <!-- Credenciais da API do Zendesk -->
-      <span class="input-label">Credenciais do Zendesk</span>
+      <span class="input-label">Conexão Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px">
         <div id="zdCredsSummary" style="font-size:11px;color:var(--muted);line-height:1.5"></div>
-        <input type="text" id="zdSubdomain" class="form-input" placeholder="Subdomínio (ex.: minhaempresa)">
-        <input type="email" id="zdEmail" class="form-input" autocomplete="off" placeholder="Novo e-mail (em branco mantém o atual)">
-        <input type="password" id="zdApiToken" class="form-input" autocomplete="off" placeholder="Novo token (em branco mantém o atual)">
+        <!-- Credenciais preenchidas automaticamente (config) e mantidas ocultas no DOM para a importação ler -->
+        <div style="display:none">
+          <input type="text" id="zdSubdomain" autocomplete="off">
+          <input type="email" id="zdEmail" autocomplete="off">
+          <input type="password" id="zdApiToken" autocomplete="off">
+          <input type="password" id="zdGeminiKey" autocomplete="off">
+        </div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button type="button" id="zdTestCredsBtn" onclick="App.testZendeskCreds()" class="btn-secondary" style="font-size:12px;padding:6px 12px"><i class="ti ti-plug-connected"></i> Testar credenciais</button>
           <span id="zdTestCredsResult" style="font-size:11px;color:var(--muted)"></span>
         </div>
-        <input type="password" id="zdGeminiKey" class="form-input" autocomplete="off" placeholder="Nova chave Gemini (opcional; em branco mantém)">
       </div>
       <span class="input-label">Grupos no Zendesk</span>
       <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">

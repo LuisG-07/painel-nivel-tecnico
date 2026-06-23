@@ -310,12 +310,11 @@ var UIModals = (function() {
     var zdDateFromEl = document.getElementById('zdDateFrom');
     var zdDateToEl   = document.getElementById('zdDateTo');
     var zdProgEl    = document.getElementById('zdImportProgress');
+    // Preenche automaticamente (campos ficam ocultos no DOM); a importação lê esses values.
     if (zdSubEl)      zdSubEl.value   = zdCfg.subdomain  || '';
-    // Credenciais sensíveis: NÃO pré-preenche (evita expor no DOM). Mostra resumo
-    // mascarado; campos em branco = mantém o que está salvo.
-    if (zdEmailEl)    zdEmailEl.value = '';
-    if (zdTokEl)      zdTokEl.value   = '';
-    if (zdGemEl)      zdGemEl.value   = '';
+    if (zdEmailEl)    zdEmailEl.value = zdCfg.email      || '';
+    if (zdTokEl)      zdTokEl.value   = zdCfg.apiToken   || '';
+    if (zdGemEl)      zdGemEl.value   = zdCfg.geminiKey  || '';
     if (zdUrlEl)      zdUrlEl.value   = zdCfg.scriptUrl  || '';
     var zdSummaryEl = document.getElementById('zdCredsSummary');
     if (zdSummaryEl) {
@@ -333,9 +332,9 @@ var UIModals = (function() {
         return e.slice(0, 2) + '•••@•••' + (dot > at ? e.slice(dot) : '');
       }
       zdSummaryEl.innerHTML = (zdCfg.email || zdCfg.apiToken)
-        ? 'Salvos: e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
-          ' · Gemini <b>' + (zdCfg.geminiKey ? esc(maskMid(zdCfg.geminiKey, 0, 4)) : '—') + '</b><br>Deixe os campos em branco para manter; preencha para trocar.'
-        : 'Nenhuma credencial salva — preencha abaixo.';
+        ? 'Credenciais preenchidas automaticamente · e-mail <b>' + esc(maskEmail(zdCfg.email)) + '</b> · token <b>' + esc(maskMid(zdCfg.apiToken, 0, 4)) + '</b>' +
+          ' · subdomínio <b>' + esc(zdCfg.subdomain || '—') + '</b><br>Use “Testar credenciais” para validar a conexão.'
+        : 'Nenhuma credencial configurada.';
     }
     // Popula checkboxes de grupos
     var selectedIds = zdCfg.groupIds || ['6441506014871', '21198035409559', '360001272933'];
