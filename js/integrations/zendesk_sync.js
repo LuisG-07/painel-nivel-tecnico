@@ -45,8 +45,19 @@ var ZendeskSync = (function() {
   // ---------------------------------------------------------------------------
   // Config: public fields in localStorage, credentials in sessionStorage
   // ---------------------------------------------------------------------------
+  // Remove chaves com valor vazio/nulo para que NÃO sobrescrevam os padrões
+  // embutidos (ex.: um e-mail/token salvo em branco não apaga o default).
+  function _pruneEmpty(o) {
+    var out = {};
+    Object.keys(o || {}).forEach(function(k) {
+      var v = o[k];
+      if (v !== '' && v !== null && v !== undefined) out[k] = v;
+    });
+    return out;
+  }
+
   function _getSensitive() {
-    try { return Object.assign({}, DEFAULT_SEC, JSON.parse(localStorage.getItem(SEC_KEY)) || {}); }
+    try { return Object.assign({}, DEFAULT_SEC, _pruneEmpty(JSON.parse(localStorage.getItem(SEC_KEY)) || {})); }
     catch (e) { return Object.assign({}, DEFAULT_SEC); }
   }
 
@@ -60,7 +71,7 @@ var ZendeskSync = (function() {
 
   function getConfig() {
     try {
-      var stored = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
+      var stored = _pruneEmpty(JSON.parse(localStorage.getItem(CFG_KEY)) || {});
       return Object.assign({}, DEFAULT_CFG, stored, _getSensitive());
     }
     catch (e) { return Object.assign({}, DEFAULT_CFG, _getSensitive()); }
@@ -115,6 +126,25 @@ var ZendeskSync = (function() {
     savePhotoCache(cache);
   }
 
+  // Cache de e-mails dos agentes do Zendesk (nome normalizado → e-mail), para
+  // preencher o cadastro do analista. Capturado na importação (users/show_many).
+  var EMAILS_KEY = 'skm6_zdemails';
+  function _emailKey(name) {
+    // minúsculas, sem espaços nas pontas e sem acentos (NFD: remove faixa 0x300–0x36f)
+    return (name || '').toString().trim().toLowerCase().normalize('NFD')
+      .split('').filter(function(c) { var x = c.charCodeAt(0); return x < 0x300 || x > 0x36f; }).join('');
+  }
+  function getAgentEmails() {
+    try { return JSON.parse(localStorage.getItem(EMAILS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveAgentEmails(map) {
+    try { localStorage.setItem(EMAILS_KEY, JSON.stringify(map || {})); } catch (e) {}
+  }
+  function getAgentEmail(name) {
+    return getAgentEmails()[_emailKey(name)] || '';
+  }
+
   function getTickets(analystId) {
     try {
       var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
@@ -140,11 +170,15 @@ var ZendeskSync = (function() {
   function saveCategoryStats(obj) {
     try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(obj || {})); } catch (e) {}
   }
+  // Rótulo do bucket de tickets sem categoria identificada (para não sumirem do ranking).
+  var SEM_CATEGORIA = '(Sem categoria)';
   // Ranking de categorias por nº de avaliações negativas (pior primeiro).
   // Calculado a partir dos TICKETS POR ANALISTA — mesma base das notas Zendesk —
   // honrando o toggle "considerar" de cada negativo (negativos ignorados não contam,
   // exatamente como na nota). Assim o nº de negativas bate com o painel.
   // Positivos por categoria vêm de t.category_good (gravado na importação).
+  // Negativos/positivos sem categoria entram no bucket "(Sem categoria)", para o
+  // ranking puxar TODOS os tickets (mesma base da rotina por analista).
   // Retorna [{ category, good, bad, total, rate }].
   function categoryRanking(analysts) {
     var good = {}, bad = {};
@@ -152,11 +186,14 @@ var ZendeskSync = (function() {
       var t = getTickets(a.id);
       if (!t) return;
       var cg = t.category_good || {};
-      Object.keys(cg).forEach(function(cat) { good[cat] = (good[cat] || 0) + (cg[cat] || 0); });
+      var sumCg = 0;
+      Object.keys(cg).forEach(function(cat) { good[cat] = (good[cat] || 0) + (cg[cat] || 0); sumCg += (cg[cat] || 0); });
+      // positivos não atribuídos a categoria → bucket "(Sem categoria)"
+      var leftoverGood = (t.good_count || 0) - sumCg;
+      if (leftoverGood > 0) good[SEM_CATEGORIA] = (good[SEM_CATEGORIA] || 0) + leftoverGood;
       (t.bad_tickets || []).forEach(function(x) {
-        if (!x.consider) return;            // honra o toggle: ignorado não conta
-        var cat = x.zdCategory || '';
-        if (!cat) return;                   // sem categoria identificada → fora do ranking
+        if (!x.consider) return;                  // honra o toggle: ignorado não conta
+        var cat = x.zdCategory || SEM_CATEGORIA;  // sem categoria → bucket "(Sem categoria)"
         bad[cat] = (bad[cat] || 0) + 1;
       });
     });
@@ -230,12 +267,15 @@ var ZendeskSync = (function() {
   // a equipe — para consulta a partir do ranking de categorias.
   function negativesForCategory(analysts, categoryName) {
     var target = categoryName || '';
+    // bucket "(Sem categoria)" casa com os negativos sem zdCategory.
+    var wantEmpty = (target === SEM_CATEGORIA || target === '');
     var out = [];
     (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
       var t = getTickets(a.id);
       if (!t) return;
       (t.bad_tickets || []).forEach(function(x) {
-        if ((x.zdCategory || '') !== target) return;
+        var cat = x.zdCategory || '';
+        if (wantEmpty ? cat !== '' : cat !== target) return;
         out.push({
           analyst:  a.name,
           id:       x.id,
@@ -252,14 +292,9 @@ var ZendeskSync = (function() {
     return out;
   }
 
-  // Peso de confiança da média suavizada (Bayesiana): nº de avaliações
-  // "emprestadas" da média da equipe. Quanto maior, mais volume é preciso
-  // para a nota refletir o desempenho individual.
-  var BAYES_K = 10;
-  var DEFAULT_PRIOR = 0.8; // fallback quando não há dados da equipe
+  var DEFAULT_PRIOR = 0.8; // usado só pela média informativa da equipe (não entra na nota)
 
-  // Média de satisfação da equipe (proporção 0–1), a partir dos tickets salvos.
-  // C = total de positivos / (positivos + negativos técnicos) de TODOS os analistas.
+  // Média de satisfação da equipe (proporção 0–1) — informativa; NÃO entra na nota.
   function getTeamPrior() {
     try {
       var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
@@ -274,32 +309,30 @@ var ZendeskSync = (function() {
     } catch (e) { return DEFAULT_PRIOR; }
   }
 
-  // Nota 0–10 com MÉDIA SUAVIZADA (Bayesiana), contando apenas negativos técnicos.
-  //   nota = ( positivos + C·k ) / ( positivos + negativos + k ) × 10
-  // Amostra pequena → nota perto da média da equipe (C); muita avaliação → nota real.
-  // Sem avaliações (n = 0) → null (não inventa nota; não entra na unificada).
-  function bayesianScore(goodCount, consideredBad, prior) {
+  // Nota Zendesk 0–10, simples e transparente:
+  //   nota = positivos ÷ (positivos + negativos técnicos) × 10
+  // É o "% de clientes satisfeitos" numa escala de 0 a 10. Conta só negativos
+  // técnicos (marcados como "considerar"). Sem avaliações (n = 0) → null.
+  function scoreFrom(goodCount, consideredBad) {
     var n = goodCount + consideredBad;
     if (n === 0) return null;
-    var adjusted = (goodCount + prior * BAYES_K) / (n + BAYES_K);
-    return parseFloat((adjusted * 10).toFixed(1));
+    return parseFloat(((goodCount / n) * 10).toFixed(1));
   }
 
   function recalcScore(goodCount, badTickets) {
     var consideredBad = badTickets.filter(function(t) { return t.consider; }).length;
-    return bayesianScore(goodCount, consideredBad, getTeamPrior());
+    return scoreFrom(goodCount, consideredBad);
   }
 
-  // Recalcula a nota Zendesk de todos os analistas usando o MESMO prior da equipe.
+  // Recalcula a nota Zendesk de todos os analistas.
   // Preserva analistas que têm nota manual e não possuem tickets importados.
   function recomputeAllScores(analysts) {
     if (!Array.isArray(analysts)) return;
-    var prior = getTeamPrior();
     analysts.forEach(function(a) {
       var t = getTickets(a.id);
       if (!t) return; // sem tickets → mantém nota manual (se houver)
       var consideredBad = (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
-      a.zendesk = bayesianScore(t.good_count || 0, consideredBad, prior);
+      a.zendesk = scoreFrom(t.good_count || 0, consideredBad);
     });
   }
 
@@ -325,18 +358,17 @@ var ZendeskSync = (function() {
     return true;
   }
 
-  // Nota Zendesk POR MÓDULO de um analista (mesma média suavizada).
+  // Nota Zendesk POR MÓDULO de um analista (mesma fórmula simples).
   // Retorna { "Módulo": { good, bad, score } } para cada módulo informado.
   function moduleScores(analystId, modules) {
     var out = {};
     var t = getTickets(analystId);
     if (!t || !Array.isArray(modules)) return out;
-    var prior = getTeamPrior();
     var mg = t.module_good || {};
     modules.forEach(function(m) {
       var good = mg[m] || 0;
       var bad = (t.bad_tickets || []).filter(function(x) { return x.module === m && x.consider; }).length;
-      out[m] = { good: good, bad: bad, score: bayesianScore(good, bad, prior) };
+      out[m] = { good: good, bad: bad, score: scoreFrom(good, bad) };
     });
     return out;
   }
@@ -565,6 +597,7 @@ var ZendeskSync = (function() {
     var cfg = getConfig();
     var moduleList = Array.isArray(modules) ? modules : [];
     var detectedField = null; // campo de categoria (definido na detecção) — usado também na busca de todos os tickets
+    var emailMap = {};        // nome normalizado → e-mail do agente (capturado em users/show_many)
     if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
       callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
       return;
@@ -583,8 +616,12 @@ var ZendeskSync = (function() {
     var now = Math.floor(Date.now() / 1000);
     var twoMinutesAgo = now - 120;
     if (cfg.dateFrom && cfg.dateTo) {
-      startTime = Math.floor(new Date(cfg.dateFrom).getTime() / 1000);
-      endTime   = Math.floor(new Date(cfg.dateTo).getTime() / 1000) + 86399; // até o final do dia
+      // Interpreta as datas escolhidas como DIA LOCAL (fuso do navegador/conta, ex. BRT),
+      // não como UTC. Sem o 'Thh:mm:ss', new Date('2026-06-01') vira meia-noite UTC e
+      // desloca o período em 3h — incluindo a noite do dia anterior e perdendo a noite
+      // do último dia, o que derruba positivos perto da borda do período.
+      startTime = Math.floor(new Date(cfg.dateFrom + 'T00:00:00').getTime() / 1000);
+      endTime   = Math.floor(new Date(cfg.dateTo + 'T23:59:59').getTime() / 1000); // até o fim do dia local
       // Se end_time for no futuro, ajusta para 2 minutos atrás
       if (endTime > twoMinutesAgo) {
         endTime = twoMinutesAgo;
@@ -610,20 +647,33 @@ var ZendeskSync = (function() {
       return proxyBase + path;
     }
 
-    function zdFetch(path) {
+    // true depois da 1ª resposta autenticada — distingue "credencial ruim" (401 logo
+    // de cara) de "throttle" (401/429 no meio do import, após já ter autenticado).
+    var authedOnce = false;
+    function zdFetch(path, attempt) {
+      attempt = attempt || 0;
       return fetch(toUrl(path), { headers: headers })
         .then(function(r) {
           return r.text().then(function(body) {
-            if (!r.ok) {
-              var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
-                       : r.status === 401 ? 'verifique e-mail e token da API.'
-                       : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
-                       : 'erro inesperado.';
-              var detail = '';
-              try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
-              throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
+            if (r.ok) { authedOnce = true; return JSON.parse(body); }
+
+            // Rate limit (429/503), ou 401 após já ter autenticado → espera e tenta de novo.
+            var throttled = (r.status === 429 || r.status === 503 || (r.status === 401 && authedOnce));
+            if (throttled && attempt < 6) {
+              var ra = parseInt(r.headers.get('retry-after'), 10);
+              var waitMs = ((ra && ra > 0) ? ra : Math.min(60, 8 * (attempt + 1))) * 1000;
+              onProgress('Limite de requisições do Zendesk atingido — aguardando ' + Math.round(waitMs / 1000) + 's e tentando de novo...');
+              return delay(waitMs).then(function() { return zdFetch(path, attempt + 1); });
             }
-            return JSON.parse(body);
+
+            var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
+                     : r.status === 401 ? 'verifique e-mail e token da API.'
+                     : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
+                     : r.status === 429 ? 'limite de requisições por minuto excedido — aguarde 1 min e tente de novo.'
+                     : 'erro inesperado.';
+            var detail = '';
+            try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
+            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
           });
         });
     }
@@ -669,7 +719,8 @@ var ZendeskSync = (function() {
           return all;
         });
       }
-      return fetchPage(base + '/api/v2/satisfaction_ratings.json?per_page=100&start_time=' + startTime + '&end_time=' + endTime + '&group_id=' + groupId)
+      // page[size] força paginação por CURSOR (sem o limite de 10.000 do offset).
+      return fetchPage(base + '/api/v2/satisfaction_ratings.json?page%5Bsize%5D=100&start_time=' + startTime + '&end_time=' + endTime + '&group_id=' + groupId)
         .then(function(ratings) {
           return delay(1000).then(function() {
             return fetchGroupRatings(idx + 1).then(function(nextRatings) {
@@ -715,6 +766,7 @@ var ZendeskSync = (function() {
           var photoMap = {};
           (data.users || []).forEach(function(u) {
             userMap[u.id] = u.name;
+            if (u.email) emailMap[_emailKey(u.name)] = u.email;
             // Prefere thumbnail 128px; fallback para content_url
             if (u.photo) {
               var thumb = u.photo.thumbnails && u.photo.thumbnails.find(function(t) { return t.width >= 128; });
@@ -726,44 +778,21 @@ var ZendeskSync = (function() {
         });
       })
 
-      // 4. Agrupa por agente (captura photoUrl) e coleta todos os ticket_ids avaliados
+      // 4. Busca os tickets PRIMEIRO (precisamos do responsável ATUAL de cada ticket),
+      //    depois agrupa por agente. Quando a avaliação vem sem responsável (assignee_id
+      //    nulo — a pesquisa foi respondida com o ticket sem responsável atribuído), o
+      //    Zendesk credita o positivo/negativo ao responsável ATUAL do ticket. Sem esse
+      //    fallback, essas avaliações somem da contagem e o agente fica com menos do que
+      //    aparece no Zendesk.
       .then(function(result) {
         var ratings = result.ratings;
-        var agentMap = {};
         var allIds = {};
-        ratings.forEach(function(r) {
-          var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-          if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], good_raw: [], module_good: {}, category_good: {}, photoUrl: result.photoMap[r.assignee_id] || null };
-          if (r.ticket_id) allIds[r.ticket_id] = true;
-          if (r.score === 'good') {
-            agentMap[name].good++;
-            var dg = new Date(r.created_at);
-            agentMap[name].good_raw.push({
-              id:   r.ticket_id,
-              date: dg.getDate().toString().padStart(2,'0') + '/' +
-                    (dg.getMonth()+1).toString().padStart(2,'0') + '/' +
-                    dg.getFullYear(),
-              module: '', zdCategory: ''
-            });
-          } else if (r.score === 'bad') {
-            agentMap[name].bad++;
-            var d = new Date(r.created_at);
-            agentMap[name].raw.push({
-              id:      r.ticket_id,
-              date:    d.getDate().toString().padStart(2,'0') + '/' +
-                       (d.getMonth()+1).toString().padStart(2,'0') + '/' +
-                       d.getFullYear(),
-              comment: r.comment || '',
-              category: '',
-              module:  ''
-            });
-          }
-        });
-
+        ratings.forEach(function(r) { if (r.ticket_id) allIds[r.ticket_id] = true; });
         var ticketIds = Object.keys(allIds);
         var subjectMap = {};
         var moduleMap  = {};
         var categoryMap = {}; // ticket_id → nome da categoria (campo Zendesk), independente de módulo
+        var assigneeMap = {}; // ticket_id → responsável ATUAL (fallback p/ avaliação sem responsável)
 
         // 4.1 Descobre automaticamente o campo de categoria (casa opções × módulos)
         var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
@@ -781,7 +810,7 @@ var ZendeskSync = (function() {
           .catch(function() { return null; });
 
         return fieldPromise.then(function(catField) {
-          // 4.2 Busca assunto + categoria de TODOS os tickets avaliados (lotes de 100)
+          // 4.2 Busca assunto + categoria + responsável atual de TODOS os tickets (lotes de 100)
           function fetchInfo(i) {
             if (i >= ticketIds.length) return Promise.resolve();
             var batch = ticketIds.slice(i, i + 100).join(',');
@@ -790,6 +819,7 @@ var ZendeskSync = (function() {
               .then(function(d) {
                 (d.tickets || []).forEach(function(t) {
                   subjectMap[t.id] = t.subject || '';
+                  if (t.assignee_id) assigneeMap[t.id] = t.assignee_id;
                   if (catField) {
                     var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(catField.id); })[0];
                     if (cf && cf.value != null && cf.value !== '') {
@@ -804,48 +834,107 @@ var ZendeskSync = (function() {
           }
 
           return (ticketIds.length ? fetchInfo(0) : Promise.resolve()).then(function() {
-            // 4.3 Segunda passada: positivos por módulo, agregação por categoria (global)
-            // e tag de módulo + categoria nos negativos.
-            var categoryAgg = {}; // { categoria: { good, bad } } — agregado global (referência)
+            // 4.3 Responsável EFETIVO da avaliação: o gravado na avaliação, ou — se vier
+            //     vazio — o responsável atual do ticket.
+            function effId(r) { return r.assignee_id || assigneeMap[r.ticket_id] || null; }
+
+            // Resolve nomes/fotos dos responsáveis atuais que ainda não foram resolvidos
+            // (avaliações sem responsável caem agora num agente novo).
+            var userMap  = result.userMap  || {};
+            var photoMap = result.photoMap || {};
+            var missing = {};
             ratings.forEach(function(r) {
-              var name = result.userMap[r.assignee_id] || ('Agente-' + r.assignee_id);
-              var mod = moduleMap[r.ticket_id];
-              if (mod && r.score === 'good') {
-                agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
-              }
-              var cat = categoryMap[r.ticket_id];
-              if (cat && (r.score === 'good' || r.score === 'bad')) {
-                categoryAgg[cat] = categoryAgg[cat] || { good: 0, bad: 0 };
+              var id = effId(r);
+              if (id && !(id in userMap)) missing[id] = true;
+            });
+            var missIds = Object.keys(missing);
+            var resolveMissing = missIds.length
+              ? zdFetch('/api/v2/users/show_many.json?ids=' + missIds.join(',')).then(function(data) {
+                  (data.users || []).forEach(function(u) {
+                    userMap[u.id] = u.name;
+                    if (u.email) emailMap[_emailKey(u.name)] = u.email;
+                    if (u.photo) {
+                      var thumb = u.photo.thumbnails && u.photo.thumbnails.find(function(t) { return t.width >= 128; });
+                      photoMap[u.id] = (thumb && thumb.content_url) || u.photo.content_url || null;
+                    }
+                  });
+                }).catch(function() {})
+              : Promise.resolve();
+
+            return resolveMissing.then(function() {
+              // 4.4 Agrupa por agente (responsável efetivo) — good/bad + tickets individuais
+              var agentMap = {};
+              ratings.forEach(function(r) {
+                var id = effId(r);
+                var name = userMap[id] || ('Agente-' + id);
+                if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], good_raw: [], module_good: {}, category_good: {}, photoUrl: photoMap[id] || null };
                 if (r.score === 'good') {
-                  categoryAgg[cat].good++;
-                  // positivos por categoria POR AGENTE → permite ranking na mesma base das notas
-                  agentMap[name].category_good[cat] = (agentMap[name].category_good[cat] || 0) + 1;
-                } else {
-                  categoryAgg[cat].bad++;
+                  agentMap[name].good++;
+                  var dg = new Date(r.created_at);
+                  agentMap[name].good_raw.push({
+                    id:   r.ticket_id,
+                    date: dg.getDate().toString().padStart(2,'0') + '/' +
+                          (dg.getMonth()+1).toString().padStart(2,'0') + '/' +
+                          dg.getFullYear(),
+                    module: '', zdCategory: ''
+                  });
+                } else if (r.score === 'bad') {
+                  agentMap[name].bad++;
+                  var d = new Date(r.created_at);
+                  agentMap[name].raw.push({
+                    id:      r.ticket_id,
+                    date:    d.getDate().toString().padStart(2,'0') + '/' +
+                             (d.getMonth()+1).toString().padStart(2,'0') + '/' +
+                             d.getFullYear(),
+                    comment: r.comment || '',
+                    category: '',
+                    module:  ''
+                  });
                 }
-              }
-            });
-            saveCategoryStats(categoryAgg);
-            Object.keys(agentMap).forEach(function(n) {
-              agentMap[n].raw.forEach(function(t) {
-                t.module     = moduleMap[t.id]   || '';
-                t.zdCategory = categoryMap[t.id] || '';
               });
-              agentMap[n].good_raw.forEach(function(t) {
-                t.module     = moduleMap[t.id]   || '';
-                t.zdCategory = categoryMap[t.id] || '';
+
+              // 4.5 Positivos por módulo, agregação por categoria (global) e tags nos negativos.
+              var categoryAgg = {}; // { categoria: { good, bad } } — agregado global (referência)
+              ratings.forEach(function(r) {
+                var name = userMap[effId(r)] || ('Agente-' + effId(r));
+                var mod = moduleMap[r.ticket_id];
+                if (mod && r.score === 'good') {
+                  agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
+                }
+                var cat = categoryMap[r.ticket_id];
+                if (cat && (r.score === 'good' || r.score === 'bad')) {
+                  categoryAgg[cat] = categoryAgg[cat] || { good: 0, bad: 0 };
+                  if (r.score === 'good') {
+                    categoryAgg[cat].good++;
+                    // positivos por categoria POR AGENTE → permite ranking na mesma base das notas
+                    agentMap[name].category_good[cat] = (agentMap[name].category_good[cat] || 0) + 1;
+                  } else {
+                    categoryAgg[cat].bad++;
+                  }
+                }
               });
-            });
+              saveCategoryStats(categoryAgg);
+              Object.keys(agentMap).forEach(function(n) {
+                agentMap[n].raw.forEach(function(t) {
+                  t.module     = moduleMap[t.id]   || '';
+                  t.zdCategory = categoryMap[t.id] || '';
+                });
+                agentMap[n].good_raw.forEach(function(t) {
+                  t.module     = moduleMap[t.id]   || '';
+                  t.zdCategory = categoryMap[t.id] || '';
+                });
+              });
 
-            // 5. Categoriza com Gemini (texto livre) se chave configurada
-            var badAll = [];
-            Object.keys(agentMap).forEach(function(n) { agentMap[n].raw.forEach(function(t) { badAll.push(t); }); });
-            var catPromise = (cfg.geminiKey && badAll.length)
-              ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
-              : Promise.resolve({});
+              // 5. Categoriza com Gemini (texto livre) se chave configurada
+              var badAll = [];
+              Object.keys(agentMap).forEach(function(n) { agentMap[n].raw.forEach(function(t) { badAll.push(t); }); });
+              var catPromise = (cfg.geminiKey && badAll.length)
+                ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
+                : Promise.resolve({});
 
-            return catPromise.then(function(cats) {
-              return { agentMap: agentMap, cats: cats, subjectMap: subjectMap };
+              return catPromise.then(function(cats) {
+                return { agentMap: agentMap, cats: cats, subjectMap: subjectMap };
+              });
             });
           });
         });
@@ -938,6 +1027,11 @@ var ZendeskSync = (function() {
         });
         saveAgents(agentStore);
 
+        // Persiste o cache de e-mails dos agentes (mescla com o que já existe).
+        if (Object.keys(emailMap).length) {
+          saveAgentEmails(Object.assign(getAgentEmails(), emailMap));
+        }
+
         // Auto-vincula nomes do Zendesk com analistas cadastrados
         var zdNames = Object.keys(finalMap);
         var autoNameMap = autoMatchNames(zdNames, analysts);
@@ -973,6 +1067,24 @@ var ZendeskSync = (function() {
           });
         });
         console.log('Total de fotos aplicadas: ' + photoCount);
+
+        // Auto-preenche o e-mail dos analistas cadastrados que ainda não têm,
+        // casando pelo nome (direto ou via nameMap). Não sobrescreve e-mail manual.
+        analysts.forEach(function(analyst) {
+          if (analyst.email) return;
+          var em = getAgentEmail(analyst.name);
+          if (!em) {
+            var key = analyst.name.trim().toLowerCase();
+            Object.keys(finalMap).forEach(function(zdName) {
+              if (em) return;
+              var mapped  = nameMap[zdName];
+              var matches = mapped ? mapped.trim().toLowerCase() === key
+                                   : zdName.trim().toLowerCase() === key;
+              if (matches) { var e2 = getAgentEmail(zdName); if (e2) em = e2; }
+            });
+          }
+          if (em) analyst.email = em;
+        });
 
         // Recalcula todas as notas com o prior final da equipe (consistente)
         recomputeAllScores(analysts);
@@ -1112,6 +1224,8 @@ var ZendeskSync = (function() {
     getTickets:     getTickets,
     saveTickets:    saveTickets,
     getAgentData:   getAgentData,
+    getAgentEmail:  getAgentEmail,
+    getAgentEmails: getAgentEmails,
     getConfig:      getConfig,
     saveConfig:     saveConfig,
     getStatus:      getStatus,
