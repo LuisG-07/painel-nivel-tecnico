@@ -11,6 +11,7 @@ var UIModals = (function() {
 
     // Populate Dados tab
     document.getElementById('editName').value = analyst.name;
+    document.getElementById('editEmail').value = analyst.email || '';
     var secSel = document.getElementById('editSector');
     secSel.innerHTML = sectors.map(function(s) {
       return '<option' + (analyst.sector === s ? ' selected' : '') + '>' + esc(s) + '</option>';
@@ -113,6 +114,7 @@ var UIModals = (function() {
       onSave({
         id:       analyst.id,
         name:     name,
+        email:    document.getElementById('editEmail').value.trim().slice(0, 120),
         sector:   sector,
         level:    level,
         step:     step,
@@ -126,6 +128,20 @@ var UIModals = (function() {
     };
   }
 
+  // Preenche o e-mail a partir do Zendesk (casado pelo nome do analista).
+  // which = 'edit' | 'add'.
+  function _fillEmailFromZendesk(which) {
+    var nameEl  = document.getElementById(which + 'Name');
+    var emailEl = document.getElementById(which + 'Email');
+    if (!nameEl || !emailEl) return;
+    var name = nameEl.value.trim();
+    if (!name) { alert('Digite o nome do analista primeiro.'); return; }
+    var email = (typeof ZendeskSync !== 'undefined' && ZendeskSync.getAgentEmail)
+      ? ZendeskSync.getAgentEmail(name) : '';
+    if (email) { emailEl.value = email; }
+    else { alert('Nenhum e-mail do Zendesk encontrado para "' + name + '".\nFaça uma importação do Zendesk primeiro, ou confira se o nome bate com o do agente.'); }
+  }
+
   // --- Add Analyst Modal ---
 
   function openAdd(modules, sectors, onSave) {
@@ -135,6 +151,7 @@ var UIModals = (function() {
     var newScores = {};
 
     document.getElementById('addName').value = '';
+    document.getElementById('addEmail').value = '';
     var secSel = document.getElementById('addSector');
     secSel.innerHTML = sectors.map(function(s) {
       return '<option>' + esc(s) + '</option>';
@@ -213,6 +230,7 @@ var UIModals = (function() {
       onSave({
         id:       Date.now(),
         name:     name,
+        email:    document.getElementById('addEmail').value.trim().slice(0, 120),
         sector:   sector,
         level:    level,
         step:     step,
@@ -229,18 +247,28 @@ var UIModals = (function() {
 
   // --- Training Modal ---
 
-  function openTraining(analysts, onSave) {
+  // existing (opcional): treinamento sendo editado — pré-preenche os campos e
+  // preserva status/provas. Sem ele, é um agendamento novo.
+  function openTraining(analysts, onSave, existing) {
     var modal = document.getElementById('trainModal');
-    document.getElementById('tDate').value = '';
-    document.getElementById('tMod').value = '';
-    document.getElementById('tLeader').value = '';
-    document.getElementById('tObs').value = '';
+    var ed = existing || null;
+    document.getElementById('tDate').value    = ed ? (ed.date || '')    : '';
+    document.getElementById('tTime').value    = ed ? (ed.time || '')    : '';
+    document.getElementById('tTimeEnd').value = ed ? (ed.timeEnd || '') : '';
+    document.getElementById('tMod').value     = ed ? (ed.module || '')  : '';
+    document.getElementById('tLeader').value  = ed ? (ed.leader || '')  : '';
+    document.getElementById('tObs').value     = ed ? (ed.obs || '')     : '';
+    var chosen = ed ? (ed.analysts || []) : [];
     document.getElementById('tAnalysts').innerHTML = analysts.map(function(a) {
+      var checked = chosen.indexOf(a.name) !== -1 ? ' checked' : '';
       return '<div class="prova-row">' +
-        '<input type="checkbox" id="cb-' + a.id + '" value="' + esc(a.name) + '">' +
+        '<input type="checkbox" id="cb-' + a.id + '" value="' + esc(a.name) + '"' + checked + '>' +
         '<label for="cb-' + a.id + '" style="flex:1;cursor:pointer">' + esc(a.name) + ' <span class="' + D.sectorBadgeClass(a.sector) + '">' + esc(a.sector) + '</span></label>' +
       '</div>';
     }).join('');
+    var titleEl = document.getElementById('trainModalTitle');
+    if (titleEl) titleEl.innerHTML = '<i class="ti ti-calendar-plus" aria-hidden="true"></i> ' + (ed ? 'Editar Treinamento' : 'Agendar Treinamento');
+    document.getElementById('trainSaveBtn').textContent = ed ? 'Salvar' : 'Agendar';
     modal.style.display = 'flex';
 
     document.getElementById('trainSaveBtn').onclick = function() {
@@ -251,9 +279,14 @@ var UIModals = (function() {
       var selected = Array.from(document.querySelectorAll('#tAnalysts input[type=checkbox]:checked'))
         .map(function(i) { return i.value; });
       onSave({
-        date: date, module: mod, leader: lead,
+        date: date,
+        time: document.getElementById('tTime').value || '',
+        timeEnd: document.getElementById('tTimeEnd').value || '',
+        module: mod, leader: lead,
         obs: document.getElementById('tObs').value,
-        analysts: selected, provas: {}, status: 'pending'
+        analysts: selected,
+        provas: ed ? (ed.provas || {}) : {},
+        status: ed ? (ed.status || 'pending') : 'pending'
       });
       modal.style.display = 'none';
     };
@@ -1043,6 +1076,7 @@ var UIModals = (function() {
     openNegativesModal:  openNegativesModal,
     init:                init,
     switchModalTab:      switchModalTab,
+    _fillEmailFromZendesk: _fillEmailFromZendesk,
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},

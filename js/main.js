@@ -101,6 +101,27 @@ var App = (function() {
     });
   }
 
+  function editTraining(idx) {
+    var t = state.trainings[idx];
+    if (!t) return;
+    UIModals.openTraining(state.analysts, function(updated) {
+      state.trainings[idx] = updated;
+      Domain.applyTrainingScores(state.analysts, state.trainings);
+      persist();
+      render();
+    }, t);
+  }
+
+  function deleteTraining(idx) {
+    var t = state.trainings[idx];
+    if (!t) return;
+    if (!confirm('Excluir o treinamento "' + (t.module || '') + '" de ' + (t.date || '') + '?')) return;
+    state.trainings.splice(idx, 1);
+    Domain.applyTrainingScores(state.analysts, state.trainings);
+    persist();
+    render();
+  }
+
   function openProvaModal(idx) {
     var training = state.trainings[idx];
     if (!training) return;
@@ -261,7 +282,7 @@ var App = (function() {
 
     Domain.applyTrainingScores(state.analysts, state.trainings);
 
-    // Recalcula notas do Zendesk com a métrica atual (média suavizada),
+    // Recalcula notas do Zendesk com a métrica atual (positivos ÷ total × 10),
     // garantindo consistência mesmo para dados importados antes da mudança.
     ZendeskSync.recomputeAllScores(state.analysts);
     persist();
@@ -501,6 +522,8 @@ var App = (function() {
     removeAnalyst:      removeAnalyst,
     toggleExpand:       toggleExpand,
     openTrainingModal:  openTrainingModal,
+    editTraining:       editTraining,
+    deleteTraining:     deleteTraining,
     openProvaModal:     openProvaModal,
     finishTraining:     finishTraining,
     toggleModuleDetail: toggleModuleDetail,

@@ -93,6 +93,11 @@
     <div class="modal-tab-panel active" data-panel="dados">
       <span class="input-label" for="editName">Nome</span>
       <input type="text" id="editName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="editEmail">E-mail</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="email" id="editEmail" class="form-input" placeholder="email@empresa.com" maxlength="120" style="flex:1">
+        <button type="button" class="btn-secondary" style="font-size:11px;padding:8px 10px;white-space:nowrap" onclick="UIModals._fillEmailFromZendesk('edit')" title="Buscar e-mail no Zendesk pelo nome"><i class="ti ti-cloud-download"></i> Zendesk</button>
+      </div>
       <span class="input-label" for="editSector">Setor</span>
       <select id="editSector" class="form-input"></select>
       <span class="input-label" for="editLevel">Nível do cargo</span>
@@ -154,6 +159,11 @@
     <div class="modal-tab-panel active" data-panel="dados">
       <span class="input-label" for="addName">Nome</span>
       <input type="text" id="addName" class="form-input" placeholder="Nome completo" maxlength="80">
+      <span class="input-label" for="addEmail">E-mail</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="email" id="addEmail" class="form-input" placeholder="email@empresa.com" maxlength="120" style="flex:1">
+        <button type="button" class="btn-secondary" style="font-size:11px;padding:8px 10px;white-space:nowrap" onclick="UIModals._fillEmailFromZendesk('add')" title="Buscar e-mail no Zendesk pelo nome"><i class="ti ti-cloud-download"></i> Zendesk</button>
+      </div>
       <span class="input-label" for="addSector">Setor</span>
       <select id="addSector" class="form-input"></select>
       <span class="input-label" for="addLevel">Nível do cargo</span>
@@ -201,6 +211,16 @@
     <div class="modal-title" id="trainModalTitle"><i class="ti ti-calendar-plus" aria-hidden="true"></i> Agendar Treinamento</div>
     <span class="input-label" for="tDate">Data</span>
     <input type="date" id="tDate" class="form-input">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1">
+        <span class="input-label" for="tTime">Horário início</span>
+        <input type="time" id="tTime" class="form-input">
+      </div>
+      <div style="flex:1">
+        <span class="input-label" for="tTimeEnd">Horário fim</span>
+        <input type="time" id="tTimeEnd" class="form-input">
+      </div>
+    </div>
     <span class="input-label" for="tMod">Módulo / Tema</span>
     <input type="text" id="tMod" class="form-input" placeholder="Ex: SendGrid">
     <span class="input-label" for="tLeader">Líder técnico</span>
@@ -370,30 +390,32 @@
     <div class="modal-title" id="zdHelpTitle"><i class="ti ti-help-circle" aria-hidden="true"></i> Como a nota do Zendesk é calculada</div>
 
     <p style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-      Cada cliente atendido dá um <b>👍 positivo</b> ou <b>👎 negativo</b>. A nota vai de 0 a 10 — mas com um cuidado importante: <b>a quantidade de avaliações conta</b>.
+      Cada cliente atendido dá um <b>👍 positivo</b> ou <b>👎 negativo</b>. A nota é simplesmente <b>quantos ficaram felizes</b>, numa escala de 0 a 10.
     </p>
 
-    <div style="background:var(--blue-soft);border-radius:12px;padding:14px;margin-bottom:12px;font-size:12.5px;color:var(--ink);line-height:1.6">
-      <b>Por que isso importa?</b><br>
-      Quem foi avaliado <b>muitas vezes</b> já tem uma média confiável. Quem foi avaliado <b>poucas vezes</b> ainda não — 1 👍 não prova que é perfeito e 1 👎 não prova que é ruim (é como jogar uma moeda só uma vez).
+    <div style="background:var(--blue-soft);border-radius:12px;padding:14px;margin-bottom:12px;font-size:13px;color:var(--ink);line-height:1.7;text-align:center">
+      <b>nota = positivos ÷ (positivos + negativos) × 10</b>
     </div>
 
     <p style="font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-      Por isso, todo analista <b>começa perto da média da equipe</b> e, conforme recebe mais avaliações, a nota vai virando o <b>desempenho real</b> dele.
-      <br><span style="color:var(--muted)">📚 É como nota de prova: a professora não dá 10 só porque você acertou a 1ª pergunta — ela espera você responder várias.</span>
+      📚 É como uma prova: <b>acertos ÷ total de questões</b>. Se o cliente reclamou do comportamento (e não do atendimento técnico), esse 👎 pode ser marcado como <b>comportamental</b> e não entra na conta.
     </p>
 
     <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:11px;font-weight:600;color:#fff;background:var(--navy)">
-        <span>Exemplo (média da equipe = 8.0)</span><span>Nota</span>
+        <span>Exemplo — Ana Claudia</span><span>Nota</span>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--border)"><span>1 👍 · 0 👎 <span style="color:var(--muted)">(só 1 avaliação)</span></span><b style="color:#15803D">~8.2</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--border)"><span>9 👍 · 1 👎</span><b style="color:#15803D">8.5</b></div>
-      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px"><span>900 👍 · 100 👎 <span style="color:var(--muted)">(muito volume)</span></span><b style="color:#15803D">9.0</b></div>
+      <div style="padding:10px 12px;font-size:12.5px;border-bottom:1px solid var(--border);line-height:1.6">
+        159 👍 positivos e 11 👎 negativos<br>
+        <span style="color:var(--muted)">159 ÷ (159 + 11) = 159 ÷ 170 = 0,935 → × 10</span>
+        <span style="float:right"><b style="color:#15803D">9,4</b></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;border-bottom:1px solid var(--border)"><span>9 👍 · 1 👎 <span style="color:var(--muted)">(9 ÷ 10)</span></span><b style="color:#15803D">9,0</b></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px"><span>1 👍 · 0 👎 <span style="color:var(--muted)">(1 ÷ 1)</span></span><b style="color:#15803D">10,0</b></div>
     </div>
 
     <p style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:16px">
-      👉 Assim ninguém é prejudicado ou beneficiado por ter poucas avaliações. Negativos marcados como <b>comportamentais</b> não entram na nota — só os técnicos.
+      👉 Dá pra conferir na mão: é só dividir os positivos pelo total de avaliações. Quem ainda <b>não tem nenhuma avaliação</b> fica sem nota (—).
     </p>
 
     <div style="display:flex;justify-content:flex-end">

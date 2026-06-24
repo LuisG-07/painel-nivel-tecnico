@@ -108,6 +108,7 @@ var Storage = (function() {
     return {
       id:       raw.id,
       name:     (raw.name || '').trim().slice(0, 80),
+      email:    typeof raw.email === 'string' ? raw.email.trim().slice(0, 120) : '',
       sector:   (raw.sector || 'Chat').slice(0, 50),
       level:    clampLevel(raw.level),
       step:     clampStep(raw.step),
@@ -159,6 +160,8 @@ var Storage = (function() {
     }
     return {
       date:     typeof t.date   === 'string' ? t.date.slice(0, 20)   : '',
+      time:     typeof t.time    === 'string' ? t.time.slice(0, 5)    : '',
+      timeEnd:  typeof t.timeEnd === 'string' ? t.timeEnd.slice(0, 5) : '',
       module:   t.module.trim().slice(0, 100),
       leader:   typeof t.leader === 'string' ? t.leader.slice(0, 80) : '',
       obs:      typeof t.obs    === 'string' ? t.obs.slice(0, 500)   : '',
