@@ -44,6 +44,7 @@ exports.zdproxy = onRequest(
       res.setHeader('Content-Type', r.headers.get('content-type') || (isImage ? 'image/jpeg' : 'application/json; charset=utf-8'));
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Cache-Control', 'public, max-age=86400');
+      if (r.headers.get('retry-after')) res.setHeader('Retry-After', r.headers.get('retry-after'));
       res.send(buf);
     } catch (err) {
       res.status(502).json({ error: String((err && err.message) || err) });

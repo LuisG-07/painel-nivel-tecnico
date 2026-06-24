@@ -72,6 +72,8 @@ app.use('/zdproxy/:subdomain', (req, res) => {
     res.setHeader('Content-Type', contentType);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=86400');
+    // Repassa Retry-After (rate limit 429) para o cliente fazer backoff correto
+    if (proxyRes.headers['retry-after']) res.setHeader('Retry-After', proxyRes.headers['retry-after']);
 
     const stream = isGzip ? proxyRes.pipe(zlib.createGunzip()) : proxyRes;
     const chunks = [];
