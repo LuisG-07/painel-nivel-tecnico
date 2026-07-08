@@ -1,7 +1,9 @@
 # SkillMatrix Pro — servidor local com proxy Zendesk
 # Uso: clique com botao direito -> Executar com PowerShell
+# Porta 3000 por padrao (onde ficam salvos os dados). Para outra porta:
+#   powershell -File start_server.ps1 -port 8080
+param([int]$port = 3000)
 
-$port = 8080
 $root = $PSScriptRoot
 
 $listener = [System.Net.HttpListener]::new()
