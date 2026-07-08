@@ -1,22 +1,42 @@
 rules_version = '2';
 
-// Regras do Firestore — SkillMatrix / GCK (app PUBLICADO na web)
-// Acesso restrito a uma LISTA DE E-MAILS autorizados. A config web do Firebase
-// é pública, então a segurança real vem daqui: só e-mails na allowlist leem/gravam.
-// Para adicionar/remover pessoas, edite a lista e rode:
-//   npx firebase deploy --only firestore:rules
+// Regras do Firestore — SkillMatrix / Painel Tecnico (app PUBLICADO na web).
+// A config web do Firebase e publica; a seguranca real vem daqui.
+//
+// Acesso restrito a uma LISTA DE E-MAILS na colecao `allowedUsers` (editavel
+// pela tela de admin — nao precisa republicar regras pra adicionar/remover).
+// Somente admin (role == 'admin') gerencia usuarios e le os logs de auditoria.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function autorizado() {
-      return request.auth != null && request.auth.token.email in [
-        // ⟶ e-mails (Google) autorizados — adicione/remova conforme necessário:
-        "gustavo@clickdigital.com.br"
-      ];
+    function signedIn() { return request.auth != null; }
+    function userEmail() { return request.auth.token.email; }
+    function allowDoc()  { return get(/databases/$(database)/documents/allowedUsers/$(userEmail())); }
+
+    function isAllowed() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/allowedUsers/$(userEmail()));
+    }
+    function isAdmin() {
+      return isAllowed() && allowDoc().data.role == 'admin';
     }
 
-    match /{document=**} {
-      allow read, write: if autorizado();
+    // Lista de acesso — quem pode usar o painel. Admin gerencia pela tela.
+    match /allowedUsers/{userDocEmail} {
+      allow read:  if isAllowed();
+      allow write: if isAdmin();
+    }
+
+    // Log de auditoria — so admin le; qualquer autorizado grava; imutavel.
+    match /auditLogs/{logId} {
+      allow read:   if isAdmin();
+      allow create: if isAllowed();
+      allow update, delete: if false;
+    }
+
+    // Dados do painel (analistas, modulos, treinamentos, historico, config...).
+    match /appData/{document=**} {
+      allow read, write: if isAllowed();
     }
   }
 }

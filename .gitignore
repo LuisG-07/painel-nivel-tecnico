@@ -10,3 +10,11 @@ functions/node_modules/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Chaves secretas — NUNCA commitar
+serviceAccountKey.json
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+.env
+.env.*
+secrets.json
