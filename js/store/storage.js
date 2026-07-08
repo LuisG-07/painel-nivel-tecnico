@@ -193,10 +193,21 @@ var Storage = (function() {
       var entries = raw[k];
       if (!Array.isArray(entries)) return;
       result[k] = entries.filter(function(e) {
-        return e && typeof e === 'object' && typeof e.date === 'string' && typeof e.avg === 'number' && isFinite(e.avg);
+        return e && typeof e === 'object' && typeof e.date === 'string';
       }).map(function(e) {
-        return { date: e.date.slice(0, 20), avg: Math.min(10, Math.max(0, e.avg)) };
-      });
+        var o = { date: e.date.slice(0, 20) };
+        ['avg', 'tech', 'unified', 'zendesk', 'prova'].forEach(function(f) {
+          if (typeof e[f] === 'number' && isFinite(e[f])) o[f] = Math.min(10, Math.max(0, e[f]));
+        });
+        if (e.mods && typeof e.mods === 'object' && !Array.isArray(e.mods)) {
+          o.mods = {};
+          Object.keys(e.mods).forEach(function(m) {
+            var v = e.mods[m];
+            if (typeof v === 'number' && isFinite(v)) o.mods[m] = Math.min(5, Math.max(0, v));
+          });
+        }
+        return o;
+      }).filter(function(e) { return typeof e.avg === 'number' || typeof e.unified === 'number'; });
     });
     return result;
   }

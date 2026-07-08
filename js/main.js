@@ -19,14 +19,40 @@ var App = (function() {
 
   // --- Persistence ---
   function persist() {
+    captureSnapshots();
     Storage.saveAll(state);
   }
 
-  function recordHistory(analystId, techScore) {
-    if (!state.history[analystId]) state.history[analystId] = [];
-    state.history[analystId].push({
-      date: new Date().toLocaleDateString('pt-BR'),
-      avg: parseFloat(techScore.toFixed(2))
+  // Registra um snapshot das notas de cada analista NA DATA DE HOJE (um por dia:
+  // se já houver o de hoje, atualiza). É o que alimenta a "Evolução" no tempo —
+  // permite comparar se o analista melhorou ou piorou desde uma data anterior.
+  function captureSnapshots() {
+    var now = new Date();
+    var iso = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+      String(now.getDate()).padStart(2, '0');
+    var r1 = function(n) { return Math.round(n * 10) / 10; };
+    (state.analysts || []).forEach(function(a) {
+      var mods = {};
+      (state.modules || []).forEach(function(m) { mods[m] = a.scores[m] || 0; });
+      var tech = r1(Domain.techScore(a.scores));
+      var snap = {
+        date:    iso,
+        avg:     tech,                                   // compat com histórico antigo
+        tech:    tech,
+        zendesk: a.zendesk  != null ? a.zendesk  : null,
+        prova:   a.provaAvg != null ? a.provaAvg : null,
+        unified: r1(Domain.unifiedScore(a)),
+        mods:    mods
+      };
+      if (!state.history[a.id]) state.history[a.id] = [];
+      var arr = state.history[a.id];
+      var last = arr[arr.length - 1];
+      var lastIso = last ? (/^\d{2}\/\d{2}\/\d{4}$/.test(last.date)
+        ? last.date.slice(6, 10) + '-' + last.date.slice(3, 5) + '-' + last.date.slice(0, 2)
+        : String(last.date).slice(0, 10)) : '';
+      if (last && lastIso === iso) arr[arr.length - 1] = snap; // atualiza o de hoje
+      else arr.push(snap);
     });
   }
 
@@ -65,9 +91,8 @@ var App = (function() {
     UIModals.openEdit(analyst, state.modules, state.sectors, function(updated) {
       var idx = state.analysts.findIndex(function(a) { return a.id === id; });
       if (idx === -1) return;
-      recordHistory(id, Domain.techScore(updated.scores));
       state.analysts[idx] = updated;
-      persist();
+      persist(); // captureSnapshots() registra o snapshot de hoje
       render();
     });
   }
