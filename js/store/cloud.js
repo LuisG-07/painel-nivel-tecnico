@@ -82,12 +82,10 @@ var Cloud = (function() {
     jobs.push(analystsCol().get().then(function(snap) {
       var arr = [];
       snap.forEach(function(d) { arr.push(d.data()); });
-      // Seguranca: nao ENCOLHE o backup local a partir da nuvem. So espelha se a
-      // nuvem tiver pelo menos tantos analistas quanto o local — evita propagar
-      // uma perda acidental (e permite o local repor os que faltam no banco).
-      var local = localGet(ANA_KEY);
-      var localN = Array.isArray(local) ? local.length : 0;
-      if (arr.length && arr.length >= localN) localSet(ANA_KEY, arr);
+      // A nuvem e a fonte da verdade — espelha exatamente (inclusive remocoes).
+      // Seguro porque flush NAO deleta automaticamente (so remocao explicita),
+      // entao a nuvem nunca encolhe por acidente.
+      if (arr.length) localSet(ANA_KEY, arr);
     }));
 
     Object.keys(SIMPLE).forEach(function(k) {
