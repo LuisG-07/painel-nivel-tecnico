@@ -82,7 +82,12 @@ var Cloud = (function() {
     jobs.push(analystsCol().get().then(function(snap) {
       var arr = [];
       snap.forEach(function(d) { arr.push(d.data()); });
-      if (arr.length) localSet(ANA_KEY, arr);
+      // Seguranca: nao ENCOLHE o backup local a partir da nuvem. So espelha se a
+      // nuvem tiver pelo menos tantos analistas quanto o local — evita propagar
+      // uma perda acidental (e permite o local repor os que faltam no banco).
+      var local = localGet(ANA_KEY);
+      var localN = Array.isArray(local) ? local.length : 0;
+      if (arr.length && arr.length >= localN) localSet(ANA_KEY, arr);
     }));
 
     Object.keys(SIMPLE).forEach(function(k) {
@@ -113,18 +118,12 @@ var Cloud = (function() {
 
   function flush(state) {
     try {
-      // Analistas: um doc por id; apaga os que sumiram.
-      var wanted = {};
+      // Analistas: um doc por id. NAO apaga "os que sumiram" — isso era perigoso:
+      // uma sessao com a lista incompleta em memoria apagava analistas do banco.
+      // Remocao agora e explicita (deleteAnalyst, chamado so no removeAnalyst).
       (state.analysts || []).forEach(function(a) {
-        if (a && a.id != null) {
-          var id = String(a.id);
-          wanted[id] = true;
-          analystsCol().doc(id).set(clone(a));
-        }
+        if (a && a.id != null) analystsCol().doc(String(a.id)).set(clone(a));
       });
-      analystsCol().get().then(function(snap) {
-        snap.forEach(function(d) { if (!wanted[d.id]) analystsCol().doc(d.id).delete(); });
-      }).catch(function() {});
 
       // Docs simples
       simpleDoc('modules').set({ data: clone(state.modules || []) });
@@ -136,9 +135,16 @@ var Cloud = (function() {
     }
   }
 
+  // Remocao EXPLICITA de um analista (chamado pelo App.removeAnalyst).
+  function deleteAnalyst(id) {
+    if (!ready || id == null) return;
+    try { analystsCol().doc(String(id)).delete(); } catch (e) {}
+  }
+
   return {
     hydrate: hydrate,
     pushAll: pushAll,
+    deleteAnalyst: deleteAnalyst,
     isReady: function() { return ready; }
   };
 })();

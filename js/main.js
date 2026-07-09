@@ -118,6 +118,7 @@ var App = (function() {
     var removed = state.analysts.find(function(a) { return a.id === id; });
     state.analysts = state.analysts.filter(function(a) { return a.id !== id; });
     persist();
+    if (window.Cloud && Cloud.isReady()) Cloud.deleteAnalyst(id); // remocao explicita na nuvem
     audit('Removeu analista', removed ? removed.name : ('id ' + id));
     render();
   }
