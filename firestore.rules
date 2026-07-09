@@ -27,10 +27,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Log de auditoria — so admin le; qualquer autorizado grava; imutavel.
+    // Log de auditoria — so admin le; imutavel (sem update/delete).
+    // Autorizados registram qualquer acao. Um usuario NAO autorizado so pode
+    // registrar a PROPRIA tentativa de login negada (email = o do proprio token),
+    // para o admin ver quem tentou entrar sem acesso.
     match /auditLogs/{logId} {
       allow read:   if isAdmin();
-      allow create: if isAllowed();
+      allow create: if request.auth != null && (
+        isAllowed() ||
+        (request.resource.data.action == 'Login negado'
+          && request.resource.data.email == request.auth.token.email)
+      );
       allow update, delete: if false;
     }
 

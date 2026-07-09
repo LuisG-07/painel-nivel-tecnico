@@ -235,11 +235,16 @@ var Auth = (function() {
       checkAccess(user).then(function(res) {
         if (res.allowed) { _user = user; startApp(); return; }
         var email = user.email || '(sem e-mail)';
-        fb().auth().signOut();
         _isAdmin = false;
-        showLogin('Voce entrou com "' + email + '", que NAO esta na lista de acesso. ' +
-          'Se voce tem mais de uma conta Google, clique em Entrar e escolha a conta de trabalho ' +
-          '(ex.: gustavo@clickdigital.com.br). Se o e-mail acima estiver certo, peca ao admin para inclui-lo.');
+        var finish = function() {
+          fb().auth().signOut();
+          showLogin('Voce entrou com "' + email + '", que NAO esta na lista de acesso. ' +
+            'Se voce tem mais de uma conta Google, clique em Entrar e escolha a conta de trabalho ' +
+            '(ex.: gustavo@clickdigital.com.br). Se o e-mail acima estiver certo, peca ao admin para inclui-lo.');
+        };
+        // Registra a tentativa negada (para o admin ver) ANTES de deslogar.
+        if (window.Audit && Audit.logDenied) Audit.logDenied(user.email || '').then(finish, finish);
+        else finish();
       }).catch(function(e) {
         var m = (e && (e.code || e.message)) || String(e);
         showLogin('Erro ao verificar acesso: ' + m +

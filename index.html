@@ -50,6 +50,7 @@
       <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Visão Geral</span></button>
       <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução"><i class="ti ti-chart-line" aria-hidden="true"></i><span>Evolução</span></button>
       <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento"><i class="ti ti-school" aria-hidden="true"></i><span>Treinamento</span></button>
+      <button class="nav-tab" id="navAdmin" onclick="App.switchPage('admin',this)" style="display:none" aria-label="Administração"><i class="ti ti-shield-lock" aria-hidden="true"></i><span>Admin</span></button>
     </nav>
     <div class="sidebar-footer">
       <span id="zdBadge" class="zd-badge" title="" style="display:none" onclick="App.openManageModal()" aria-label="Status Zendesk">
@@ -78,6 +79,7 @@
       <div id="page-visao"       class="page active"></div>
       <div id="page-evolucao"    class="page"></div>
       <div id="page-treinamento" class="page"></div>
+      <div id="page-admin"       class="page"></div>
     </main>
   </div>
 </div>
@@ -434,6 +436,8 @@
 <script src="js/ui/evolution.js"></script>
 <script src="js/ui/training.js"></script>
 <script src="js/ui/modals.js"></script>
+<script src="js/ui/admin.js"></script>
+<script src="js/audit/audit.js"></script>
 <script src="js/integrations/zendesk_sync.js"></script>
 <script src="js/main.js"></script>
 

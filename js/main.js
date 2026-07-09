@@ -25,6 +25,9 @@ var App = (function() {
     if (window.Cloud && Cloud.isReady()) Cloud.pushAll(state);
   }
 
+  // Registra uma acao no log de auditoria (no-op se o modulo nao estiver carregado).
+  function audit(action, details) { if (window.Audit) Audit.log(action, details); }
+
   // Registra um snapshot das notas de cada analista NA DATA DE HOJE (um por dia:
   // se já houver o de hoje, atualiza). É o que alimenta a "Evolução" no tempo —
   // permite comparar se o analista melhorou ou piorou desde uma data anterior.
@@ -84,6 +87,7 @@ var App = (function() {
     if (state.currentPage === 'visao')       UIOverview.render(state);
     else if (state.currentPage === 'evolucao') UIEvolution.render(state);
     else if (state.currentPage === 'treinamento') UITraining.render(state);
+    else if (state.currentPage === 'admin')    UIAdmin.render(state);
   }
 
   // --- Analyst operations ---
@@ -95,6 +99,7 @@ var App = (function() {
       if (idx === -1) return;
       state.analysts[idx] = updated;
       persist(); // captureSnapshots() registra o snapshot de hoje
+      audit('Editou analista', updated.name);
       render();
     });
   }
@@ -103,14 +108,17 @@ var App = (function() {
     UIModals.openAdd(state.modules, state.sectors, function(newAnalyst) {
       state.analysts.push(newAnalyst);
       persist();
+      audit('Adicionou analista', newAnalyst.name);
       render();
     });
   }
 
   function removeAnalyst(id) {
     if (!confirm('Remover este analista? Esta ação não pode ser desfeita.')) return;
+    var removed = state.analysts.find(function(a) { return a.id === id; });
     state.analysts = state.analysts.filter(function(a) { return a.id !== id; });
     persist();
+    audit('Removeu analista', removed ? removed.name : ('id ' + id));
     render();
   }
 
@@ -124,6 +132,7 @@ var App = (function() {
     UIModals.openTraining(state.analysts, function(newTraining) {
       state.trainings.push(newTraining);
       persist();
+      audit('Criou treinamento', newTraining.module + (newTraining.date ? ' — ' + newTraining.date : ''));
       render();
     });
   }
@@ -135,6 +144,7 @@ var App = (function() {
       state.trainings[idx] = updated;
       Domain.applyTrainingScores(state.analysts, state.trainings);
       persist();
+      audit('Editou treinamento', updated.module);
       render();
     }, t);
   }
@@ -143,9 +153,11 @@ var App = (function() {
     var t = state.trainings[idx];
     if (!t) return;
     if (!confirm('Excluir o treinamento "' + (t.module || '') + '" de ' + (t.date || '') + '?')) return;
+    var removedModule = t.module;
     state.trainings.splice(idx, 1);
     Domain.applyTrainingScores(state.analysts, state.trainings);
     persist();
+    audit('Excluiu treinamento', removedModule);
     render();
   }
 
@@ -156,6 +168,7 @@ var App = (function() {
       state.trainings[trainingIndex].provas = provas;
       Domain.applyTrainingScores(state.analysts, state.trainings);
       persist();
+      audit('Lançou notas de prova', state.trainings[trainingIndex].module);
       render();
     });
   }
@@ -165,6 +178,7 @@ var App = (function() {
     state.trainings[idx].status = 'done';
     Domain.applyTrainingScores(state.analysts, state.trainings);
     persist();
+    audit('Concluiu treinamento', state.trainings[idx].module || '');
     render();
   }
 
@@ -186,6 +200,7 @@ var App = (function() {
         });
       });
       persist();
+      audit('Gerenciou módulos/setores', state.modules.length + ' módulos, ' + state.sectors.length + ' setores');
       renderSectorTabs();
       render();
     });
@@ -318,6 +333,12 @@ var App = (function() {
     renderSectorTabs();
     render();
 
+    // Mostra a aba Admin somente para o usuario admin (login master).
+    if (window.Auth && Auth.isAdmin && Auth.isAdmin()) {
+      var navAdmin = document.getElementById('navAdmin');
+      if (navAdmin) navAdmin.style.display = '';
+    }
+
     // Zendesk CSAT sync — async, non-blocking
     updateZendeskBadge('loading');
     ZendeskSync.sync(state.analysts, function(count, err, status) {
@@ -434,6 +455,7 @@ var App = (function() {
         if (count > 0) {
           render();
           persist(); // Salva fotos e dados no localStorage
+          audit('Importou do Zendesk', count + ' avaliações');
           updateZendeskBadge('ok');
           if (progEl) progEl.textContent = '✓ Fotos e dados salvos!';
           // Mostra tabela de mapeamento para vincular nomes não reconhecidos
