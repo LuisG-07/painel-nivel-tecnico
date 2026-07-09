@@ -46,6 +46,9 @@ while ($listener.IsListening) {
         $resp.Headers.Add('X-Frame-Options', 'DENY')
         $resp.Headers.Add('X-Content-Type-Options', 'nosniff')
         $resp.Headers.Add('Content-Security-Policy', "frame-ancestors 'none'")
+        # Sem cache: garante que o navegador sempre pegue a versao mais recente dos arquivos.
+        $resp.Headers.Add('Cache-Control', 'no-store, no-cache, must-revalidate')
+        $resp.Headers.Add('Pragma', 'no-cache')
 
         $localPath = $req.Url.LocalPath.TrimStart('/')
 

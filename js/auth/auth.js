@@ -30,22 +30,33 @@ var Auth = (function() {
 
     var style = document.createElement('style');
     style.textContent =
-      '#authOverlay{position:fixed;inset:0;z-index:9999;background:#001636;' +
-        'display:flex;align-items:center;justify-content:center;font-family:"Segoe UI",Arial,sans-serif}' +
-      '#authOverlay .auth-card{background:#00204A;border:1px solid #0E3060;border-radius:16px;' +
-        'padding:36px 32px;width:360px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}' +
-      '#authOverlay .auth-logo{font-size:22px;font-weight:600;color:#fff;margin-bottom:6px}' +
+      '#authOverlay{position:fixed;inset:0;z-index:9999;padding:24px;' +
+        'background:radial-gradient(1100px 620px at 50% -8%,#0b3f86 0%,#001a40 48%,#000c22 100%);' +
+        'display:flex;align-items:center;justify-content:center;' +
+        'font-family:"Inter Variable","Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}' +
+      '#authOverlay .auth-card{position:relative;background:#fff;border-radius:20px;' +
+        'padding:40px 36px 30px;width:384px;max-width:100%;text-align:center;' +
+        'box-shadow:0 30px 80px -22px rgba(0,10,45,.65),0 6px 20px rgba(0,10,45,.16)}' +
+      '#authOverlay .auth-badge{width:72px;height:72px;margin:2px auto 18px;display:flex;align-items:center;justify-content:center}' +
+      '#authOverlay .auth-badge img{width:100%;height:100%;object-fit:contain;display:block}' +
+      '#authOverlay .auth-logo{font-size:25px;font-weight:700;letter-spacing:-.5px;color:#0A1F44;margin-bottom:7px}' +
       '#authOverlay .auth-logo span{color:#0268CD}' +
-      '#authOverlay .auth-sub{font-size:13px;color:#8AADDB;margin-bottom:26px}' +
-      '#authOverlay .gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#3c4043;' +
-        'border:none;border-radius:8px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;' +
-        'font-family:inherit;width:100%;justify-content:center;transition:box-shadow .15s}' +
-      '#authOverlay .gbtn:hover{box-shadow:0 2px 10px rgba(2,104,205,.4)}' +
-      '#authOverlay .gbtn:disabled{opacity:.6;cursor:default}' +
-      '#authOverlay .auth-msg{font-size:12.5px;color:#FF8080;margin-top:18px;line-height:1.5;min-height:16px}' +
-      '#authOverlay .auth-spin{width:34px;height:34px;border:3px solid #0E3060;border-top-color:#0268CD;' +
-        'border-radius:50%;animation:authspin .8s linear infinite;margin:8px auto 0}' +
-      '#authOverlay .auth-loadtxt{font-size:13px;color:#8AADDB;margin-top:14px}' +
+      '#authOverlay .auth-sub{font-size:13.5px;color:#64748B;margin-bottom:28px}' +
+      '#authOverlay .gbtn{display:inline-flex;align-items:center;gap:11px;background:#0268CD;color:#fff;' +
+        'border:none;border-radius:10px;padding:0 18px;height:48px;font-size:14.5px;font-weight:600;cursor:pointer;' +
+        'font-family:inherit;width:100%;justify-content:center;transition:box-shadow .18s,background .18s,transform .05s}' +
+      '#authOverlay .gbtn:hover{box-shadow:0 8px 22px -6px rgba(2,104,205,.55);background:#0163c4}' +
+      '#authOverlay .gbtn:active{transform:translateY(1px)}' +
+      '#authOverlay .gbtn:disabled{opacity:.6;cursor:default;box-shadow:none}' +
+      '#authOverlay .gbtn .gicon{display:inline-flex;align-items:center;justify-content:center;background:#fff;' +
+        'border-radius:6px;width:30px;height:30px;flex-shrink:0}' +
+      '#authOverlay .auth-msg{font-size:12.5px;color:#CC0000;margin-top:16px;line-height:1.5}' +
+      '#authOverlay .auth-foot{margin-top:26px;padding-top:18px;border-top:1px solid #eef1f6;' +
+        'font-size:11.5px;color:#94A3B8}' +
+      '#authOverlay .auth-foot b{color:#475569;font-weight:600}' +
+      '#authOverlay .auth-spin{width:34px;height:34px;border:3px solid #e8edf5;border-top-color:#0268CD;' +
+        'border-radius:50%;animation:authspin .8s linear infinite;margin:6px auto 0}' +
+      '#authOverlay .auth-loadtxt{font-size:13px;color:#64748B;margin-top:14px}' +
       '@keyframes authspin{to{transform:rotate(360deg)}}';
     document.head.appendChild(style);
 
@@ -56,11 +67,13 @@ var Auth = (function() {
     ov.id = 'authOverlay';
     ov.innerHTML =
       '<div class="auth-card">' +
-        '<div class="auth-logo">Skill<span>Matrix</span> Pro</div>' +
-        '<div class="auth-sub">Painel Tecnico — acesso restrito</div>' +
+        '<div class="auth-badge"><img src="assets/logoGCK.webp" alt="GCK"></div>' +
+        '<div class="auth-logo">Painel <span>Técnico</span></div>' +
+        '<div class="auth-sub">Faça login para continuar</div>' +
         '<div id="authLoginBox">' +
-          '<button id="authGoogleBtn" class="gbtn">' + gLogo + ' Entrar com Google</button>' +
+          '<button id="authGoogleBtn" class="gbtn"><span class="gicon">' + gLogo + '</span> Entrar com Google</button>' +
           '<div id="authMsg" class="auth-msg"></div>' +
+          '<div class="auth-foot">Acesso exclusivo a contas <b>@clickdigital.com.br</b></div>' +
         '</div>' +
         '<div id="authLoadBox" style="display:none">' +
           '<div class="auth-spin"></div>' +
@@ -172,9 +185,18 @@ var Auth = (function() {
   function startApp() {
     if (_started) return;
     _started = true;
-    hideOverlay();
-    App.init();
-    injectUserChip();
+    showLoading('Carregando dados...');
+    var hydrate = (window.Cloud && Cloud.hydrate) ? Cloud.hydrate(_user) : Promise.resolve();
+    hydrate.then(function() {
+      hideOverlay();
+      App.init();
+      injectUserChip();
+    }).catch(function(e) {
+      _started = false;
+      var m = (e && (e.code || e.message)) || String(e);
+      showLogin('Erro ao carregar os dados da nuvem: ' + m +
+        (m.indexOf('permission') !== -1 ? ' (verifique as regras/allowlist)' : ''));
+    });
   }
 
   // Chip com usuario logado + botao Sair, no canto direito da topbar.

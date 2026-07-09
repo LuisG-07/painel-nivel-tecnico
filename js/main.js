@@ -21,6 +21,8 @@ var App = (function() {
   function persist() {
     captureSnapshots();
     Storage.saveAll(state);
+    // Espelha na nuvem (dados compartilhados). No-op se ainda nao autenticado/pronto.
+    if (window.Cloud && Cloud.isReady()) Cloud.pushAll(state);
   }
 
   // Registra um snapshot das notas de cada analista NA DATA DE HOJE (um por dia:

@@ -1,5 +1,6 @@
 test_screenshots/
 *.tmp
+scripts/*.png
 
 # Dependencies
 node_modules/
