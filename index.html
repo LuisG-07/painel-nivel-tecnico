@@ -21,11 +21,13 @@
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://apis.google.com;
   style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   font-src    https://cdn.jsdelivr.net;
   img-src     'self' data: blob: https://*.zendesk.com;
-  connect-src 'self' https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
+  connect-src 'self' https://*.zendesk.com https://*.googleapis.com https://script.google.com https://*.firebaseapp.com https://apis.google.com https://accounts.google.com wss://*.googleapis.com http://localhost:* http://127.0.0.1:*;
+  frame-src   https://*.firebaseapp.com https://accounts.google.com https://*.google.com;
+  form-action 'self' https://accounts.google.com https://*.firebaseapp.com;
   object-src  'none';
   base-uri    'self';
 ">
@@ -434,7 +436,16 @@
 <script src="js/ui/modals.js"></script>
 <script src="js/integrations/zendesk_sync.js"></script>
 <script src="js/main.js"></script>
-<script>App.init();</script>
+
+<!-- Firebase (compat) + login com Google. App.init() e chamado apos autenticar. -->
+<!-- SDK hospedado localmente (js/vendor/firebase) para nao depender do CDN gstatic,
+     que pode ser bloqueado por adblock/firewall no navegador. -->
+<script src="js/vendor/firebase/firebase-app-compat.js"></script>
+<script src="js/vendor/firebase/firebase-auth-compat.js"></script>
+<script src="js/vendor/firebase/firebase-firestore-compat.js"></script>
+<script src="js/firebase/firebase-config.js"></script>
+<script src="js/auth/auth.js"></script>
+<script>Auth.start();</script>
 
 </body>
 </html>

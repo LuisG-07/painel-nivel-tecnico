@@ -9,7 +9,8 @@
   "dependencies": {
     "express": "*",
     "firebase-admin": "^14.1.0",
-    "jsonwebtoken": "*"
+    "jsonwebtoken": "*",
+    "playwright-core": "^1.61.1"
   },
   "devDependencies": {
     "firebase-tools": "^15.22.0"
