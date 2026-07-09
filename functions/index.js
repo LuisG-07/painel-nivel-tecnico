@@ -63,7 +63,9 @@ exports.zdproxy = onRequest(
       res.status(r.status);
       res.setHeader('Content-Type', r.headers.get('content-type') || (isImage ? 'image/jpeg' : 'application/json; charset=utf-8'));
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      // So cacheia imagens que deram certo. API e erros (ex.: 429) NUNCA cacheiam,
+      // senao o CDN do Hosting passa a servir o 429/dados antigos por 24h.
+      res.setHeader('Cache-Control', (isImage && r.ok) ? 'public, max-age=86400' : 'no-store');
       if (r.headers.get('retry-after')) res.setHeader('Retry-After', r.headers.get('retry-after'));
       res.send(buf);
     } catch (err) {
