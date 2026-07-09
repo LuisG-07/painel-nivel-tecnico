@@ -5,11 +5,18 @@
 // Rota (via Hosting rewrite): /zdproxy/<subdominio>/<caminho-da-api>?<query>
 //   ou para imagens de CDN:   /zdproxy/<subdominio>?url=<url-encodada>
 const { onRequest } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const admin = require('firebase-admin');
+if (!admin.apps.length) admin.initializeApp();
+
+// Credenciais do Zendesk no formato "email/token:apitoken" (o base64 e aplicado
+// aqui no servidor). Definir com: firebase functions:secrets:set ZENDESK_AUTH
+const ZENDESK_AUTH = defineSecret('ZENDESK_AUTH');
 
 const SUB_RE = /^[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]?$/;
 
 exports.zdproxy = onRequest(
-  { region: 'us-central1', memory: '256MiB', timeoutSeconds: 120, cors: false },
+  { region: 'us-central1', memory: '256MiB', timeoutSeconds: 120, cors: false, secrets: [ZENDESK_AUTH] },
   async (req, res) => {
     try {
       var m = req.path.match(/^\/zdproxy\/([^/?]+)(\/.*)?$/);
@@ -17,6 +24,18 @@ exports.zdproxy = onRequest(
       var subdomain = m[1];
       if (!SUB_RE.test(subdomain)) { res.status(400).json({ error: 'Subdomínio inválido.' }); return; }
       var restPath = m[2] || '/';
+
+      // Autenticacao: exige usuario LOGADO (token do Firebase) e AUTORIZADO (allowlist).
+      // Sem isso o proxy ficaria aberto na internet usando o token do Zendesk.
+      var authz = req.headers.authorization || '';
+      if (authz.indexOf('Bearer ') !== 0) { res.status(401).json({ error: 'Nao autenticado.' }); return; }
+      var email;
+      try {
+        var decoded = await admin.auth().verifyIdToken(authz.slice(7));
+        email = (decoded.email || '').toLowerCase();
+      } catch (e) { res.status(401).json({ error: 'Token invalido ou expirado.' }); return; }
+      var allow = await admin.firestore().collection('allowedUsers').doc(email).get();
+      if (!allow.exists) { res.status(403).json({ error: 'E-mail sem acesso.' }); return; }
 
       var urlParam = req.query.url;
       if (Array.isArray(urlParam)) urlParam = urlParam[0];
@@ -31,9 +50,10 @@ exports.zdproxy = onRequest(
 
       var isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(target);
       var headers = { 'User-Agent': 'Mozilla/5.0' };
-      var authHeader = req.headers.authorization || '';
-      if (authHeader && !isImage) {
-        headers['Authorization'] = authHeader;
+      if (!isImage) {
+        // Autenticacao do Zendesk vem do SECRET do servidor (nunca do cliente).
+        var cred = ZENDESK_AUTH.value(); // "email/token:apitoken"
+        if (cred) headers['Authorization'] = 'Basic ' + Buffer.from(cred).toString('base64');
         headers['Accept'] = 'application/json';
       }
 

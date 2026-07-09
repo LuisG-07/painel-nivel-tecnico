@@ -21,7 +21,18 @@
       "firestore.rules",
       "firestore.indexes.json",
       "*.md",
-      "*.log"
+      "*.log",
+      "serviceAccountKey.json",
+      "*serviceAccount*.json",
+      "*-firebase-adminsdk-*.json",
+      "scripts/**",
+      "start_server.ps1",
+      "build.js",
+      "build.ps1",
+      "zd_import_data.js",
+      "load_zendesk.html",
+      "SkillMatrix_Pro.html",
+      "dist/**"
     ],
     "rewrites": [
       { "source": "/zdproxy/**", "function": "zdproxy" }

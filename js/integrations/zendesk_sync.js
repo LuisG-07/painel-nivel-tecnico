@@ -23,7 +23,10 @@ var ZendeskSync = (function() {
     'Thales Silva':                        'Thales'
   } };
   // Credentials — stored in localStorage (persistent between sessions)
-  var DEFAULT_SEC = { email: 'lucas@beteltecnologia.com.br', apiToken: 'jXs605fvYJ6YAoLUUjlnUxRXmxGmI71wik57js3X', geminiKey: '' };
+  // Credenciais NAO ficam mais no frontend publicado: na web a Cloud Function
+  // injeta a autenticacao do Zendesk (secret no servidor). Localmente, o usuario
+  // pode informar e-mail/token pela tela (ficam so no localStorage da maquina).
+  var DEFAULT_SEC = { email: '', apiToken: '', geminiKey: '' };
 
   var FOUND_KEY = 'skm6_zdfound';
 
@@ -536,10 +539,25 @@ var ZendeskSync = (function() {
   // ---------------------------------------------------------------------------
   // Importação direta do Zendesk via browser (sem Apps Script)
   // ---------------------------------------------------------------------------
+  // Cabecalho de autenticacao para o proxy:
+  //  - Local (server.js): credencial Zendesk digitada pelo usuario (Basic).
+  //  - Web (Cloud Function): token do Firebase (Bearer). A function verifica
+  //    login + allowlist e injeta a credencial do Zendesk (secret no servidor),
+  //    para o proxy NAO ficar aberto na internet.
+  function proxyAuthHeaders(cfg) {
+    if (cfg && cfg.email && cfg.apiToken) {
+      return { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
+    }
+    if (window.__FB_ID_TOKEN__) {
+      return { 'Authorization': 'Bearer ' + window.__FB_ID_TOKEN__ };
+    }
+    return {};
+  }
+
   // Cria uma função zdFetch (auth + proxy local) a partir da config.
   function buildZdFetch(cfg) {
     var base    = 'https://' + cfg.subdomain + '.zendesk.com';
-    var headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
+    var headers = proxyAuthHeaders(cfg);
     // Sempre via proxy relativo: local = Express (server.js); web = Cloud Function (rewrite /zdproxy/**)
     var proxyBase = '/zdproxy/' + cfg.subdomain;
     function toUrl(path) {
@@ -598,8 +616,8 @@ var ZendeskSync = (function() {
     var moduleList = Array.isArray(modules) ? modules : [];
     var detectedField = null; // campo de categoria (definido na detecção) — usado também na busca de todos os tickets
     var emailMap = {};        // nome normalizado → e-mail do agente (capturado em users/show_many)
-    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
-      callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
+    if (!cfg.subdomain) {
+      callback(0, 'Configure o subdomínio do Zendesk antes de importar.');
       return;
     }
     if (!isValidSubdomain(cfg.subdomain)) {
@@ -608,8 +626,7 @@ var ZendeskSync = (function() {
     }
 
     var base      = 'https://' + cfg.subdomain + '.zendesk.com';
-    var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
-    var headers   = { 'Authorization': auth };
+    var headers   = proxyAuthHeaders(cfg);
 
     // Calcula startTime e endTime baseado em dateFrom/dateTo ou usa período em dias
     var startTime, endTime;
@@ -957,7 +974,7 @@ var ZendeskSync = (function() {
           // Foto via proxy (relativo) — funciona local e na web
           var url = '/zdproxy/' + cfg.subdomain + '?url=' + encodeURIComponent(photoUrl);
 
-          return fetch(url)
+          return fetch(url, { headers: proxyAuthHeaders(cfg) })
             .then(function(r) {
               if (!r.ok) {
                 console.error('Erro ao baixar foto de ' + name + ': HTTP ' + r.status);

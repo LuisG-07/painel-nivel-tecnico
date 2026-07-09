@@ -229,6 +229,13 @@ var Auth = (function() {
       try { console.error('getRedirectResult >>>', e); } catch (_) {}
     });
 
+    // Mantem um ID token do Firebase sempre atualizado (usado pelo proxy do Zendesk
+    // na web: a Cloud Function verifica login+allowlist antes de injetar o token).
+    fb().auth().onIdTokenChanged(function(user) {
+      if (!user) { window.__FB_ID_TOKEN__ = null; return; }
+      user.getIdToken().then(function(t) { window.__FB_ID_TOKEN__ = t; }).catch(function () {});
+    });
+
     fb().auth().onAuthStateChanged(function(user) {
       if (!user) { showLogin(); return; }
       showLoading('Verificando acesso...');
