@@ -4,7 +4,8 @@ var Storage = (function() {
     modules:   'skm6_mods',
     trainings: 'skm6_train',
     history:   'skm6_hist',
-    sectors:   'skm6_sec'
+    sectors:   'skm6_sec',
+    leaders:   'skm6_leaders'
   };
 
   var STORAGE_WARN_BYTES = 4 * 1024 * 1024; // warn at 4 MB
@@ -146,6 +147,13 @@ var Storage = (function() {
     return valid.length ? valid : null;
   }
 
+  function loadLeaders() {
+    var raw = safeGet(KEYS.leaders, null);
+    if (!Array.isArray(raw)) return null;
+    var valid = raw.filter(function(l) { return typeof l === 'string' && l.trim(); });
+    return valid.length ? valid : null;
+  }
+
   function sanitizeTraining(t) {
     if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
     if (typeof t.module !== 'string' || !t.module.trim()) return null;
@@ -216,6 +224,7 @@ var Storage = (function() {
     safeSet(KEYS.analysts,  state.analysts);
     safeSet(KEYS.modules,   state.modules);
     safeSet(KEYS.sectors,   state.sectors);
+    safeSet(KEYS.leaders,   state.leaders);
     safeSet(KEYS.trainings, state.trainings);
     safeSet(KEYS.history,   state.history);
   }
@@ -235,6 +244,7 @@ var Storage = (function() {
     loadAnalysts:   loadAnalysts,
     loadModules:    loadModules,
     loadSectors:    loadSectors,
+    loadLeaders:    loadLeaders,
     loadTrainings:  loadTrainings,
     loadHistory:    loadHistory,
     saveAll:        saveAll,

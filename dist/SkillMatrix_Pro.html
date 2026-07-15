@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -21,11 +21,13 @@
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'none';
-  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com;
+  script-src  'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://apis.google.com;
   style-src   'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   font-src    https://cdn.jsdelivr.net;
   img-src     'self' data: blob: https://*.zendesk.com;
-  connect-src 'self' https://*.zendesk.com https://generativelanguage.googleapis.com https://script.google.com http://localhost:* http://127.0.0.1:*;
+  connect-src 'self' https://*.zendesk.com https://*.googleapis.com https://script.google.com https://*.firebaseapp.com https://apis.google.com https://accounts.google.com wss://*.googleapis.com http://localhost:* http://127.0.0.1:*;
+  frame-src   https://*.firebaseapp.com https://accounts.google.com https://*.google.com;
+  form-action 'self' https://accounts.google.com https://*.firebaseapp.com;
   object-src  'none';
   base-uri    'self';
 ">
@@ -328,6 +330,7 @@ body{
       <button class="nav-tab active" onclick="App.switchPage('visao',this)" aria-label="Visão Geral"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Visão Geral</span></button>
       <button class="nav-tab" onclick="App.switchPage('evolucao',this)" aria-label="Evolução"><i class="ti ti-chart-line" aria-hidden="true"></i><span>Evolução</span></button>
       <button class="nav-tab" onclick="App.switchPage('treinamento',this)" aria-label="Treinamento"><i class="ti ti-school" aria-hidden="true"></i><span>Treinamento</span></button>
+      <button class="nav-tab" id="navAdmin" onclick="App.switchPage('admin',this)" style="display:none" aria-label="Administração"><i class="ti ti-shield-lock" aria-hidden="true"></i><span>Admin</span></button>
     </nav>
     <div class="sidebar-footer">
       <span id="zdBadge" class="zd-badge" title="" style="display:none" onclick="App.openManageModal()" aria-label="Status Zendesk">
@@ -356,6 +359,7 @@ body{
       <div id="page-visao"       class="page active"></div>
       <div id="page-evolucao"    class="page"></div>
       <div id="page-treinamento" class="page"></div>
+      <div id="page-admin"       class="page"></div>
     </main>
   </div>
 </div>
@@ -504,7 +508,7 @@ body{
     <span class="input-label" for="tMod">Módulo / Tema</span>
     <input type="text" id="tMod" class="form-input" placeholder="Ex: SendGrid">
     <span class="input-label" for="tLeader">Líder técnico</span>
-    <input type="text" id="tLeader" class="form-input" placeholder="Nome do líder">
+    <select id="tLeader" class="form-input"></select>
     <span class="input-label" for="tObs">Observações</span>
     <input type="text" id="tObs" class="form-input" placeholder="Opcional">
     <span class="input-label">Participantes</span>
@@ -534,10 +538,11 @@ body{
 <!-- Manage Modules & Sectors Modal -->
 <div id="manageModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manageModalTitle">
   <div class="modal">
-    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos e Setores</div>
+    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos, Setores e Líderes</div>
     <div class="modal-tabs">
       <button class="modal-tab active" data-tab="modules" onclick="UIModals.switchModalTab('manageModal','modules')">Módulos</button>
       <button class="modal-tab" data-tab="sectors" onclick="UIModals.switchModalTab('manageModal','sectors')">Setores</button>
+      <button class="modal-tab" data-tab="leaders" onclick="UIModals.switchModalTab('manageModal','leaders')">Líderes</button>
       <button class="modal-tab" data-tab="zendesk" onclick="UIModals.switchModalTab('manageModal','zendesk')">Zendesk</button>
     </div>
 
@@ -555,6 +560,14 @@ body{
         <button class="btn-primary" id="addSectorBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
       </div>
       <div id="sectorsList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="leaders">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newLeaderInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo líder técnico">
+        <button class="btn-primary" id="addLeaderBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div id="leadersList"></div>
     </div>
 
     <div class="modal-tab-panel" data-panel="zendesk">
@@ -720,6 +733,9 @@ var SEED_MODULES = [
 // Default sectors — overridden by localStorage if present
 var SEED_SECTORS = ["Chat","Telefone","Notas"];
 
+// Líderes técnicos — usados para preencher o campo "Líder técnico" do modal de treinamento
+var SEED_LEADERS = ["Ariane","Lucas Emmanuel","Luis Gustavo"];
+
 // Seed analyst data — used only when localStorage has no data
 var SEED_ANALYSTS = [
   {"id":2,"name":"Bruno","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":4,"Layout e domínio personalizado":2,"Assinatura Digital":3,"Serasa":3,"Tray":3,"Mercado Pago":0,"Mercado Livre":4,"NuvemShop":4,"SendGrid":2,"Pipedrive":2,"PagHiper":4,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":3,"Loja Virtual":3,"Hotmart":2,"Shopee":4,"Stone":3,"API":1,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":3,"GerenciaNet":4,"Iugu":3,"Loja Integrada":4,"MDF-e":2}},
@@ -748,7 +764,8 @@ var Storage = (function() {
     modules:   'skm6_mods',
     trainings: 'skm6_train',
     history:   'skm6_hist',
-    sectors:   'skm6_sec'
+    sectors:   'skm6_sec',
+    leaders:   'skm6_leaders'
   };
 
   var STORAGE_WARN_BYTES = 4 * 1024 * 1024; // warn at 4 MB
@@ -890,6 +907,13 @@ var Storage = (function() {
     return valid.length ? valid : null;
   }
 
+  function loadLeaders() {
+    var raw = safeGet(KEYS.leaders, null);
+    if (!Array.isArray(raw)) return null;
+    var valid = raw.filter(function(l) { return typeof l === 'string' && l.trim(); });
+    return valid.length ? valid : null;
+  }
+
   function sanitizeTraining(t) {
     if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
     if (typeof t.module !== 'string' || !t.module.trim()) return null;
@@ -960,6 +984,7 @@ var Storage = (function() {
     safeSet(KEYS.analysts,  state.analysts);
     safeSet(KEYS.modules,   state.modules);
     safeSet(KEYS.sectors,   state.sectors);
+    safeSet(KEYS.leaders,   state.leaders);
     safeSet(KEYS.trainings, state.trainings);
     safeSet(KEYS.history,   state.history);
   }
@@ -979,6 +1004,7 @@ var Storage = (function() {
     loadAnalysts:   loadAnalysts,
     loadModules:    loadModules,
     loadSectors:    loadSectors,
+    loadLeaders:    loadLeaders,
     loadTrainings:  loadTrainings,
     loadHistory:    loadHistory,
     saveAll:        saveAll,
@@ -2268,14 +2294,24 @@ var UIModals = (function() {
 
   // existing (opcional): treinamento sendo editado — pré-preenche os campos e
   // preserva status/provas. Sem ele, é um agendamento novo.
-  function openTraining(analysts, onSave, existing) {
+  function openTraining(analysts, onSave, existing, leadersList) {
     var modal = document.getElementById('trainModal');
     var ed = existing || null;
     document.getElementById('tDate').value    = ed ? (ed.date || '')    : '';
     document.getElementById('tTime').value    = ed ? (ed.time || '')    : '';
     document.getElementById('tTimeEnd').value = ed ? (ed.timeEnd || '') : '';
     document.getElementById('tMod').value     = ed ? (ed.module || '')  : '';
-    document.getElementById('tLeader').value  = ed ? (ed.leader || '')  : '';
+    var curLeader = ed ? (ed.leader || '') : '';
+    var leaders = (leadersList && leadersList.length
+      ? leadersList
+      : (typeof SEED_LEADERS !== 'undefined' ? SEED_LEADERS : [])).slice();
+    // Preserva um líder antigo que não esteja mais na lista fixa (registros existentes)
+    if (curLeader && leaders.indexOf(curLeader) === -1) leaders.push(curLeader);
+    document.getElementById('tLeader').innerHTML =
+      '<option value="">— selecione —</option>' +
+      leaders.map(function(l) {
+        return '<option value="' + esc(l) + '"' + (l === curLeader ? ' selected' : '') + '>' + esc(l) + '</option>';
+      }).join('');
     document.getElementById('tObs').value     = ed ? (ed.obs || '')     : '';
     var chosen = ed ? (ed.analysts || []) : [];
     document.getElementById('tAnalysts').innerHTML = analysts.map(function(a) {
@@ -2343,13 +2379,15 @@ var UIModals = (function() {
 
   // --- Manage Modal (modules + sectors) ---
 
-  function openManage(modules, sectors, zendeskCfg, onSave) {
+  function openManage(modules, sectors, leaders, zendeskCfg, onSave) {
     var modal = document.getElementById('manageModal');
     var pendingModules = modules.slice();
     var pendingSectors = sectors.slice();
+    var pendingLeaders = (leaders || []).slice();
 
     renderManageModules(pendingModules);
     renderManageSectors(pendingSectors);
+    renderManageLeaders(pendingLeaders);
 
     // Populate Zendesk tab
     var zdCfg = zendeskCfg || {};
@@ -2413,6 +2451,15 @@ var UIModals = (function() {
       renderManageSectors(pendingSectors);
     };
 
+    document.getElementById('addLeaderBtn').onclick = function() {
+      var val = document.getElementById('newLeaderInput').value.trim();
+      if (!val) return;
+      if (pendingLeaders.indexOf(val) !== -1) { alert('Líder já existe.'); return; }
+      pendingLeaders.push(val);
+      document.getElementById('newLeaderInput').value = '';
+      renderManageLeaders(pendingLeaders);
+    };
+
     document.getElementById('manageSaveBtn').onclick = function() {
       if (!pendingModules.length) { alert('Deve existir pelo menos um módulo.'); return; }
       if (!pendingSectors.length) { alert('Deve existir pelo menos um setor.'); return; }
@@ -2435,6 +2482,7 @@ var UIModals = (function() {
       onSave({
         modules:    pendingModules,
         sectors:    pendingSectors,
+        leaders:    pendingLeaders,
         zendeskCfg: {
           subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, ''),
           email:     g('zdEmail'),
@@ -2588,11 +2636,23 @@ var UIModals = (function() {
       }).join('');
     }
 
+    function renderManageLeaders(list) {
+      document.getElementById('leadersList').innerHTML = list.map(function(l, i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
+          '<span>' + esc(l) + '</span>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'leaders\')" title="Remover"><i class="ti ti-x"></i></button>' +
+        '</div>';
+      }).join('');
+    }
+
     // Expose for inline onclick callbacks in the manage modal
     UIModals._removeListItem = function(idx, type) {
       if (type === 'modules') {
         pendingModules.splice(idx, 1);
         renderManageModules(pendingModules);
+      } else if (type === 'leaders') {
+        pendingLeaders.splice(idx, 1);
+        renderManageLeaders(pendingLeaders);
       } else {
         pendingSectors.splice(idx, 1);
         renderManageSectors(pendingSectors);
@@ -3110,1244 +3170,9 @@ var UIModals = (function() {
 })();
 
 </script>
-<script>
-var ZendeskSync = (function() {
-  var CFG_KEY     = 'skm6_zdcfg';
-  var SEC_KEY     = 'skm6_zdcfg_sec';
-  var STATUS_KEY  = 'skm6_zdstatus';
-  var TICKETS_KEY = 'skm6_zdtickets';
-  var AGENTS_KEY  = 'skm6_zdagents'; // foto + score de todos os agentes do Zendesk
-  var PHOTOS_KEY  = 'skm6_zdphotos'; // cache persistente de fotos de analistas
-
-  // Public (non-sensitive) defaults — stored in localStorage
-  var DEFAULT_CFG = { subdomain: 'beteltecnologia', groupName: 'SUP-N1', groupIds: ['6441506014871', '21198035409559', '360001272933'], days: 30, dateFrom: '', dateTo: '', scriptUrl: '', categoryFieldId: '', nameMap: {
-    'Bruno Henrique Ferreira da Silva': 'Bruno',
-    'Henrique Rodrigues Costa Sérgio': 'Henrique Sergio',
-    'Mário Diniz':                    'Mario Diniz',
-    'Ana Claudia Corrêa':            'Ana Claudia',
-    'Diego Machado':                       'Diego',
-    'Karolyne Moreira':                    'Karolyne',
-    'Ismael Chagas Bessa':                 'Ismael',
-    'João Pedro Santana':            'João Pedro S.',
-    'Luan Pereira':                        'Luan',
-    'Mario Junior':                        'Mario',
-    'Mateus Rodrigues':                    'Mateus',
-    'Sergio Junior':                       'Sergio',
-    'Thales Silva':                        'Thales'
-  } };
-  // Credentials — stored in localStorage (persistent between sessions)
-  var DEFAULT_SEC = { email: 'lucas@beteltecnologia.com.br', apiToken: 'jXs605fvYJ6YAoLUUjlnUxRXmxGmI71wik57js3X', geminiKey: '' };
-
-  var FOUND_KEY = 'skm6_zdfound';
-
-  // ---------------------------------------------------------------------------
-  // Input validators
-  // ---------------------------------------------------------------------------
-  function isValidSubdomain(s) {
-    // Zendesk subdomains: 1-63 alphanumeric + hyphens, no leading/trailing hyphens
-    return typeof s === 'string' && /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/.test(s);
-  }
-
-  function isAllowedScriptUrl(url) {
-    try {
-      var p = new URL(url);
-      return p.protocol === 'https:' && p.hostname === 'script.google.com';
-    } catch (e) { return false; }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Config: public fields in localStorage, credentials in sessionStorage
-  // ---------------------------------------------------------------------------
-  // Remove chaves com valor vazio/nulo para que NÃO sobrescrevam os padrões
-  // embutidos (ex.: um e-mail/token salvo em branco não apaga o default).
-  function _pruneEmpty(o) {
-    var out = {};
-    Object.keys(o || {}).forEach(function(k) {
-      var v = o[k];
-      if (v !== '' && v !== null && v !== undefined) out[k] = v;
-    });
-    return out;
-  }
-
-  function _getSensitive() {
-    try { return Object.assign({}, DEFAULT_SEC, _pruneEmpty(JSON.parse(localStorage.getItem(SEC_KEY)) || {})); }
-    catch (e) { return Object.assign({}, DEFAULT_SEC); }
-  }
-
-  function _saveSensitive(s) {
-    localStorage.setItem(SEC_KEY, JSON.stringify({
-      email:     typeof s.email     === 'string' ? s.email.slice(0, 256)     : '',
-      apiToken:  typeof s.apiToken  === 'string' ? s.apiToken.slice(0, 512)  : '',
-      geminiKey: typeof s.geminiKey === 'string' ? s.geminiKey.slice(0, 256) : ''
-    }));
-  }
-
-  function getConfig() {
-    try {
-      var stored = _pruneEmpty(JSON.parse(localStorage.getItem(CFG_KEY)) || {});
-      return Object.assign({}, DEFAULT_CFG, stored, _getSensitive());
-    }
-    catch (e) { return Object.assign({}, DEFAULT_CFG, _getSensitive()); }
-  }
-
-  function saveConfig(c) {
-    var groupIds = c.groupIds || ['6441506014871', '21198035409559', '360001272933'];
-    if (!Array.isArray(groupIds)) groupIds = [groupIds];
-    var pub = {
-      subdomain: typeof c.subdomain === 'string' ? c.subdomain.slice(0, 63)  : '',
-      groupName: typeof c.groupName === 'string' ? c.groupName.slice(0, 100) : 'suporte n1',
-      groupIds:  groupIds.map(function(id) { return typeof id === 'string' ? id.slice(0, 20) : ''; }).filter(function(id) { return id; }),
-      days:      typeof c.days      === 'number' ? Math.min(Math.max(c.days, 1), 365) : 30,
-      dateFrom:  typeof c.dateFrom  === 'string' ? c.dateFrom.slice(0, 10) : '',
-      dateTo:    typeof c.dateTo    === 'string' ? c.dateTo.slice(0, 10) : '',
-      scriptUrl: typeof c.scriptUrl === 'string' && isAllowedScriptUrl(c.scriptUrl) ? c.scriptUrl : '',
-      categoryFieldId: typeof c.categoryFieldId === 'string' ? c.categoryFieldId.slice(0, 30) : (c.categoryFieldId != null ? String(c.categoryFieldId).slice(0, 30) : ''),
-      nameMap:   (c.nameMap && typeof c.nameMap === 'object' && !Array.isArray(c.nameMap)) ? c.nameMap : {}
-    };
-    localStorage.setItem(CFG_KEY, JSON.stringify(pub));
-    _saveSensitive({ email: c.email, apiToken: c.apiToken, geminiKey: c.geminiKey });
-  }
-
-  function getStatus() {
-    try { return JSON.parse(localStorage.getItem(STATUS_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function saveStatus(s) { localStorage.setItem(STATUS_KEY, JSON.stringify(s)); }
-
-  function getAgentData(zdName) {
-    try {
-      var all = JSON.parse(localStorage.getItem(AGENTS_KEY)) || {};
-      return all[zdName] || null;
-    } catch (e) { return null; }
-  }
-  function saveAgents(agentStore) {
-    try { localStorage.setItem(AGENTS_KEY, JSON.stringify(agentStore)); } catch(e) {}
-  }
-
-  // Cache persistente de fotos de analistas
-  function getPhotoCache() {
-    try { return JSON.parse(localStorage.getItem(PHOTOS_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function savePhotoCache(photos) {
-    try { localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos)); }
-    catch (e) { console.error('Erro ao salvar cache de fotos'); }
-  }
-  function addPhotoToCache(analystName, photoBase64) {
-    var cache = getPhotoCache();
-    cache[analystName.toLowerCase()] = photoBase64;
-    savePhotoCache(cache);
-  }
-
-  // Cache de e-mails dos agentes do Zendesk (nome normalizado → e-mail), para
-  // preencher o cadastro do analista. Capturado na importação (users/show_many).
-  var EMAILS_KEY = 'skm6_zdemails';
-  function _emailKey(name) {
-    // minúsculas, sem espaços nas pontas e sem acentos (NFD: remove faixa 0x300–0x36f)
-    return (name || '').toString().trim().toLowerCase().normalize('NFD')
-      .split('').filter(function(c) { var x = c.charCodeAt(0); return x < 0x300 || x > 0x36f; }).join('');
-  }
-  function getAgentEmails() {
-    try { return JSON.parse(localStorage.getItem(EMAILS_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function saveAgentEmails(map) {
-    try { localStorage.setItem(EMAILS_KEY, JSON.stringify(map || {})); } catch (e) {}
-  }
-  function getAgentEmail(name) {
-    return getAgentEmails()[_emailKey(name)] || '';
-  }
-
-  function getTickets(analystId) {
-    try {
-      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
-      return all[analystId] || null;
-    } catch (e) { return null; }
-  }
-  function saveTickets(analystId, data) {
-    try {
-      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
-      all[analystId] = data;
-      localStorage.setItem(TICKETS_KEY, JSON.stringify(all));
-    } catch (e) {}
-  }
-
-  // Estatística GLOBAL de satisfação por categoria de ticket do Zendesk.
-  // Estrutura: { "<categoria>": { good, bad } } — alimenta o ranking de
-  // categorias mais negativadas (toda a equipe, independente de módulo do painel).
-  var CATEGORIES_KEY = 'skm6_zdcategories';
-  function getCategoryStats() {
-    try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function saveCategoryStats(obj) {
-    try { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(obj || {})); } catch (e) {}
-  }
-  // Rótulo do bucket de tickets sem categoria identificada (para não sumirem do ranking).
-  var SEM_CATEGORIA = '(Sem categoria)';
-  // Ranking de categorias por nº de avaliações negativas (pior primeiro).
-  // Calculado a partir dos TICKETS POR ANALISTA — mesma base das notas Zendesk —
-  // honrando o toggle "considerar" de cada negativo (negativos ignorados não contam,
-  // exatamente como na nota). Assim o nº de negativas bate com o painel.
-  // Positivos por categoria vêm de t.category_good (gravado na importação).
-  // Negativos/positivos sem categoria entram no bucket "(Sem categoria)", para o
-  // ranking puxar TODOS os tickets (mesma base da rotina por analista).
-  // Retorna [{ category, good, bad, total, rate }].
-  function categoryRanking(analysts) {
-    var good = {}, bad = {};
-    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
-      var t = getTickets(a.id);
-      if (!t) return;
-      var cg = t.category_good || {};
-      var sumCg = 0;
-      Object.keys(cg).forEach(function(cat) { good[cat] = (good[cat] || 0) + (cg[cat] || 0); sumCg += (cg[cat] || 0); });
-      // positivos não atribuídos a categoria → bucket "(Sem categoria)"
-      var leftoverGood = (t.good_count || 0) - sumCg;
-      if (leftoverGood > 0) good[SEM_CATEGORIA] = (good[SEM_CATEGORIA] || 0) + leftoverGood;
-      (t.bad_tickets || []).forEach(function(x) {
-        if (!x.consider) return;                  // honra o toggle: ignorado não conta
-        var cat = x.zdCategory || SEM_CATEGORIA;  // sem categoria → bucket "(Sem categoria)"
-        bad[cat] = (bad[cat] || 0) + 1;
-      });
-    });
-    var seen = {};
-    Object.keys(good).forEach(function(c) { seen[c] = true; });
-    Object.keys(bad).forEach(function(c) { seen[c] = true; });
-    return Object.keys(seen).map(function(cat) {
-      var g = good[cat] || 0, b = bad[cat] || 0, total = g + b;
-      return { category: cat, good: g, bad: b, total: total, rate: total ? b / total : 0 };
-    })
-    .filter(function(e) { return e.total > 0; })
-    .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
-  }
-
-  // Ranking GLOBAL de módulos mais negativados no Zendesk (equipe toda), na mesma
-  // base das notas: positivos por módulo (t.module_good) + negativos por módulo
-  // (bad_tickets com module), honrando o toggle "considerar". Só módulos com
-  // pelo menos uma negativa entram. Retorna [{ module, good, bad, total, rate }].
-  // Chave do bucket de negativos sem módulo identificado.
-  var SEM_MODULO = '';
-  function moduleRanking(analysts) {
-    var good = {}, bad = {};
-    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
-      var t = getTickets(a.id);
-      if (!t) return;
-      var mg = t.module_good || {};
-      var sumMg = 0;
-      Object.keys(mg).forEach(function(m) { good[m] = (good[m] || 0) + (mg[m] || 0); sumMg += (mg[m] || 0); });
-      // positivos não atribuídos a módulo → entram no bucket "Sem módulo"
-      var leftover = (t.good_count || 0) - sumMg;
-      if (leftover > 0) good[SEM_MODULO] = (good[SEM_MODULO] || 0) + leftover;
-      (t.bad_tickets || []).forEach(function(x) {
-        if (!x.consider) return;            // honra o toggle
-        var m = x.module || SEM_MODULO;     // sem módulo → bucket "Sem módulo"
-        bad[m] = (bad[m] || 0) + 1;
-      });
-    });
-    return Object.keys(bad).map(function(m) {
-      var g = good[m] || 0, b = bad[m] || 0, total = g + b;
-      return { module: m, good: g, bad: b, total: total, rate: total ? b / total : 0 };
-    })
-    .sort(function(a, b) { return (b.bad - a.bad) || (b.rate - a.rate); });
-  }
-
-  // Tickets negativados de um módulo (ou "Sem módulo" quando moduleName vazio),
-  // somando toda a equipe — para consulta. Retorna registros com o analista.
-  function negativesForModule(analysts, moduleName) {
-    var target = moduleName || '';
-    var out = [];
-    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
-      var t = getTickets(a.id);
-      if (!t) return;
-      (t.bad_tickets || []).forEach(function(x) {
-        if ((x.module || '') !== target) return;
-        out.push({
-          analyst:  a.name,
-          id:       x.id,
-          date:     x.date || '',
-          subject:  x.subject || '',
-          comment:  x.comment || '',
-          zdCategory: x.zdCategory || '',
-          category: x.category || '',
-          consider: x.consider !== false
-        });
-      });
-    });
-    return out;
-  }
-
-  // Tickets negativados de uma categoria do Zendesk (zdCategory), somando toda
-  // a equipe — para consulta a partir do ranking de categorias.
-  function negativesForCategory(analysts, categoryName) {
-    var target = categoryName || '';
-    // bucket "(Sem categoria)" casa com os negativos sem zdCategory.
-    var wantEmpty = (target === SEM_CATEGORIA || target === '');
-    var out = [];
-    (Array.isArray(analysts) ? analysts : []).forEach(function(a) {
-      var t = getTickets(a.id);
-      if (!t) return;
-      (t.bad_tickets || []).forEach(function(x) {
-        var cat = x.zdCategory || '';
-        if (wantEmpty ? cat !== '' : cat !== target) return;
-        out.push({
-          analyst:  a.name,
-          id:       x.id,
-          date:     x.date || '',
-          subject:  x.subject || '',
-          comment:  x.comment || '',
-          zdCategory: x.zdCategory || '',
-          category: x.category || '',
-          module:   x.module || '',
-          consider: x.consider !== false
-        });
-      });
-    });
-    return out;
-  }
-
-  var DEFAULT_PRIOR = 0.8; // usado só pela média informativa da equipe (não entra na nota)
-
-  // Média de satisfação da equipe (proporção 0–1) — informativa; NÃO entra na nota.
-  function getTeamPrior() {
-    try {
-      var all = JSON.parse(localStorage.getItem(TICKETS_KEY)) || {};
-      var good = 0, bad = 0;
-      Object.keys(all).forEach(function(id) {
-        var t = all[id];
-        if (!t) return;
-        good += t.good_count || 0;
-        bad  += (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
-      });
-      return (good + bad) > 0 ? good / (good + bad) : DEFAULT_PRIOR;
-    } catch (e) { return DEFAULT_PRIOR; }
-  }
-
-  // Nota Zendesk 0–10, simples e transparente:
-  //   nota = positivos ÷ (positivos + negativos técnicos) × 10
-  // É o "% de clientes satisfeitos" numa escala de 0 a 10. Conta só negativos
-  // técnicos (marcados como "considerar"). Sem avaliações (n = 0) → null.
-  function scoreFrom(goodCount, consideredBad) {
-    var n = goodCount + consideredBad;
-    if (n === 0) return null;
-    return parseFloat(((goodCount / n) * 10).toFixed(1));
-  }
-
-  function recalcScore(goodCount, badTickets) {
-    var consideredBad = badTickets.filter(function(t) { return t.consider; }).length;
-    return scoreFrom(goodCount, consideredBad);
-  }
-
-  // Recalcula a nota Zendesk de todos os analistas.
-  // Preserva analistas que têm nota manual e não possuem tickets importados.
-  function recomputeAllScores(analysts) {
-    if (!Array.isArray(analysts)) return;
-    analysts.forEach(function(a) {
-      var t = getTickets(a.id);
-      if (!t) return; // sem tickets → mantém nota manual (se houver)
-      var consideredBad = (t.bad_tickets || []).filter(function(x) { return x.consider; }).length;
-      a.zendesk = scoreFrom(t.good_count || 0, consideredBad);
-    });
-  }
-
-  // Normaliza nomes para comparação (sem acento, minúsculo, separadores → espaço)
-  function normalizeName(s) {
-    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  // Casamento PRECISO entre nome de agente (Zendesk) e nome de analista (painel).
-  // Regra: nomes iguais, OU o nome do analista é prefixo EXATO (palavra a palavra)
-  // do nome do agente — ex.: "Bruno" ⊂ "Bruno Henrique Silva". NUNCA casa só pelo
-  // primeiro nome quando os demais divergem (ex.: "João Pedro S." ✗ "João Vitor Almeida").
-  function agentMatchesAnalyst(agentName, analystName) {
-    var a = normalizeName(agentName).split(' ').filter(Boolean);
-    var b = normalizeName(analystName).split(' ').filter(Boolean);
-    if (!a.length || !b.length) return false;
-    if (a.join(' ') === b.join(' ')) return true;       // iguais
-    if (b.length > a.length) return false;               // analista mais longo → não é prefixo
-    for (var i = 0; i < b.length; i++) {                 // todas as palavras do analista batem com as primeiras do agente
-      if (b[i] !== a[i]) return false;
-    }
-    return true;
-  }
-
-  // Nota Zendesk POR MÓDULO de um analista (mesma fórmula simples).
-  // Retorna { "Módulo": { good, bad, score } } para cada módulo informado.
-  function moduleScores(analystId, modules) {
-    var out = {};
-    var t = getTickets(analystId);
-    if (!t || !Array.isArray(modules)) return out;
-    var mg = t.module_good || {};
-    modules.forEach(function(m) {
-      var good = mg[m] || 0;
-      var bad = (t.bad_tickets || []).filter(function(x) { return x.module === m && x.consider; }).length;
-      out[m] = { good: good, bad: bad, score: scoreFrom(good, bad) };
-    });
-    return out;
-  }
-
-  // Escolhe, entre os campos de ticket (dropdowns), aquele cujas opções mais
-  // batem com os módulos do painel. Retorna { id, valueToModule } ou null.
-  function pickCategoryField(ticketFields, modules) {
-    if (!Array.isArray(ticketFields) || !Array.isArray(modules) || !modules.length) return null;
-    var modByNorm = {};
-    modules.forEach(function(m) { modByNorm[normalizeName(m)] = m; });
-
-    var best = null, bestCount = 0;
-    ticketFields.forEach(function(f) {
-      if (!Array.isArray(f.custom_field_options) || !f.custom_field_options.length) return;
-      var valueToModule = {};
-      var valueToName = {};
-      var count = 0;
-      f.custom_field_options.forEach(function(o) {
-        valueToName[String(o.value)] = o.name || o.value;
-        var hit = modByNorm[normalizeName(o.name)] || modByNorm[normalizeName(o.value)];
-        if (hit) { valueToModule[String(o.value)] = hit; count++; }
-      });
-      if (count > bestCount) { bestCount = count; best = { id: f.id, valueToModule: valueToModule, valueToName: valueToName }; }
-    });
-    return bestCount > 0 ? best : null;
-  }
-
-  // Encontra o analista do painel correspondente a um nome de agente do Zendesk
-  // (usa o nameMap manual/auto e, como fallback, casamento por nome normalizado).
-  function findAnalystForAgent(agentName, analysts, nameMap) {
-    if (!Array.isArray(analysts)) return null;
-    var mapped = (nameMap && nameMap[agentName]) || '';
-    if (mapped) {
-      var target = normalizeName(mapped);
-      var byMap = analysts.filter(function(a) { return normalizeName(a.name) === target; })[0];
-      if (byMap) return byMap;
-    }
-    // sem mapeamento manual → casamento preciso (igual ou prefixo exato)
-    return analysts.filter(function(a) { return agentMatchesAnalyst(agentName, a.name); })[0] || null;
-  }
-
-  function getFoundNames() {
-    try { return JSON.parse(localStorage.getItem(FOUND_KEY)) || []; }
-    catch(e) { return []; }
-  }
-  function saveFoundNames(names) {
-    localStorage.setItem(FOUND_KEY, JSON.stringify(names));
-  }
-
-  // Auto-match Zendesk agent names com analistas cadastrados (casamento PRECISO)
-  function autoMatchNames(zdNames, analysts) {
-    var nameMap = getConfig().nameMap || {};
-    zdNames.forEach(function(zdName) {
-      if (nameMap[zdName]) return; // já mapeado manualmente
-      var found = analysts.filter(function(a) { return agentMatchesAnalyst(zdName, a.name); })[0];
-      if (found) {
-        nameMap[zdName] = found.name;
-        console.log('✓ Auto-vinculado: "' + zdName + '" → "' + found.name + '"');
-      }
-    });
-    return nameMap;
-  }
-
-  // Processa resposta da API (Apps Script doGet) e atualiza analysts in-place
-  function applyAgentData(analysts, agentMap) {
-    var updated  = 0;
-    var nameMap  = getConfig().nameMap || {};
-    var found    = Object.keys(agentMap);
-    saveFoundNames(found);
-
-    // Track which agentes foram já vinculados para evitar duplicatas
-    var usedAgents = {};
-
-    analysts.forEach(function(analyst) {
-      Object.keys(agentMap).forEach(function(agentName) {
-        if (usedAgents[agentName]) return; // já foi vinculado, pula
-
-        // Mapeamento manual tem prioridade; senão, casamento PRECISO (igual/prefixo exato)
-        var mapped  = nameMap[agentName];
-        var matches = mapped
-          ? normalizeName(mapped) === normalizeName(analyst.name)
-          : agentMatchesAnalyst(agentName, analyst.name);
-
-        if (!matches) return;
-
-        // Auto-preenche nameMap se encontrou correspondência automática
-        if (!mapped) {
-          nameMap[agentName] = analyst.name;
-          console.log('✓ Auto-vinculado: ' + agentName + ' → ' + analyst.name);
-        }
-        var data = agentMap[agentName];
-        var score = data.score;
-        if (score === null || score === undefined || isNaN(parseFloat(score))) return;
-
-        var existing    = getTickets(analyst.id);
-        var existingMap = {};
-        if (existing && existing.bad_tickets) {
-          existing.bad_tickets.forEach(function(t) { existingMap[t.id] = t.consider; });
-        }
-
-        var bad_tickets = (data.bad_tickets || []).map(function(t) {
-          var prev = existingMap[t.id];
-          return {
-            id:       t.id,
-            date:     t.date || '',
-            category: t.category || '',
-            comment:  t.comment || '',
-            module:   t.module || '',
-            zdCategory: t.zdCategory || '',
-            consider: prev !== undefined ? prev : true
-          };
-        });
-
-        var goodCount = data.good_count != null ? data.good_count : (data.good_tickets || 0);
-        saveTickets(analyst.id, { good_count: goodCount, bad_tickets: bad_tickets, module_good: data.module_good || {}, category_good: data.category_good || {}, good_tickets: data.good_tickets || [] });
-        analyst.zendesk = recalcScore(goodCount, bad_tickets);
-
-        // Aplica foto se tiver
-        if (data.photo && !analyst.photo) {
-          analyst.photo = data.photo;
-          addPhotoToCache(analyst.name, data.photo);
-        }
-
-        usedAgents[agentName] = true; // marca como usado para evitar duplicata
-        updated++;
-      });
-    });
-
-    // Restaura fotos do cache para analistas
-    var photoCache = getPhotoCache();
-    analysts.forEach(function(analyst) {
-      if (!analyst.photo) {
-        var cached = photoCache[analyst.name.toLowerCase()];
-        if (cached) {
-          analyst.photo = cached;
-        }
-      }
-    });
-
-    return { updated: updated, nameMap: nameMap };
-  }
-
-  function sync(analysts, callback) {
-    var c = getConfig();
-    if (!c.scriptUrl) { callback && callback(0, null, 'not-configured'); return; }
-    if (!isAllowedScriptUrl(c.scriptUrl)) {
-      callback && callback(0, 'URL inválida: deve ser do Google Apps Script (script.google.com).', 'error');
-      return;
-    }
-
-    fetch(c.scriptUrl, { redirect: 'follow' })
-      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(data) {
-        if (data.error) throw new Error(data.error);
-        var result = applyAgentData(analysts, data.agents || {});
-        saveStatus({ ok: true, at: new Date().toISOString(), updated: result.updated });
-        callback && callback(result.updated, null, 'ok');
-      })
-      .catch(function(err) {
-        saveStatus({ ok: false, at: new Date().toISOString(), error: err.message });
-        callback && callback(0, err.message, 'error');
-      });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Importação direta do Zendesk via browser (sem Apps Script)
-  // ---------------------------------------------------------------------------
-  // Cria uma função zdFetch (auth + proxy local) a partir da config.
-  function buildZdFetch(cfg) {
-    var base    = 'https://' + cfg.subdomain + '.zendesk.com';
-    var headers = { 'Authorization': 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken) };
-    // Sempre via proxy relativo: local = Express (server.js); web = Cloud Function (rewrite /zdproxy/**)
-    var proxyBase = '/zdproxy/' + cfg.subdomain;
-    function toUrl(path) {
-      if (path.indexOf('http') === 0) return path.replace(base, proxyBase);
-      return proxyBase + path;
-    }
-    return function zdFetch(path) {
-      return fetch(toUrl(path), { headers: headers }).then(function(r) {
-        return r.text().then(function(body) {
-          if (!r.ok) {
-            var hint = r.status === 404 ? 'verifique o subdomínio.'
-                     : r.status === 401 ? 'verifique e-mail e token da API.'
-                     : r.status === 403 ? 'token sem permissão na API.'
-                     : 'erro inesperado.';
-            var detail = '';
-            try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
-            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
-          }
-          return JSON.parse(body);
-        });
-      });
-    };
-  }
-
-  // Detecta os campos personalizados de ticket (dropdowns) para o usuário escolher
-  // qual é a "categoria do atendimento". callback(fields, errorMessage).
-  function detectTicketFields(callback) {
-    var cfg = getConfig();
-    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
-      callback(null, 'Preencha subdomínio, e-mail e token antes de detectar.');
-      return;
-    }
-    if (!isValidSubdomain(cfg.subdomain)) {
-      callback(null, 'Subdomínio inválido.');
-      return;
-    }
-    buildZdFetch(cfg)('/api/v2/ticket_fields.json')
-      .then(function(data) {
-        var fields = (data.ticket_fields || [])
-          .filter(function(f) { return Array.isArray(f.custom_field_options) && f.custom_field_options.length; })
-          .map(function(f) {
-            return {
-              id:      f.id,
-              title:   f.title || f.raw_title || ('Campo ' + f.id),
-              type:    f.type,
-              options: f.custom_field_options.map(function(o) { return { name: o.name, value: o.value }; })
-            };
-          });
-        callback(fields, null);
-      })
-      .catch(function(err) { callback(null, err.message); });
-  }
-
-  function importDirect(analysts, modules, onProgress, callback) {
-    var cfg = getConfig();
-    var moduleList = Array.isArray(modules) ? modules : [];
-    var detectedField = null; // campo de categoria (definido na detecção) — usado também na busca de todos os tickets
-    var emailMap = {};        // nome normalizado → e-mail do agente (capturado em users/show_many)
-    if (!cfg.subdomain || !cfg.email || !cfg.apiToken) {
-      callback(0, 'Preencha subdomínio, e-mail e token antes de importar.');
-      return;
-    }
-    if (!isValidSubdomain(cfg.subdomain)) {
-      callback(0, 'Subdomínio inválido: use apenas letras, números e hífens (ex: minhaempresa).');
-      return;
-    }
-
-    var base      = 'https://' + cfg.subdomain + '.zendesk.com';
-    var auth      = 'Basic ' + btoa(cfg.email + '/token:' + cfg.apiToken);
-    var headers   = { 'Authorization': auth };
-
-    // Calcula startTime e endTime baseado em dateFrom/dateTo ou usa período em dias
-    var startTime, endTime;
-    var now = Math.floor(Date.now() / 1000);
-    var twoMinutesAgo = now - 120;
-    if (cfg.dateFrom && cfg.dateTo) {
-      // Interpreta as datas escolhidas como DIA LOCAL (fuso do navegador/conta, ex. BRT),
-      // não como UTC. Sem o 'Thh:mm:ss', new Date('2026-06-01') vira meia-noite UTC e
-      // desloca o período em 3h — incluindo a noite do dia anterior e perdendo a noite
-      // do último dia, o que derruba positivos perto da borda do período.
-      startTime = Math.floor(new Date(cfg.dateFrom + 'T00:00:00').getTime() / 1000);
-      endTime   = Math.floor(new Date(cfg.dateTo + 'T23:59:59').getTime() / 1000); // até o fim do dia local
-      // Se end_time for no futuro, ajusta para 2 minutos atrás
-      if (endTime > twoMinutesAgo) {
-        endTime = twoMinutesAgo;
-      }
-    } else {
-      startTime = Math.floor((Date.now() - (cfg.days || 30) * 86400000) / 1000);
-      endTime   = twoMinutesAgo; // sempre 2 minutos atrás para garantir
-    }
-    var groupName = (cfg.groupName || 'suporte n1').toLowerCase();
-
-    // Proxy relativo sempre: local = Express; web = Cloud Function (rewrite /zdproxy/**)
-    var proxyBase = '/zdproxy/' + cfg.subdomain;
-
-    function toUrl(path) {
-      if (path.startsWith('http')) {
-        // Imagens de CDN: passa a URL completa como parâmetro
-        if (/\.(jpg|jpeg|png|gif|webp)$/i.test(path)) {
-          return proxyBase + '?url=' + encodeURIComponent(path);
-        }
-        // APIs: substitui o domínio pelo proxy
-        return path.replace(base, proxyBase);
-      }
-      return proxyBase + path;
-    }
-
-    // true depois da 1ª resposta autenticada — distingue "credencial ruim" (401 logo
-    // de cara) de "throttle" (401/429 no meio do import, após já ter autenticado).
-    var authedOnce = false;
-    function zdFetch(path, attempt) {
-      attempt = attempt || 0;
-      return fetch(toUrl(path), { headers: headers })
-        .then(function(r) {
-          return r.text().then(function(body) {
-            if (r.ok) { authedOnce = true; return JSON.parse(body); }
-
-            // Rate limit (429/503), ou 401 após já ter autenticado → espera e tenta de novo.
-            var throttled = (r.status === 429 || r.status === 503 || (r.status === 401 && authedOnce));
-            if (throttled && attempt < 6) {
-              var ra = parseInt(r.headers.get('retry-after'), 10);
-              var waitMs = ((ra && ra > 0) ? ra : Math.min(60, 8 * (attempt + 1))) * 1000;
-              onProgress('Limite de requisições do Zendesk atingido — aguardando ' + Math.round(waitMs / 1000) + 's e tentando de novo...');
-              return delay(waitMs).then(function() { return zdFetch(path, attempt + 1); });
-            }
-
-            var hint = r.status === 404 ? 'verifique o subdomínio (só a parte antes de .zendesk.com).'
-                     : r.status === 401 ? 'verifique e-mail e token da API.'
-                     : r.status === 403 ? 'token sem permissão — verifique escopo na API do Zendesk.'
-                     : r.status === 429 ? 'limite de requisições por minuto excedido — aguarde 1 min e tente de novo.'
-                     : 'erro inesperado.';
-            var detail = '';
-            try { detail = ' (' + (JSON.parse(body).description || JSON.parse(body).error || '') + ')'; } catch(e) {}
-            throw new Error('Zendesk HTTP ' + r.status + ' — ' + hint + detail);
-          });
-        });
-    }
-
-    onProgress('Conectando ao Zendesk...');
-
-    // 1. Define os grupos a importar (por ID) - usa config ou usa padrão
-    var groupIdMap = {
-      '360001272933': 'SUP-N1',
-      '6441506014871': 'Suporte (Outros Assuntos)',
-      '21198035409559': 'Suporte para Nota Fiscal'
-    };
-    var groupIds = (cfg.groupIds && cfg.groupIds.length) ? cfg.groupIds : ['6441506014871', '21198035409559', '360001272933'];
-    var groupNames = groupIds.map(function(id) { return groupIdMap[id] || 'Grupo ' + id; });
-
-    // 2. Busca avaliações de todos os grupos (sequencial com delay para evitar rate limit)
-    function delay(ms) {
-      return new Promise(function(resolve) { setTimeout(resolve, ms); });
-    }
-
-    // Próxima página — suporta paginação por OFFSET (next_page) e por CURSOR
-    // (meta.has_more + links.next). O Zendesk migrou várias APIs para cursor,
-    // então sem isso só vinha a 1ª página (~100 registros).
-    function nextPageUrl(data) {
-      if (data && data.meta && typeof data.meta.has_more === 'boolean') {
-        return (data.meta.has_more && data.links && data.links.next) ? data.links.next : null;
-      }
-      return (data && data.next_page) || null;
-    }
-
-    function fetchGroupRatings(idx) {
-      if (idx >= groupIds.length) return Promise.resolve([]);
-      var groupId = groupIds[idx];
-      var all = [];
-      function fetchPage(url) {
-        return zdFetch(url).then(function(data) {
-          var batch = data.satisfaction_ratings || [];
-          all = all.concat(batch);
-          onProgress('Grupo "' + groupNames[idx] + '" - Avaliações: ' + all.length + '...');
-          var next = nextPageUrl(data);
-          // Teto de segurança alto só para evitar loop; quem limita é o período (start/end).
-          if (next && all.length < 100000) return delay(500).then(function() { return fetchPage(next); });
-          return all;
-        });
-      }
-      // page[size] força paginação por CURSOR (sem o limite de 10.000 do offset).
-      return fetchPage(base + '/api/v2/satisfaction_ratings.json?page%5Bsize%5D=100&start_time=' + startTime + '&end_time=' + endTime + '&group_id=' + groupId)
-        .then(function(ratings) {
-          return delay(1000).then(function() {
-            return fetchGroupRatings(idx + 1).then(function(nextRatings) {
-              return [ratings].concat(nextRatings);
-            });
-          });
-        });
-    }
-
-    fetchGroupRatings(0)
-      .then(function(allRatingsArrays) {
-        var consolidated = [];
-        allRatingsArrays.forEach(function(ratings) {
-          consolidated = consolidated.concat(ratings);
-        });
-
-        // Deduplica por TICKET (um ticket pode ter várias avaliações — reavaliação —
-        // ou vir repetido entre grupos). Mantém a avaliação mais recente de cada ticket,
-        // para a contagem bater com os tickets reais do Zendesk.
-        var byTicket = {};
-        consolidated.forEach(function(r) {
-          var key = (r.ticket_id != null) ? ('t' + r.ticket_id) : ('r' + r.id);
-          var prev = byTicket[key];
-          if (!prev) { byTicket[key] = r; return; }
-          var prevT = new Date(prev.updated_at || prev.created_at || 0).getTime();
-          var curT  = new Date(r.updated_at || r.created_at || 0).getTime();
-          if (curT >= prevT) byTicket[key] = r;
-        });
-        var unique = Object.keys(byTicket).map(function(k) { return byTicket[k]; });
-
-        onProgress('Avaliações: ' + consolidated.length + ' (tickets únicos: ' + unique.length + ')');
-        return unique;
-      })
-
-      // 3. Resolve nomes e fotos dos agentes
-      .then(function(ratings) {
-        var idSet = {};
-        ratings.forEach(function(r) { if (r.assignee_id) idSet[r.assignee_id] = true; });
-        var ids = Object.keys(idSet).join(',');
-        if (!ids) return { ratings: ratings, userMap: {}, photoMap: {} };
-        return zdFetch('/api/v2/users/show_many.json?ids=' + ids).then(function(data) {
-          var userMap  = {};
-          var photoMap = {};
-          (data.users || []).forEach(function(u) {
-            userMap[u.id] = u.name;
-            if (u.email) emailMap[_emailKey(u.name)] = u.email;
-            // Prefere thumbnail 128px; fallback para content_url
-            if (u.photo) {
-              var thumb = u.photo.thumbnails && u.photo.thumbnails.find(function(t) { return t.width >= 128; });
-              photoMap[u.id] = (thumb && thumb.content_url) || u.photo.content_url || null;
-            }
-          });
-          onProgress('Nomes resolvidos. Buscando fotos...');
-          return { ratings: ratings, userMap: userMap, photoMap: photoMap };
-        });
-      })
-
-      // 4. Busca os tickets PRIMEIRO (precisamos do responsável ATUAL de cada ticket),
-      //    depois agrupa por agente. Quando a avaliação vem sem responsável (assignee_id
-      //    nulo — a pesquisa foi respondida com o ticket sem responsável atribuído), o
-      //    Zendesk credita o positivo/negativo ao responsável ATUAL do ticket. Sem esse
-      //    fallback, essas avaliações somem da contagem e o agente fica com menos do que
-      //    aparece no Zendesk.
-      .then(function(result) {
-        var ratings = result.ratings;
-        var allIds = {};
-        ratings.forEach(function(r) { if (r.ticket_id) allIds[r.ticket_id] = true; });
-        var ticketIds = Object.keys(allIds);
-        var subjectMap = {};
-        var moduleMap  = {};
-        var categoryMap = {}; // ticket_id → nome da categoria (campo Zendesk), independente de módulo
-        var assigneeMap = {}; // ticket_id → responsável ATUAL (fallback p/ avaliação sem responsável)
-
-        // 4.1 Descobre automaticamente o campo de categoria (casa opções × módulos)
-        var fieldPromise = zdFetch('/api/v2/ticket_fields.json')
-          .then(function(fd) {
-            var f = pickCategoryField(fd.ticket_fields || [], moduleList);
-            detectedField = f;
-            if (f) {
-              try { var c = getConfig(); c.categoryFieldId = String(f.id); saveConfig(c); } catch (e) {}
-              onProgress('Campo de categoria detectado (ID ' + f.id + ').');
-            } else {
-              onProgress('Nenhum campo de categoria batendo com os módulos — seguindo sem cruzar módulos.');
-            }
-            return f;
-          })
-          .catch(function() { return null; });
-
-        return fieldPromise.then(function(catField) {
-          // 4.2 Busca assunto + categoria + responsável atual de TODOS os tickets (lotes de 100)
-          function fetchInfo(i) {
-            if (i >= ticketIds.length) return Promise.resolve();
-            var batch = ticketIds.slice(i, i + 100).join(',');
-            onProgress('Lendo categorias dos tickets... (' + Math.min(i + 100, ticketIds.length) + '/' + ticketIds.length + ')');
-            return zdFetch('/api/v2/tickets/show_many.json?ids=' + batch)
-              .then(function(d) {
-                (d.tickets || []).forEach(function(t) {
-                  subjectMap[t.id] = t.subject || '';
-                  if (t.assignee_id) assigneeMap[t.id] = t.assignee_id;
-                  if (catField) {
-                    var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(catField.id); })[0];
-                    if (cf && cf.value != null && cf.value !== '') {
-                      moduleMap[t.id] = catField.valueToModule[String(cf.value)] || '';
-                      categoryMap[t.id] = (catField.valueToName && catField.valueToName[String(cf.value)]) || String(cf.value);
-                    }
-                  }
-                });
-              })
-              .catch(function() {})
-              .then(function() { return delay(500).then(function() { return fetchInfo(i + 100); }); });
-          }
-
-          return (ticketIds.length ? fetchInfo(0) : Promise.resolve()).then(function() {
-            // 4.3 Responsável EFETIVO da avaliação: o gravado na avaliação, ou — se vier
-            //     vazio — o responsável atual do ticket.
-            function effId(r) { return r.assignee_id || assigneeMap[r.ticket_id] || null; }
-
-            // Resolve nomes/fotos dos responsáveis atuais que ainda não foram resolvidos
-            // (avaliações sem responsável caem agora num agente novo).
-            var userMap  = result.userMap  || {};
-            var photoMap = result.photoMap || {};
-            var missing = {};
-            ratings.forEach(function(r) {
-              var id = effId(r);
-              if (id && !(id in userMap)) missing[id] = true;
-            });
-            var missIds = Object.keys(missing);
-            var resolveMissing = missIds.length
-              ? zdFetch('/api/v2/users/show_many.json?ids=' + missIds.join(',')).then(function(data) {
-                  (data.users || []).forEach(function(u) {
-                    userMap[u.id] = u.name;
-                    if (u.email) emailMap[_emailKey(u.name)] = u.email;
-                    if (u.photo) {
-                      var thumb = u.photo.thumbnails && u.photo.thumbnails.find(function(t) { return t.width >= 128; });
-                      photoMap[u.id] = (thumb && thumb.content_url) || u.photo.content_url || null;
-                    }
-                  });
-                }).catch(function() {})
-              : Promise.resolve();
-
-            return resolveMissing.then(function() {
-              // 4.4 Agrupa por agente (responsável efetivo) — good/bad + tickets individuais
-              var agentMap = {};
-              ratings.forEach(function(r) {
-                var id = effId(r);
-                var name = userMap[id] || ('Agente-' + id);
-                if (!agentMap[name]) agentMap[name] = { good: 0, bad: 0, raw: [], good_raw: [], module_good: {}, category_good: {}, photoUrl: photoMap[id] || null };
-                if (r.score === 'good') {
-                  agentMap[name].good++;
-                  var dg = new Date(r.created_at);
-                  agentMap[name].good_raw.push({
-                    id:   r.ticket_id,
-                    date: dg.getDate().toString().padStart(2,'0') + '/' +
-                          (dg.getMonth()+1).toString().padStart(2,'0') + '/' +
-                          dg.getFullYear(),
-                    module: '', zdCategory: ''
-                  });
-                } else if (r.score === 'bad') {
-                  agentMap[name].bad++;
-                  var d = new Date(r.created_at);
-                  agentMap[name].raw.push({
-                    id:      r.ticket_id,
-                    date:    d.getDate().toString().padStart(2,'0') + '/' +
-                             (d.getMonth()+1).toString().padStart(2,'0') + '/' +
-                             d.getFullYear(),
-                    comment: r.comment || '',
-                    category: '',
-                    module:  ''
-                  });
-                }
-              });
-
-              // 4.5 Positivos por módulo, agregação por categoria (global) e tags nos negativos.
-              var categoryAgg = {}; // { categoria: { good, bad } } — agregado global (referência)
-              ratings.forEach(function(r) {
-                var name = userMap[effId(r)] || ('Agente-' + effId(r));
-                var mod = moduleMap[r.ticket_id];
-                if (mod && r.score === 'good') {
-                  agentMap[name].module_good[mod] = (agentMap[name].module_good[mod] || 0) + 1;
-                }
-                var cat = categoryMap[r.ticket_id];
-                if (cat && (r.score === 'good' || r.score === 'bad')) {
-                  categoryAgg[cat] = categoryAgg[cat] || { good: 0, bad: 0 };
-                  if (r.score === 'good') {
-                    categoryAgg[cat].good++;
-                    // positivos por categoria POR AGENTE → permite ranking na mesma base das notas
-                    agentMap[name].category_good[cat] = (agentMap[name].category_good[cat] || 0) + 1;
-                  } else {
-                    categoryAgg[cat].bad++;
-                  }
-                }
-              });
-              saveCategoryStats(categoryAgg);
-              Object.keys(agentMap).forEach(function(n) {
-                agentMap[n].raw.forEach(function(t) {
-                  t.module     = moduleMap[t.id]   || '';
-                  t.zdCategory = categoryMap[t.id] || '';
-                });
-                agentMap[n].good_raw.forEach(function(t) {
-                  t.module     = moduleMap[t.id]   || '';
-                  t.zdCategory = categoryMap[t.id] || '';
-                });
-              });
-
-              // 5. Categoriza com Gemini (texto livre) se chave configurada
-              var badAll = [];
-              Object.keys(agentMap).forEach(function(n) { agentMap[n].raw.forEach(function(t) { badAll.push(t); }); });
-              var catPromise = (cfg.geminiKey && badAll.length)
-                ? categorizeGemini(cfg.geminiKey, badAll, onProgress)
-                : Promise.resolve({});
-
-              return catPromise.then(function(cats) {
-                return { agentMap: agentMap, cats: cats, subjectMap: subjectMap };
-              });
-            });
-          });
-        });
-      })
-
-      // 5.5 Baixa fotos dos agentes como base64
-      .then(function(result) {
-        var withPhoto = Object.keys(result.agentMap).filter(function(n) { return result.agentMap[n].photoUrl; });
-        var withoutPhoto = Object.keys(result.agentMap).filter(function(n) { return !result.agentMap[n].photoUrl; });
-        console.log('Agentes COM foto:', withPhoto.length, withPhoto);
-        console.log('Agentes SEM foto:', withoutPhoto.length);
-
-        var names    = withPhoto;
-        var total    = names.length;
-        if (!total) { onProgress('⚠️ Nenhum agente com foto disponível'); return result; }
-        onProgress('Baixando fotos (' + total + ' agentes)...');
-
-        var fetches = names.map(function(name) {
-          var photoUrl = result.agentMap[name].photoUrl;
-          // Foto via proxy (relativo) — funciona local e na web
-          var url = '/zdproxy/' + cfg.subdomain + '?url=' + encodeURIComponent(photoUrl);
-
-          return fetch(url)
-            .then(function(r) {
-              if (!r.ok) {
-                console.error('Erro ao baixar foto de ' + name + ': HTTP ' + r.status);
-                throw new Error('HTTP ' + r.status);
-              }
-              return r.blob();
-            })
-            .then(function(blob) {
-              if (!blob || blob.size === 0) {
-                console.warn('Blob vazio para foto de ' + name);
-                return Promise.resolve();
-              }
-              return new Promise(function(resolve) {
-                var reader = new FileReader();
-                reader.onload  = function(e) {
-                  result.agentMap[name].photo = e.target.result;
-                  console.log('✓ Foto de ' + name + ' salva (' + Math.round(e.target.result.length / 1024) + 'KB)');
-                  onProgress('Foto de ' + name + ' salva...');
-                  resolve();
-                };
-                reader.onerror = function() {
-                  console.error('Erro ao ler foto de ' + name);
-                  onProgress('Erro ao ler foto de ' + name);
-                  resolve();
-                };
-                reader.readAsDataURL(blob);
-              });
-            })
-            .catch(function(err) {
-              console.error('Erro ao baixar foto de ' + name + ':', err);
-              onProgress('⚠️ Foto de ' + name + ' não disponível');
-            });
-        });
-
-        return Promise.all(fetches).then(function() { return result; });
-      })
-
-      // 6. Aplica no estado
-      .then(function(result) {
-        var agentMap = result.agentMap;
-        var cats     = result.cats;
-        var finalMap = {};
-        Object.keys(agentMap).forEach(function(name) {
-          var a = agentMap[name];
-          finalMap[name] = {
-            score:       a.good + a.bad > 0 ? parseFloat(((a.good / (a.good + a.bad)) * 10).toFixed(1)) : null,
-            good_count:  a.good,
-            bad_count:   a.bad,
-            total:       a.good + a.bad,
-            photo:       a.photo || null,
-            module_good: a.module_good || {},
-            category_good: a.category_good || {},
-            bad_tickets: a.raw.map(function(t) {
-              return { id: t.id, date: t.date, subject: (result.subjectMap || {})[t.id] || '', comment: t.comment, category: cats[t.id] || '', module: t.module || '', zdCategory: t.zdCategory || '' };
-            }),
-            // Positivos individuais com data (para o filtro por período contar certo)
-            good_tickets: a.good_raw.map(function(t) {
-              return { id: t.id, date: t.date, module: t.module || '', zdCategory: t.zdCategory || '' };
-            })
-          };
-        });
-
-        // Persiste dados de todos os agentes (foto + score) para cadastro posterior
-        var agentStore = {};
-        Object.keys(finalMap).forEach(function(name) {
-          agentStore[name] = { photo: finalMap[name].photo || null, score: finalMap[name].score };
-        });
-        saveAgents(agentStore);
-
-        // Persiste o cache de e-mails dos agentes (mescla com o que já existe).
-        if (Object.keys(emailMap).length) {
-          saveAgentEmails(Object.assign(getAgentEmails(), emailMap));
-        }
-
-        // Auto-vincula nomes do Zendesk com analistas cadastrados
-        var zdNames = Object.keys(finalMap);
-        var autoNameMap = autoMatchNames(zdNames, analysts);
-
-        // Aplica scores e tickets
-        var result = applyAgentData(analysts, finalMap);
-        var updated = result.updated;
-        var nameMap = result.nameMap;
-
-        // Mescla auto-matching com resultado do applyAgentData
-        Object.assign(nameMap, autoNameMap);
-
-        // Salva o nameMap atualizado na config
-        var cfg = getConfig();
-        cfg.nameMap = nameMap;
-        saveConfig(cfg);
-
-        // Aplica fotos: só preenche se o analista ainda não tiver foto
-        var photoCount = 0;
-        analysts.forEach(function(analyst) {
-          var key = analyst.name.trim().toLowerCase();
-          if (analyst.photo) return; // não sobrescreve foto existente
-          Object.keys(finalMap).forEach(function(zdName) {
-            var mapped  = nameMap[zdName];
-            var matches = mapped
-              ? mapped.trim().toLowerCase() === key
-              : zdName.trim().toLowerCase() === key;
-            if (matches && finalMap[zdName].photo) {
-              analyst.photo = finalMap[zdName].photo;
-              photoCount++;
-              console.log('✓ Foto aplicada a ' + analyst.name);
-            }
-          });
-        });
-        console.log('Total de fotos aplicadas: ' + photoCount);
-
-        // Auto-preenche o e-mail dos analistas cadastrados que ainda não têm,
-        // casando pelo nome (direto ou via nameMap). Não sobrescreve e-mail manual.
-        analysts.forEach(function(analyst) {
-          if (analyst.email) return;
-          var em = getAgentEmail(analyst.name);
-          if (!em) {
-            var key = analyst.name.trim().toLowerCase();
-            Object.keys(finalMap).forEach(function(zdName) {
-              if (em) return;
-              var mapped  = nameMap[zdName];
-              var matches = mapped ? mapped.trim().toLowerCase() === key
-                                   : zdName.trim().toLowerCase() === key;
-              if (matches) { var e2 = getAgentEmail(zdName); if (e2) em = e2; }
-            });
-          }
-          if (em) analyst.email = em;
-        });
-
-        // Recalcula todas as notas com o prior final da equipe (consistente)
-        recomputeAllScores(analysts);
-
-        // 7. Busca TODOS os atendimentos do período (não só os avaliados) por analista
-        function ymd(ts) {
-          var d = new Date(ts * 1000);
-          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-        function fetchAllTickets() {
-          var startYmd = ymd(startTime), endYmd = ymd(endTime);
-          var raw = [], assigneeIds = {}, seen = {};
-          function fieldModule(t) {
-            if (!detectedField) return '';
-            var cf = (t.custom_fields || []).filter(function(x) { return String(x.id) === String(detectedField.id); })[0];
-            return (cf && cf.value != null && cf.value !== '') ? (detectedField.valueToModule[String(cf.value)] || '') : '';
-          }
-          function fetchGroup(gi) {
-            if (gi >= groupIds.length) return Promise.resolve();
-            var query = 'type:ticket group:' + groupIds[gi] + ' created>=' + startYmd + ' created<=' + endYmd;
-            var collected = 0;
-            function page(url) {
-              return zdFetch(url).then(function(d) {
-                (d.results || []).forEach(function(t) {
-                  if (t.id == null || seen[t.id]) return;
-                  seen[t.id] = true;
-                  if (t.assignee_id) assigneeIds[t.assignee_id] = true;
-                  raw.push({ assignee_id: t.assignee_id, id: t.id, subject: (t.subject || '').slice(0, 120), created_at: t.created_at, status: t.status || '', module: fieldModule(t) });
-                  collected++;
-                });
-                onProgress('Buscando todos os atendimentos... (' + raw.length + ')');
-                var next = nextPageUrl(d);
-                // Teto de segurança alto; na prática a Search API do Zendesk já limita ~1000/consulta.
-                if (next && collected < 20000) return delay(500).then(function() { return page(next); });
-                return null;
-              }).catch(function() { return null; });
-            }
-            return page(base + '/api/v2/search.json?per_page=100&query=' + encodeURIComponent(query))
-              .then(function() { return delay(1000).then(function() { return fetchGroup(gi + 1); }); });
-          }
-          onProgress('Buscando todos os atendimentos no período...');
-          return fetchGroup(0).then(function() {
-            var ids = Object.keys(assigneeIds), nameById = {};
-            function resolve(i) {
-              if (i >= ids.length) return Promise.resolve();
-              return zdFetch('/api/v2/users/show_many.json?ids=' + ids.slice(i, i + 100).join(','))
-                .then(function(d) { (d.users || []).forEach(function(u) { nameById[u.id] = u.name; }); })
-                .catch(function() {})
-                .then(function() { return delay(300).then(function() { return resolve(i + 100); }); });
-            }
-            return (ids.length ? resolve(0) : Promise.resolve()).then(function() {
-              var byAnalyst = {};
-              raw.forEach(function(t) {
-                var agentName = nameById[t.assignee_id] || ('Agente-' + t.assignee_id);
-                var an = findAnalystForAgent(agentName, analysts, nameMap);
-                if (!an) return;
-                var d = new Date(t.created_at);
-                var rec = {
-                  id: t.id, subject: t.subject, status: t.status, module: t.module,
-                  date: d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + '/' + d.getFullYear()
-                };
-                (byAnalyst[an.id] = byAnalyst[an.id] || []).push(rec);
-              });
-              Object.keys(byAnalyst).forEach(function(aid) {
-                var stored = getTickets(aid) || {};
-                stored.all_tickets = byAnalyst[aid].slice(0, 1000);
-                saveTickets(aid, stored);
-              });
-              onProgress('Atendimentos por analista atualizados.');
-            });
-          });
-        }
-
-        return fetchAllTickets().catch(function() {}).then(function() {
-          saveStatus({ ok: true, at: new Date().toISOString(), updated: updated });
-          onProgress('✓ ' + updated + ' analistas atualizados (avaliações + atendimentos)!');
-          callback(updated, null);
-        });
-      })
-
-      .catch(function(err) {
-        onProgress('✗ ' + err.message);
-        callback(0, err.message);
-      });
-  }
-
-  function categorizeGemini(key, tickets, onProgress) {
-    var cats  = {};
-    var BATCH = 5;
-    var LABELS = ['Demora no atendimento','Problema não resolvido','Falta de conhecimento técnico','Comunicação inadequada','Procedimento incorreto','Outros'];
-
-    function next(i) {
-      if (i >= tickets.length) return Promise.resolve(cats);
-      var slice  = tickets.slice(i, i + BATCH);
-      var done   = Math.min(i + BATCH, tickets.length);
-      onProgress('Categorizando com Gemini... (' + done + '/' + tickets.length + ')');
-
-      var prompt = 'Classifique cada feedback negativo em uma categoria.\nCategorias: ' + LABELS.join(' | ') +
-        '\nResponda SOMENTE com JSON array de strings.\n\n';
-      slice.forEach(function(t, j) {
-        prompt += (j + 1) + '. ' + (t.comment || '(sem comentário)').substring(0, 200) + '\n';
-      });
-
-      return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + key, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 200, temperature: 0 } })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        var text  = data.candidates && data.candidates[0] ? data.candidates[0].content.parts[0].text.trim() : '[]';
-        var match = text.match(/\[[\s\S]*\]/);
-        var arr   = match ? JSON.parse(match[0]) : [];
-        slice.forEach(function(t, j) { cats[t.id] = arr[j] || 'Outros'; });
-        return new Promise(function(res) { setTimeout(res, 4000); }); // 15 RPM free tier
-      })
-      .catch(function() { slice.forEach(function(t) { cats[t.id] = ''; }); })
-      .then(function() { return next(i + BATCH); });
-    }
-
-    return next(0);
-  }
-
-  return {
-    sync:           sync,
-    importDirect:   importDirect,
-    recalcScore:    recalcScore,
-    recomputeAllScores: recomputeAllScores,
-    getTeamPrior:   getTeamPrior,
-    moduleScores:   moduleScores,
-    getCategoryStats: getCategoryStats,
-    categoryRanking: categoryRanking,
-    moduleRanking:  moduleRanking,
-    negativesForModule: negativesForModule,
-    negativesForCategory: negativesForCategory,
-    detectTicketFields: detectTicketFields,
-    getTickets:     getTickets,
-    saveTickets:    saveTickets,
-    getAgentData:   getAgentData,
-    getAgentEmail:  getAgentEmail,
-    getAgentEmails: getAgentEmails,
-    getConfig:      getConfig,
-    saveConfig:     saveConfig,
-    getStatus:      getStatus,
-    getFoundNames:  getFoundNames,
-    getPhotoCache:  getPhotoCache
-  };
-})();
-
-</script>
+<script src="js/ui/admin.js"></script>
+<script src="js/audit/audit.js"></script>
+<script src="js/integrations/zendesk_sync.js"></script>
 <script>
 var App = (function() {
   // --- State ---
@@ -4372,7 +3197,12 @@ var App = (function() {
   function persist() {
     captureSnapshots();
     Storage.saveAll(state);
+    // Espelha na nuvem (dados compartilhados). No-op se ainda nao autenticado/pronto.
+    if (window.Cloud && Cloud.isReady()) Cloud.pushAll(state);
   }
+
+  // Registra uma acao no log de auditoria (no-op se o modulo nao estiver carregado).
+  function audit(action, details) { if (window.Audit) Audit.log(action, details); }
 
   // Registra um snapshot das notas de cada analista NA DATA DE HOJE (um por dia:
   // se já houver o de hoje, atualiza). É o que alimenta a "Evolução" no tempo —
@@ -4433,6 +3263,7 @@ var App = (function() {
     if (state.currentPage === 'visao')       UIOverview.render(state);
     else if (state.currentPage === 'evolucao') UIEvolution.render(state);
     else if (state.currentPage === 'treinamento') UITraining.render(state);
+    else if (state.currentPage === 'admin')    UIAdmin.render(state);
   }
 
   // --- Analyst operations ---
@@ -4444,6 +3275,7 @@ var App = (function() {
       if (idx === -1) return;
       state.analysts[idx] = updated;
       persist(); // captureSnapshots() registra o snapshot de hoje
+      audit('Editou analista', updated.name);
       render();
     });
   }
@@ -4452,14 +3284,18 @@ var App = (function() {
     UIModals.openAdd(state.modules, state.sectors, function(newAnalyst) {
       state.analysts.push(newAnalyst);
       persist();
+      audit('Adicionou analista', newAnalyst.name);
       render();
     });
   }
 
   function removeAnalyst(id) {
     if (!confirm('Remover este analista? Esta ação não pode ser desfeita.')) return;
+    var removed = state.analysts.find(function(a) { return a.id === id; });
     state.analysts = state.analysts.filter(function(a) { return a.id !== id; });
     persist();
+    if (window.Cloud && Cloud.isReady()) Cloud.deleteAnalyst(id); // remocao explicita na nuvem
+    audit('Removeu analista', removed ? removed.name : ('id ' + id));
     render();
   }
 
@@ -4473,8 +3309,9 @@ var App = (function() {
     UIModals.openTraining(state.analysts, function(newTraining) {
       state.trainings.push(newTraining);
       persist();
+      audit('Criou treinamento', newTraining.module + (newTraining.date ? ' — ' + newTraining.date : ''));
       render();
-    });
+    }, null, state.leaders);
   }
 
   function editTraining(idx) {
@@ -4484,17 +3321,20 @@ var App = (function() {
       state.trainings[idx] = updated;
       Domain.applyTrainingScores(state.analysts, state.trainings);
       persist();
+      audit('Editou treinamento', updated.module);
       render();
-    }, t);
+    }, t, state.leaders);
   }
 
   function deleteTraining(idx) {
     var t = state.trainings[idx];
     if (!t) return;
     if (!confirm('Excluir o treinamento "' + (t.module || '') + '" de ' + (t.date || '') + '?')) return;
+    var removedModule = t.module;
     state.trainings.splice(idx, 1);
     Domain.applyTrainingScores(state.analysts, state.trainings);
     persist();
+    audit('Excluiu treinamento', removedModule);
     render();
   }
 
@@ -4505,6 +3345,7 @@ var App = (function() {
       state.trainings[trainingIndex].provas = provas;
       Domain.applyTrainingScores(state.analysts, state.trainings);
       persist();
+      audit('Lançou notas de prova', state.trainings[trainingIndex].module);
       render();
     });
   }
@@ -4514,6 +3355,7 @@ var App = (function() {
     state.trainings[idx].status = 'done';
     Domain.applyTrainingScores(state.analysts, state.trainings);
     persist();
+    audit('Concluiu treinamento', state.trainings[idx].module || '');
     render();
   }
 
@@ -4525,9 +3367,10 @@ var App = (function() {
 
   // --- Manage modal (modules + sectors) ---
   function openManageModal() {
-    UIModals.openManage(state.modules, state.sectors, ZendeskSync.getConfig(), function(updated) {
+    UIModals.openManage(state.modules, state.sectors, state.leaders, ZendeskSync.getConfig(), function(updated) {
       state.modules  = updated.modules;
       state.sectors  = updated.sectors;
+      state.leaders  = updated.leaders;
       if (updated.zendeskCfg) ZendeskSync.saveConfig(updated.zendeskCfg);
       state.analysts.forEach(function(a) {
         state.modules.forEach(function(m) {
@@ -4535,6 +3378,7 @@ var App = (function() {
         });
       });
       persist();
+      audit('Gerenciou módulos/setores', state.modules.length + ' módulos, ' + state.sectors.length + ' setores, ' + state.leaders.length + ' líderes');
       renderSectorTabs();
       render();
     });
@@ -4566,6 +3410,7 @@ var App = (function() {
     var analystData = JSON.stringify(state.analysts);
     var moduleData  = JSON.stringify(state.modules);
     var sectorData  = JSON.stringify(state.sectors);
+    var leaderData  = JSON.stringify(state.leaders);
     var trainData   = JSON.stringify(state.trainings);
     var histData    = JSON.stringify(state.history);
 
@@ -4587,6 +3432,10 @@ var App = (function() {
     html = html.replace(
       /var SEED_SECTORS\s*=\s*\[[\s\S]*?\];/,
       'var SEED_SECTORS = ' + sectorData + ';'
+    );
+    html = html.replace(
+      /var SEED_LEADERS\s*=\s*\[[\s\S]*?\];/,
+      'var SEED_LEADERS = ' + leaderData + ';'
     );
 
     // Inject trainings and history as additional seeds
@@ -4646,12 +3495,14 @@ var App = (function() {
       state.analysts  = SEED_ANALYSTS.map(Storage.migrateAnalyst);
       state.modules   = SEED_MODULES.slice();
       state.sectors   = SEED_SECTORS.slice();
+      state.leaders   = SEED_LEADERS.slice();
       state.trainings = SEED_TRAININGS.slice();
       state.history   = SEED_HISTORY;
     } else {
       state.analysts  = Storage.loadAnalysts()  || SEED_ANALYSTS.map(Storage.migrateAnalyst);
       state.modules   = Storage.loadModules()   || SEED_MODULES.slice();
       state.sectors   = Storage.loadSectors()   || SEED_SECTORS.slice();
+      state.leaders   = Storage.loadLeaders()   || SEED_LEADERS.slice();
       state.trainings = Storage.loadTrainings();
       state.history   = Storage.loadHistory();
     }
@@ -4666,6 +3517,12 @@ var App = (function() {
     UIModals.init();
     renderSectorTabs();
     render();
+
+    // Mostra a aba Admin somente para o usuario admin (login master).
+    if (window.Auth && Auth.isAdmin && Auth.isAdmin()) {
+      var navAdmin = document.getElementById('navAdmin');
+      if (navAdmin) navAdmin.style.display = '';
+    }
 
     // Zendesk CSAT sync — async, non-blocking
     updateZendeskBadge('loading');
@@ -4783,6 +3640,7 @@ var App = (function() {
         if (count > 0) {
           render();
           persist(); // Salva fotos e dados no localStorage
+          audit('Importou do Zendesk', count + ' avaliações');
           updateZendeskBadge('ok');
           if (progEl) progEl.textContent = '✓ Fotos e dados salvos!';
           // Mostra tabela de mapeamento para vincular nomes não reconhecidos
@@ -4913,7 +3771,17 @@ var App = (function() {
 })();
 
 </script>
-<script>App.init();</script>
+
+<!-- Firebase (compat) + login com Google. App.init() e chamado apos autenticar. -->
+<!-- SDK hospedado localmente (js/vendor/firebase) para nao depender do CDN gstatic,
+     que pode ser bloqueado por adblock/firewall no navegador. -->
+<script src="js/vendor/firebase/firebase-app-compat.js"></script>
+<script src="js/vendor/firebase/firebase-auth-compat.js"></script>
+<script src="js/vendor/firebase/firebase-firestore-compat.js"></script>
+<script src="js/firebase/firebase-config.js"></script>
+<script src="js/store/cloud.js"></script>
+<script src="js/auth/auth.js"></script>
+<script>Auth.start();</script>
 
 </body>
 </html>

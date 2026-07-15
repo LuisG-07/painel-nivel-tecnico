@@ -8,7 +8,7 @@
     "runtime": "nodejs20"
   },
   "hosting": {
-    "site": "painel-nivel-tecnico",
+    "site": "painel-tecnico-clickdigital",
     "public": ".",
     "ignore": [
       "firebase.json",

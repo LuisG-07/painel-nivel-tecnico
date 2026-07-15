@@ -249,14 +249,24 @@ var UIModals = (function() {
 
   // existing (opcional): treinamento sendo editado — pré-preenche os campos e
   // preserva status/provas. Sem ele, é um agendamento novo.
-  function openTraining(analysts, onSave, existing) {
+  function openTraining(analysts, onSave, existing, leadersList) {
     var modal = document.getElementById('trainModal');
     var ed = existing || null;
     document.getElementById('tDate').value    = ed ? (ed.date || '')    : '';
     document.getElementById('tTime').value    = ed ? (ed.time || '')    : '';
     document.getElementById('tTimeEnd').value = ed ? (ed.timeEnd || '') : '';
     document.getElementById('tMod').value     = ed ? (ed.module || '')  : '';
-    document.getElementById('tLeader').value  = ed ? (ed.leader || '')  : '';
+    var curLeader = ed ? (ed.leader || '') : '';
+    var leaders = (leadersList && leadersList.length
+      ? leadersList
+      : (typeof SEED_LEADERS !== 'undefined' ? SEED_LEADERS : [])).slice();
+    // Preserva um líder antigo que não esteja mais na lista fixa (registros existentes)
+    if (curLeader && leaders.indexOf(curLeader) === -1) leaders.push(curLeader);
+    document.getElementById('tLeader').innerHTML =
+      '<option value="">— selecione —</option>' +
+      leaders.map(function(l) {
+        return '<option value="' + esc(l) + '"' + (l === curLeader ? ' selected' : '') + '>' + esc(l) + '</option>';
+      }).join('');
     document.getElementById('tObs').value     = ed ? (ed.obs || '')     : '';
     var chosen = ed ? (ed.analysts || []) : [];
     document.getElementById('tAnalysts').innerHTML = analysts.map(function(a) {
@@ -324,13 +334,15 @@ var UIModals = (function() {
 
   // --- Manage Modal (modules + sectors) ---
 
-  function openManage(modules, sectors, zendeskCfg, onSave) {
+  function openManage(modules, sectors, leaders, zendeskCfg, onSave) {
     var modal = document.getElementById('manageModal');
     var pendingModules = modules.slice();
     var pendingSectors = sectors.slice();
+    var pendingLeaders = (leaders || []).slice();
 
     renderManageModules(pendingModules);
     renderManageSectors(pendingSectors);
+    renderManageLeaders(pendingLeaders);
 
     // Populate Zendesk tab
     var zdCfg = zendeskCfg || {};
@@ -394,6 +406,15 @@ var UIModals = (function() {
       renderManageSectors(pendingSectors);
     };
 
+    document.getElementById('addLeaderBtn').onclick = function() {
+      var val = document.getElementById('newLeaderInput').value.trim();
+      if (!val) return;
+      if (pendingLeaders.indexOf(val) !== -1) { alert('Líder já existe.'); return; }
+      pendingLeaders.push(val);
+      document.getElementById('newLeaderInput').value = '';
+      renderManageLeaders(pendingLeaders);
+    };
+
     document.getElementById('manageSaveBtn').onclick = function() {
       if (!pendingModules.length) { alert('Deve existir pelo menos um módulo.'); return; }
       if (!pendingSectors.length) { alert('Deve existir pelo menos um setor.'); return; }
@@ -416,6 +437,7 @@ var UIModals = (function() {
       onSave({
         modules:    pendingModules,
         sectors:    pendingSectors,
+        leaders:    pendingLeaders,
         zendeskCfg: {
           subdomain: g('zdSubdomain').replace(/\.zendesk\.com.*/i, ''),
           email:     g('zdEmail'),
@@ -569,11 +591,23 @@ var UIModals = (function() {
       }).join('');
     }
 
+    function renderManageLeaders(list) {
+      document.getElementById('leadersList').innerHTML = list.map(function(l, i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--white)">' +
+          '<span>' + esc(l) + '</span>' +
+          '<button class="edit-btn" style="color:#CC0000" onclick="UIModals._removeListItem(' + i + ',\'leaders\')" title="Remover"><i class="ti ti-x"></i></button>' +
+        '</div>';
+      }).join('');
+    }
+
     // Expose for inline onclick callbacks in the manage modal
     UIModals._removeListItem = function(idx, type) {
       if (type === 'modules') {
         pendingModules.splice(idx, 1);
         renderManageModules(pendingModules);
+      } else if (type === 'leaders') {
+        pendingLeaders.splice(idx, 1);
+        renderManageLeaders(pendingLeaders);
       } else {
         pendingSectors.splice(idx, 1);
         renderManageSectors(pendingSectors);

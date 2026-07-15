@@ -135,7 +135,7 @@ var App = (function() {
       persist();
       audit('Criou treinamento', newTraining.module + (newTraining.date ? ' — ' + newTraining.date : ''));
       render();
-    });
+    }, null, state.leaders);
   }
 
   function editTraining(idx) {
@@ -147,7 +147,7 @@ var App = (function() {
       persist();
       audit('Editou treinamento', updated.module);
       render();
-    }, t);
+    }, t, state.leaders);
   }
 
   function deleteTraining(idx) {
@@ -191,9 +191,10 @@ var App = (function() {
 
   // --- Manage modal (modules + sectors) ---
   function openManageModal() {
-    UIModals.openManage(state.modules, state.sectors, ZendeskSync.getConfig(), function(updated) {
+    UIModals.openManage(state.modules, state.sectors, state.leaders, ZendeskSync.getConfig(), function(updated) {
       state.modules  = updated.modules;
       state.sectors  = updated.sectors;
+      state.leaders  = updated.leaders;
       if (updated.zendeskCfg) ZendeskSync.saveConfig(updated.zendeskCfg);
       state.analysts.forEach(function(a) {
         state.modules.forEach(function(m) {
@@ -201,7 +202,7 @@ var App = (function() {
         });
       });
       persist();
-      audit('Gerenciou módulos/setores', state.modules.length + ' módulos, ' + state.sectors.length + ' setores');
+      audit('Gerenciou módulos/setores', state.modules.length + ' módulos, ' + state.sectors.length + ' setores, ' + state.leaders.length + ' líderes');
       renderSectorTabs();
       render();
     });
@@ -233,6 +234,7 @@ var App = (function() {
     var analystData = JSON.stringify(state.analysts);
     var moduleData  = JSON.stringify(state.modules);
     var sectorData  = JSON.stringify(state.sectors);
+    var leaderData  = JSON.stringify(state.leaders);
     var trainData   = JSON.stringify(state.trainings);
     var histData    = JSON.stringify(state.history);
 
@@ -254,6 +256,10 @@ var App = (function() {
     html = html.replace(
       /var SEED_SECTORS\s*=\s*\[[\s\S]*?\];/,
       'var SEED_SECTORS = ' + sectorData + ';'
+    );
+    html = html.replace(
+      /var SEED_LEADERS\s*=\s*\[[\s\S]*?\];/,
+      'var SEED_LEADERS = ' + leaderData + ';'
     );
 
     // Inject trainings and history as additional seeds
@@ -313,12 +319,14 @@ var App = (function() {
       state.analysts  = SEED_ANALYSTS.map(Storage.migrateAnalyst);
       state.modules   = SEED_MODULES.slice();
       state.sectors   = SEED_SECTORS.slice();
+      state.leaders   = SEED_LEADERS.slice();
       state.trainings = SEED_TRAININGS.slice();
       state.history   = SEED_HISTORY;
     } else {
       state.analysts  = Storage.loadAnalysts()  || SEED_ANALYSTS.map(Storage.migrateAnalyst);
       state.modules   = Storage.loadModules()   || SEED_MODULES.slice();
       state.sectors   = Storage.loadSectors()   || SEED_SECTORS.slice();
+      state.leaders   = Storage.loadLeaders()   || SEED_LEADERS.slice();
       state.trainings = Storage.loadTrainings();
       state.history   = Storage.loadHistory();
     }

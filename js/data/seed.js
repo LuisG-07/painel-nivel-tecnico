@@ -12,6 +12,9 @@ var SEED_MODULES = [
 // Default sectors — overridden by localStorage if present
 var SEED_SECTORS = ["Chat","Telefone","Notas"];
 
+// Líderes técnicos — usados para preencher o campo "Líder técnico" do modal de treinamento
+var SEED_LEADERS = ["Ariane","Lucas Emmanuel","Luis Gustavo"];
+
 // Seed analyst data — used only when localStorage has no data
 var SEED_ANALYSTS = [
   {"id":2,"name":"Bruno","sector":"Telefone","zendesk":null,"provaAvg":null,"photo":null,"comment":"","anexos":[],"scores":{"Cadastro":4,"Produtos":3,"Serviços":4,"Orçamento":4,"OS":4,"Vendas":4,"Estoque":4,"Boletos":3,"DRE":3,"Financeiro":4,"NFS":3,"NF´s":3,"Contratos":3,"Atendimento":4,"Relatorios":3,"Configurações":4,"Layout e domínio personalizado":2,"Assinatura Digital":3,"Serasa":3,"Tray":3,"Mercado Pago":0,"Mercado Livre":4,"NuvemShop":4,"SendGrid":2,"Pipedrive":2,"PagHiper":4,"Pag Seguro":3,"Expedição":3,"Recursos Humanos":3,"Banco Inter":4,"Pesquisas":4,"Cora":4,"CRM":3,"Loja Virtual":3,"Hotmart":2,"Shopee":4,"Stone":3,"API":1,"Área do Cliente":4,"Cobranças":4,"Controle de Bens":3,"Controle de Produção":3,"CT-e":3,"GerenciaNet":4,"Iugu":3,"Loja Integrada":4,"MDF-e":2}},

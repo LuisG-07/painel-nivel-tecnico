@@ -228,7 +228,7 @@
     <span class="input-label" for="tMod">Módulo / Tema</span>
     <input type="text" id="tMod" class="form-input" placeholder="Ex: SendGrid">
     <span class="input-label" for="tLeader">Líder técnico</span>
-    <input type="text" id="tLeader" class="form-input" placeholder="Nome do líder">
+    <select id="tLeader" class="form-input"></select>
     <span class="input-label" for="tObs">Observações</span>
     <input type="text" id="tObs" class="form-input" placeholder="Opcional">
     <span class="input-label">Participantes</span>
@@ -258,10 +258,11 @@
 <!-- Manage Modules & Sectors Modal -->
 <div id="manageModal" style="display:none" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manageModalTitle">
   <div class="modal">
-    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos e Setores</div>
+    <div class="modal-title" id="manageModalTitle"><i class="ti ti-settings" aria-hidden="true"></i> Gerenciar Módulos, Setores e Líderes</div>
     <div class="modal-tabs">
       <button class="modal-tab active" data-tab="modules" onclick="UIModals.switchModalTab('manageModal','modules')">Módulos</button>
       <button class="modal-tab" data-tab="sectors" onclick="UIModals.switchModalTab('manageModal','sectors')">Setores</button>
+      <button class="modal-tab" data-tab="leaders" onclick="UIModals.switchModalTab('manageModal','leaders')">Líderes</button>
       <button class="modal-tab" data-tab="zendesk" onclick="UIModals.switchModalTab('manageModal','zendesk')">Zendesk</button>
     </div>
 
@@ -279,6 +280,14 @@
         <button class="btn-primary" id="addSectorBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
       </div>
       <div id="sectorsList"></div>
+    </div>
+
+    <div class="modal-tab-panel" data-panel="leaders">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="newLeaderInput" class="form-input" style="margin:0;flex:1" placeholder="Nome do novo líder técnico">
+        <button class="btn-primary" id="addLeaderBtn" style="white-space:nowrap"><i class="ti ti-plus"></i> Adicionar</button>
+      </div>
+      <div id="leadersList"></div>
     </div>
 
     <div class="modal-tab-panel" data-panel="zendesk">
