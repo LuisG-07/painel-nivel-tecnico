@@ -302,6 +302,33 @@ var App = (function() {
     }
   }
 
+  // Recarrega o estado a partir do localStorage (que o Cloud.watch acabou de
+  // atualizar com dados de OUTRO usuario) e re-renderiza — sem persist() para
+  // nao gerar eco/loop. Se houver modal aberto, adia para nao atrapalhar a edicao.
+  var _reloadPending = false;
+  function reloadFromLocal() {
+    var modalOpen = Array.prototype.some.call(
+      document.querySelectorAll('.modal-overlay'),
+      function(m) { return m.style.display && m.style.display !== 'none'; }
+    );
+    if (modalOpen) {
+      if (_reloadPending) return;
+      _reloadPending = true;
+      setTimeout(function() { _reloadPending = false; reloadFromLocal(); }, 1500);
+      return;
+    }
+    state.analysts  = Storage.loadAnalysts()  || state.analysts;
+    state.modules   = Storage.loadModules()   || state.modules;
+    state.sectors   = Storage.loadSectors()   || state.sectors;
+    state.leaders   = Storage.loadLeaders()   || state.leaders;
+    state.trainings = Storage.loadTrainings();
+    state.history   = Storage.loadHistory();
+    Domain.applyTrainingScores(state.analysts, state.trainings);
+    ZendeskSync.recomputeAllScores(state.analysts);
+    renderSectorTabs();
+    render();
+  }
+
   // --- Init ---
   function init() {
     var __EXPORT_MODE__ = false;
@@ -344,6 +371,9 @@ var App = (function() {
     UIModals.init();
     renderSectorTabs();
     render();
+
+    // Tempo real: reflete no ato as mudancas feitas por outros usuarios (sem F5).
+    if (window.Cloud && Cloud.watch) Cloud.watch(reloadFromLocal);
 
     // Mostra a aba Admin somente para o usuario admin (login master).
     if (window.Auth && Auth.isAdmin && Auth.isAdmin()) {

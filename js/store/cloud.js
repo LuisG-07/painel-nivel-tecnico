@@ -21,10 +21,11 @@ var Cloud = (function() {
 
   // chave localStorage -> nome do "tipo" na nuvem (docs simples)
   var SIMPLE = {
-    'skm6_mods':  'modules',
-    'skm6_sec':   'sectors',
-    'skm6_train': 'trainings',
-    'skm6_hist':  'history'
+    'skm6_mods':    'modules',
+    'skm6_sec':     'sectors',
+    'skm6_leaders': 'leaders',
+    'skm6_train':   'trainings',
+    'skm6_hist':    'history'
   };
   var ANA_KEY = 'skm6_ana';
 
@@ -209,6 +210,7 @@ var Cloud = (function() {
       // Docs simples
       simpleDoc('modules').set({ data: clone(state.modules || []) });
       simpleDoc('sectors').set({ data: clone(state.sectors || []) });
+      simpleDoc('leaders').set({ data: clone(state.leaders || []) });
       simpleDoc('trainings').set({ data: clone(state.trainings || []) });
       simpleDoc('history').set({ data: clone(state.history || {}) });
     } catch (e) {
@@ -228,6 +230,46 @@ var Cloud = (function() {
     }, 700);
   }
 
+  // --- Tempo real: escuta a nuvem e avisa quando OUTRO usuario muda algo -------
+  var watching = false;
+  var changeTimer = null;
+  function watch(onChange) {
+    if (watching) return;
+    watching = true;
+
+    // Debounce: varias mudancas (ou um lote) geram um unico reload.
+    function notify() {
+      clearTimeout(changeTimer);
+      changeTimer = setTimeout(function() { try { onChange && onChange(); } catch (e) {} }, 250);
+    }
+
+    // Analistas (colecao) — ignora eco das proprias escritas (hasPendingWrites).
+    analystsCol().onSnapshot(function(snap) {
+      if (snap.metadata && snap.metadata.hasPendingWrites) return;
+      var arr = [];
+      snap.forEach(function(d) { arr.push(d.data()); });
+      if (arr.length) localSet(ANA_KEY, arr);
+      notify();
+    }, function(e) { try { console.warn('watch analysts', e); } catch (_) {} });
+
+    // Docs simples (modulos, setores, lideres, treinos, historico)
+    Object.keys(SIMPLE).forEach(function(k) {
+      simpleDoc(SIMPLE[k]).onSnapshot(function(d) {
+        if (d.metadata && d.metadata.hasPendingWrites) return;
+        if (d.exists && d.data() && d.data().data != null) localSet(k, d.data().data);
+        notify();
+      }, function() {});
+    });
+
+    // Zendesk (config/vinculos, tickets, ranking, agentes, fotos)
+    ZD_KEYS.forEach(function(k) {
+      zdDoc(k).onSnapshot(function(d) {
+        if (d.metadata && d.metadata.hasPendingWrites) return;
+        zdRead(k).then(notify);
+      }, function() {});
+    });
+  }
+
   // Remocao EXPLICITA de um analista (chamado pelo App.removeAnalyst).
   function deleteAnalyst(id) {
     if (!ready || id == null) return;
@@ -238,6 +280,7 @@ var Cloud = (function() {
     hydrate: hydrate,
     pushAll: pushAll,
     pushZendesk: pushZendesk,
+    watch: watch,
     deleteAnalyst: deleteAnalyst,
     isReady: function() { return ready; }
   };
