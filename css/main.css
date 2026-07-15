@@ -191,6 +191,10 @@ body{
 .tbl tbody tr:nth-child(even) td{background:#FAFBFD}
 .tbl tbody tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover td{background:var(--blue-soft)}
+/* Rankings: altura de linha uniforme + nome de categoria em 1 linha (…) para as
+   duas tabelas ficarem exatamente do mesmo tamanho e alinhadas. */
+.tbl td.cat-cell{font-weight:500;max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl-rank tbody tr{height:45px}
 
 /* ============================== Section cards ============================== */
 .evo-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh-sm)}

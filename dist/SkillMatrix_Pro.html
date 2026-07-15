@@ -229,6 +229,10 @@ body{
 .tbl tbody tr:nth-child(even) td{background:#FAFBFD}
 .tbl tbody tr:last-child td{border-bottom:none}
 .tbl tbody tr:hover td{background:var(--blue-soft)}
+/* Rankings: altura de linha uniforme + nome de categoria em 1 linha (…) para as
+   duas tabelas ficarem exatamente do mesmo tamanho e alinhadas. */
+.tbl td.cat-cell{font-weight:500;max-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl-rank tbody tr{height:45px}
 
 /* ============================== Section cards ============================== */
 .evo-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh-sm)}
@@ -1436,7 +1440,7 @@ var UIOverview = (function() {
       var nw = ' style="white-space:nowrap"';
       var wrapId = 'rank_' + (++_rankSeq);
       var t = '<div id="' + wrapId + '" style="display:flex;flex-direction:column;height:100%"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
-        '<table class="tbl"><thead><tr><th' + nw + '>#</th><th' + nw + '>' + label + '</th><th' + nw + '>Negativas</th><th' + nw + '>Avaliações</th><th' + nw + '>% neg.</th><th' + nw + '>Status</th></tr></thead><tbody>';
+        '<table class="tbl tbl-rank"><thead><tr><th' + nw + '>#</th><th' + nw + '>' + label + '</th><th' + nw + '>Negativas</th><th' + nw + '>Avaliações</th><th' + nw + '>% neg.</th><th' + nw + '>Status</th></tr></thead><tbody>';
       rows.forEach(function(r, i) {
         var pct = r.rate * 100, st = zdStatus(pct);
         var extra = i >= RANK_LIMIT;
@@ -1448,7 +1452,7 @@ var UIOverview = (function() {
           (styleParts.length ? ' style="' + styleParts.join(';') + '"' : '');
         t += '<tr' + trAttr + '>' +
           '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
-          '<td style="font-weight:500">' + esc(r.name) + '</td>' +
+          '<td class="cat-cell" title="' + esc(r.name) + '">' + esc(r.name) + '</td>' +
           '<td style="color:#CC0000;font-weight:700">' + r.bad + '</td>' +
           '<td style="color:var(--muted)">' + r.total + '</td>' +
           '<td style="color:' + st.c + ';font-weight:600">' + pct.toFixed(0) + '%</td>' +
@@ -1461,14 +1465,14 @@ var UIOverview = (function() {
     // 1) Ranking de Módulos (técnico, média 1–5)
     var modWrapId = 'rank_' + (++_rankSeq);
     var modTable = '<div id="' + modWrapId + '" style="display:flex;flex-direction:column;height:100%"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
-      '<table class="tbl"><thead><tr><th style="white-space:nowrap">#</th><th style="white-space:nowrap">Categoria</th><th style="white-space:nowrap">Média (1–5)</th><th style="white-space:nowrap">Status</th></tr></thead><tbody>';
+      '<table class="tbl tbl-rank"><thead><tr><th style="white-space:nowrap">#</th><th style="white-space:nowrap">Categoria</th><th style="white-space:nowrap">Média (1–5)</th><th style="white-space:nowrap">Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
       var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
       var extra = i >= RANK_LIMIT;
       modTable += '<tr' + (extra ? ' class="rank-extra" style="display:none"' : '') + '>' +
         '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
-        '<td style="font-weight:500">' + esc(x.name) + '</td>' +
+        '<td class="cat-cell" title="' + esc(x.name) + '">' + esc(x.name) + '</td>' +
         '<td style="color:' + statusColor + ';font-weight:700">' + x.avg.toFixed(2) + '</td>' +
         '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
       '</tr>';
