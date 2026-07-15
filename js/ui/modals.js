@@ -478,11 +478,12 @@ var UIModals = (function() {
         data.analystNames.map(function(n) {
           return '<option value="' + D.escapeHtml(n) + '" style="' + optStyle + '"' + (current === n ? ' selected' : '') + '>' + D.escapeHtml(n) + '</option>';
         }).join('');
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+      return '<div class="zd-map-row" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
         '<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + D.escapeHtml(zdName) + '">' + D.escapeHtml(zdName) + '</span>' +
         '<span style="font-size:11px;color:var(--muted)">→</span>' +
         '<select data-zdname="' + D.escapeHtml(zdName) + '" style="' + selStyle + ';flex:1" onchange="UIModals._zdMapChange(this)">' + options + '</select>' +
         '<select data-sector style="' + selStyle + ';min-width:90px;' + (isNew ? '' : 'display:none') + '">' + sectorOpts + '</select>' +
+        '<button type="button" onclick="UIModals._zdStageRow(this)" title="Adicionar à lista" style="flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:5px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit"><i class="ti ti-plus"></i></button>' +
       '</div>';
     }
 
@@ -509,38 +510,88 @@ var UIModals = (function() {
         analystNames: analystNames || [],
         sectors: (sectors && sectors.length) ? sectors : ['Chat', 'Telefone', 'Notas']
       };
+      UIModals._nameMapStaged = []; // fila de vínculos/cadastros escolhidos
       container.style.display = 'block';
       if (searchEl) searchEl.value = '';
-      if (hint) hint.textContent = unmapped.length + ' usuário(s) do Zendesk sem vínculo. Digite um nome para localizar e vincular (opcional).';
+      if (hint) hint.textContent = unmapped.length + ' usuário(s) do Zendesk sem vínculo. Busque, escolha o vínculo e clique em + para acumular vários; depois "Salvar todos e reimportar".';
       rows.innerHTML = '';
+      UIModals._renderStaged();
     };
 
-    // Busca incremental: só renderiza os nomes que casam com o que foi digitado
+    // Busca incremental: só renderiza os nomes que casam com o que foi digitado.
+    // Ignora nomes já colocados na lista de selecionados.
     UIModals._zdNameMapFilter = function(query) {
       var rows = document.getElementById('zdNameMapRows');
       var data = UIModals._nameMapData;
       if (!rows || !data) return;
       var q = _nameNorm(query);
       if (!q) { rows.innerHTML = ''; return; }
+      var staged = (UIModals._nameMapStaged || []).map(function(s) { return s.zdName; });
       var matches = data.unmapped.filter(function(zdName) {
-        return _nameNorm(zdName).indexOf(q) !== -1;
+        return staged.indexOf(zdName) === -1 && _nameNorm(zdName).indexOf(q) !== -1;
       }).slice(0, 20);
       rows.innerHTML = matches.length
         ? matches.map(_nameMapRowHtml).join('')
         : '<div style="font-size:11px;color:var(--muted);padding:4px 0">Nenhum usuário do Zendesk encontrado com esse nome.</div>';
     };
 
+    // Adiciona a linha atual à lista de selecionados (persiste entre buscas).
+    UIModals._zdStageRow = function(btn) {
+      var row = btn.closest('.zd-map-row'); if (!row) return;
+      var sel    = row.querySelector('select[data-zdname]');
+      var secSel = row.querySelector('select[data-sector]');
+      if (!sel) return;
+      var zdName = sel.getAttribute('data-zdname');
+      var val    = sel.value;
+      if (!val) { alert('Escolha "Cadastrar novo" ou um analista existente para vincular.'); return; }
+      UIModals._nameMapStaged = UIModals._nameMapStaged || [];
+      // evita duplicar o mesmo zdName
+      UIModals._nameMapStaged = UIModals._nameMapStaged.filter(function(s) { return s.zdName !== zdName; });
+      if (val === '__NEW__') {
+        UIModals._nameMapStaged.push({ zdName: zdName, action: 'new', sector: (secSel && secSel.value) || '' });
+      } else {
+        UIModals._nameMapStaged.push({ zdName: zdName, action: 'link', target: val });
+      }
+      // limpa a busca para agilizar o próximo
+      var searchEl = document.getElementById('zdNameMapSearch');
+      if (searchEl) searchEl.value = '';
+      var rowsEl = document.getElementById('zdNameMapRows');
+      if (rowsEl) rowsEl.innerHTML = '';
+      UIModals._renderStaged();
+    };
+
+    // Remove um item da lista de selecionados.
+    UIModals._zdUnstage = function(idx) {
+      if (!UIModals._nameMapStaged) return;
+      UIModals._nameMapStaged.splice(idx, 1);
+      UIModals._renderStaged();
+    };
+
+    // Desenha a lista de selecionados (chips com ação + botão remover).
+    UIModals._renderStaged = function() {
+      var box = document.getElementById('zdNameMapStaged');
+      if (!box) return;
+      var staged = UIModals._nameMapStaged || [];
+      if (!staged.length) { box.innerHTML = ''; return; }
+      var items = staged.map(function(s, i) {
+        var desc = s.action === 'new'
+          ? 'cadastrar' + (s.sector ? ' · ' + D.escapeHtml(s.sector) : '')
+          : '→ ' + D.escapeHtml(s.target);
+        return '<span style="display:inline-flex;align-items:center;gap:6px;background:#EAF2FF;border:1px solid #CBE0FF;color:#0F2440;border-radius:99px;padding:3px 8px 3px 10px;font-size:11px;margin:0 6px 6px 0">' +
+          '<b style="font-weight:600">' + D.escapeHtml(s.zdName) + '</b>' +
+          '<span style="color:var(--muted)">' + desc + '</span>' +
+          '<button type="button" onclick="UIModals._zdUnstage(' + i + ')" title="Remover" style="border:none;background:none;color:#CC0000;cursor:pointer;font-size:13px;line-height:1;padding:0">×</button>' +
+        '</span>';
+      }).join('');
+      box.innerHTML = '<div style="font-size:11px;color:var(--white);font-weight:600;margin-bottom:5px">Selecionados (' + staged.length + '):</div>' +
+        '<div style="display:flex;flex-wrap:wrap;align-items:center">' + items + '</div>';
+    };
+
     UIModals._zdMapChange = function(sel) {
+      // Mostra o seletor de setor só quando for "Cadastrar novo".
+      // A confirmação do vínculo é feita pelo botão + (lista de selecionados).
       var sectorSel = sel.parentElement.querySelector('select[data-sector]');
       if (sectorSel) sectorSel.style.display = sel.value === '__NEW__' ? '' : 'none';
-      // Persiste o vínculo na hora (analista existente) para não se perder ao filtrar
-      var zdName = sel.getAttribute('data-zdname');
-      if (zdName && sel.value && sel.value !== '__NEW__') {
-        var cfg = ZendeskSync.getConfig();
-        var nm  = cfg.nameMap || {};
-        nm[zdName] = sel.value;
-        ZendeskSync.saveConfig(Object.assign({}, cfg, { nameMap: nm }));
-      }
     };
 
     document.getElementById('zdTestBtn') && (document.getElementById('zdTestBtn').onclick = function() {

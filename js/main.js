@@ -488,23 +488,20 @@ var App = (function() {
   }
 
   function saveNameMapAndReimport() {
-    var selects  = document.querySelectorAll('#zdNameMapRows select[data-zdname]');
+    // Lê a lista de selecionados acumulada no modal (vários de uma vez).
+    var staged   = (typeof UIModals !== 'undefined' && UIModals._nameMapStaged) ? UIModals._nameMapStaged : [];
     var nameMap  = {};
-    var toCreate = [];
+    var toCreate = []; // { zdName, sector }
 
-    selects.forEach(function(sel) {
-      var zdName = sel.getAttribute('data-zdname');
-      var val    = sel.value;
-      if (!zdName) return;
-      if (val === '__NEW__') {
-        toCreate.push(zdName);
-      } else if (val) {
-        nameMap[zdName] = val;
-      }
+    staged.forEach(function(s) {
+      if (!s || !s.zdName) return;
+      if (s.action === 'new')                 toCreate.push({ zdName: s.zdName, sector: s.sector });
+      else if (s.action === 'link' && s.target) nameMap[s.zdName] = s.target;
     });
 
     // Cria novos analistas para cada seleção "Cadastrar"
-    toCreate.forEach(function(zdName) {
+    toCreate.forEach(function(item) {
+      var zdName = item.zdName;
       // Evita duplicata
       var existing = state.analysts.find(function(a) {
         return a.name.trim().toLowerCase() === zdName.trim().toLowerCase();
@@ -514,11 +511,7 @@ var App = (function() {
       var agentData  = ZendeskSync.getAgentData(zdName);
       var newScores  = {};
       state.modules.forEach(function(m) { newScores[m] = 1; });
-
-      // Lê setor do select inline (aparece ao escolher "Cadastrar")
-      var mapSel    = document.querySelector('#zdNameMapRows select[data-zdname="' + zdName.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"]');
-      var sectorSel = mapSel && mapSel.parentElement.querySelector('select[data-sector]');
-      var sector    = (sectorSel && sectorSel.value) || state.sectors[0] || 'Chat';
+      var sector = item.sector || state.sectors[0] || 'Chat';
 
       var newAnalyst = {
         id:       Date.now() + Math.floor(Math.random() * 9999),

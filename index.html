@@ -335,10 +335,11 @@
       <div id="zdNameMapContainer" style="display:none;margin-top:12px;padding:10px;background:#F8FAFC;border:1px solid var(--border);border-radius:8px">
         <div style="font-size:11px;font-weight:600;color:var(--white);margin-bottom:8px"><i class="ti ti-link"></i> Vincular outro usuário do Zendesk</div>
         <div id="zdNameMapHint" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+        <div id="zdNameMapStaged" style="margin-bottom:8px"></div>
         <input id="zdNameMapSearch" type="text" autocomplete="off" placeholder="Digite o nome da pessoa para localizar…" oninput="UIModals._zdNameMapFilter(this.value)" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid var(--border);color:#0F2440;border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit;margin-bottom:8px">
         <div id="zdNameMapRows"></div>
         <button onclick="App.saveNameMapAndReimport()" style="margin-top:10px;font-size:12px;padding:5px 12px;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit">
-          <i class="ti ti-refresh"></i> Salvar e reimportar
+          <i class="ti ti-refresh"></i> Salvar todos e reimportar
         </button>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
