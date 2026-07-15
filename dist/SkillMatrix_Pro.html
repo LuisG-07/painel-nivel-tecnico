@@ -1147,6 +1147,23 @@ var UIOverview = (function() {
   var D = Domain;
   var esc = Domain.escapeHtml;
 
+  // Rankings colapsáveis: mostra até RANK_LIMIT linhas e um botão "Ver todas".
+  var RANK_LIMIT = 15;
+  var _rankSeq = 0;
+
+  // Botão de expandir/recolher, associado ao wrapper pelo id.
+  function rankToggle(wrapId, total) {
+    if (total <= RANK_LIMIT) return '';
+    return '<div style="text-align:center;margin-top:10px">' +
+      '<button type="button" data-target="' + wrapId + '" data-total="' + total + '" data-open="0" ' +
+        'onclick="UIOverview._toggleRank(this)" ' +
+        'style="background:var(--blue-soft,#eaf2ff);color:var(--blue,#0268CD);border:1px solid var(--border);' +
+        'border-radius:8px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;' +
+        'display:inline-flex;align-items:center;gap:6px">' +
+        '<i class="ti ti-chevron-down"></i> Ver todas (' + total + ')' +
+      '</button></div>';
+  }
+
   function sectorBadge(sector) {
     var cls = D.sectorBadgeClass(sector);
     return '<span class="' + cls + '">' + esc(sector) + '</span>';
@@ -1417,11 +1434,18 @@ var UIOverview = (function() {
         (clickFn ? ' Clique numa linha para ver os tickets.' : '');
       var help = ' <span title="' + esc(info) + '" style="cursor:help;color:var(--muted);font-size:12px;vertical-align:middle" aria-label="Sobre este ranking"><i class="ti ti-help-circle"></i></span>';
       var nw = ' style="white-space:nowrap"';
-      var t = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
+      var wrapId = 'rank_' + (++_rankSeq);
+      var t = '<div id="' + wrapId + '"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
         '<table class="tbl"><thead><tr><th' + nw + '>#</th><th' + nw + '>' + label + '</th><th' + nw + '>Negativas</th><th' + nw + '>Avaliações</th><th' + nw + '>% neg.</th><th' + nw + '>Status</th></tr></thead><tbody>';
-      rows.slice(0, 15).forEach(function(r, i) {
+      rows.forEach(function(r, i) {
         var pct = r.rate * 100, st = zdStatus(pct);
-        var trAttr = clickFn ? ' onclick="' + clickFn + '(' + i + ')" style="cursor:pointer" title="Ver tickets"' : '';
+        var extra = i >= RANK_LIMIT;
+        var styleParts = [];
+        if (clickFn) styleParts.push('cursor:pointer');
+        if (extra)   styleParts.push('display:none');
+        var trAttr = (extra ? ' class="rank-extra"' : '') +
+          (clickFn ? ' onclick="' + clickFn + '(' + i + ')" title="Ver tickets"' : '') +
+          (styleParts.length ? ' style="' + styleParts.join(';') + '"' : '');
         t += '<tr' + trAttr + '>' +
           '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
           '<td style="font-weight:500">' + esc(r.name) + '</td>' +
@@ -1431,23 +1455,25 @@ var UIOverview = (function() {
           '<td><span style="background:' + st.bg + ';color:' + st.c + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + st.l + '</span></td>' +
         '</tr>';
       });
-      return t + '</tbody></table></div>';
+      return t + '</tbody></table>' + rankToggle(wrapId, rows.length) + '</div>';
     }
 
     // 1) Ranking de Módulos (técnico, média 1–5)
-    var modTable = '<div><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
+    var modWrapId = 'rank_' + (++_rankSeq);
+    var modTable = '<div id="' + modWrapId + '"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
       '<table class="tbl"><thead><tr><th style="white-space:nowrap">#</th><th style="white-space:nowrap">Categoria</th><th style="white-space:nowrap">Média (1–5)</th><th style="white-space:nowrap">Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
       var statusColor = x.avg < 3 ? '#CC0000' : x.avg < 4 ? '#B45309' : '#15803D';
-      modTable += '<tr>' +
+      var extra = i >= RANK_LIMIT;
+      modTable += '<tr' + (extra ? ' class="rank-extra" style="display:none"' : '') + '>' +
         '<td style="color:var(--muted)">' + (i + 1) + '</td>' +
         '<td style="font-weight:500">' + esc(x.name) + '</td>' +
         '<td style="color:' + statusColor + ';font-weight:700">' + x.avg.toFixed(2) + '</td>' +
         '<td><span style="background:' + statusBg + ';color:' + statusColor + ';font-size:10px;font-weight:600;padding:3px 11px;border-radius:99px">' + D.scoreStatusLabel(x.avg) + '</span></td>' +
       '</tr>';
     });
-    modTable += '</tbody></table></div>';
+    modTable += '</tbody></table>' + rankToggle(modWrapId, modAvgs.length) + '</div>';
 
     // 2) Categorias mais negativadas (Zendesk) — ao lado do técnico. Linhas
     //    clicáveis: abrem o modal com os tickets daquela categoria, para consulta.
@@ -1465,7 +1491,21 @@ var UIOverview = (function() {
     document.getElementById('page-visao').innerHTML = h;
   }
 
-  return { render: render };
+  // Expande/recolhe as linhas extras de um ranking (chamado pelo botão inline).
+  function toggleRank(btn) {
+    var wrap = document.getElementById(btn.getAttribute('data-target'));
+    if (!wrap) return;
+    var open = btn.getAttribute('data-open') === '1';
+    wrap.querySelectorAll('tr.rank-extra').forEach(function(tr) {
+      tr.style.display = open ? 'none' : '';
+    });
+    btn.setAttribute('data-open', open ? '0' : '1');
+    btn.innerHTML = open
+      ? '<i class="ti ti-chevron-down"></i> Ver todas (' + btn.getAttribute('data-total') + ')'
+      : '<i class="ti ti-chevron-up"></i> Ver menos';
+  }
+
+  return { render: render, _toggleRank: toggleRank };
 })();
 
 </script>
