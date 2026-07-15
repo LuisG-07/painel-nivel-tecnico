@@ -1154,7 +1154,7 @@ var UIOverview = (function() {
   // Botão de expandir/recolher, associado ao wrapper pelo id.
   function rankToggle(wrapId, total) {
     if (total <= RANK_LIMIT) return '';
-    return '<div style="text-align:center;margin-top:10px">' +
+    return '<div style="text-align:center;margin-top:auto;padding-top:12px">' +
       '<button type="button" data-target="' + wrapId + '" data-total="' + total + '" data-open="0" ' +
         'onclick="UIOverview._toggleRank(this)" ' +
         'style="background:var(--blue-soft,#eaf2ff);color:var(--blue,#0268CD);border:1px solid var(--border);' +
@@ -1435,7 +1435,7 @@ var UIOverview = (function() {
       var help = ' <span title="' + esc(info) + '" style="cursor:help;color:var(--muted);font-size:12px;vertical-align:middle" aria-label="Sobre este ranking"><i class="ti ti-help-circle"></i></span>';
       var nw = ' style="white-space:nowrap"';
       var wrapId = 'rank_' + (++_rankSeq);
-      var t = '<div id="' + wrapId + '"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
+      var t = '<div id="' + wrapId + '" style="display:flex;flex-direction:column;height:100%"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ' + icon + '"></i> ' + title + help + '</div>' +
         '<table class="tbl"><thead><tr><th' + nw + '>#</th><th' + nw + '>' + label + '</th><th' + nw + '>Negativas</th><th' + nw + '>Avaliações</th><th' + nw + '>% neg.</th><th' + nw + '>Status</th></tr></thead><tbody>';
       rows.forEach(function(r, i) {
         var pct = r.rate * 100, st = zdStatus(pct);
@@ -1460,7 +1460,7 @@ var UIOverview = (function() {
 
     // 1) Ranking de Módulos (técnico, média 1–5)
     var modWrapId = 'rank_' + (++_rankSeq);
-    var modTable = '<div id="' + modWrapId + '"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
+    var modTable = '<div id="' + modWrapId + '" style="display:flex;flex-direction:column;height:100%"><div class="sectitle" style="margin-top:0;min-height:42px;align-items:flex-start"><i class="ti ti-list-numbers"></i> Ranking de Categorias (técnico)</div>' +
       '<table class="tbl"><thead><tr><th style="white-space:nowrap">#</th><th style="white-space:nowrap">Categoria</th><th style="white-space:nowrap">Média (1–5)</th><th style="white-space:nowrap">Status</th></tr></thead><tbody>';
     modAvgs.forEach(function(x, i) {
       var statusBg   = x.avg < 3 ? '#FBEAEA'  : x.avg < 4 ? '#FBF1E3' : '#E9F5EE';
@@ -1485,7 +1485,7 @@ var UIOverview = (function() {
 
     // 2 colunas quando há ranking de categorias; senão, técnico ocupa tudo.
     var rankCols = catTable ? 'minmax(0,1fr) minmax(0,1fr)' : '1fr';
-    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:start">' +
+    h += '<div style="margin-top:28px;display:grid;grid-template-columns:' + rankCols + ';gap:22px;align-items:stretch">' +
       modTable + catTable + '</div>';
 
     document.getElementById('page-visao').innerHTML = h;
