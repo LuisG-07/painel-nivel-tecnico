@@ -170,8 +170,24 @@ var Cloud = (function() {
       if (!seeded) return seedFromLocal(user).then(mirrorToLocal);
       return mirrorToLocal();
     }).then(function() {
+      return seedZendeskIfEmpty();
+    }).then(function() {
       ready = true;
     });
+  }
+
+  // Migracao: se a nuvem ainda NAO tem dados do Zendesk mas ESTA maquina tem,
+  // sobe uma vez (para dados que foram importados antes deste sync existir).
+  // Depois disso o pushZendesk normal cuida das atualizacoes.
+  function seedZendeskIfEmpty() {
+    return zdDoc('skm6_zdcfg').get().then(function(d) {
+      var cloudHas = d.exists;
+      var localHas = ZD_KEYS.some(function(k) { return localStorage.getItem(k) != null; });
+      if (cloudHas || !localHas) return;
+      return Promise.all(ZD_KEYS.map(function(k) {
+        return zdWrite(k).catch(function() {});
+      }));
+    }).catch(function() {});
   }
 
   // --- Empurrar o estado para a nuvem (apos salvar) --------------------------
