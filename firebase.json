@@ -37,6 +37,14 @@
     ],
     "rewrites": [
       { "source": "/zdproxy/**", "function": "zdproxy" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      }
     ]
   }
 }
