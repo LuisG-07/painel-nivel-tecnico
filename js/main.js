@@ -195,7 +195,10 @@ var App = (function() {
       state.modules  = updated.modules;
       state.sectors  = updated.sectors;
       state.leaders  = updated.leaders;
-      if (updated.zendeskCfg) ZendeskSync.saveConfig(updated.zendeskCfg);
+      if (updated.zendeskCfg) {
+        ZendeskSync.saveConfig(updated.zendeskCfg);
+        if (window.Cloud && Cloud.isReady() && Cloud.pushZendesk) Cloud.pushZendesk();
+      }
       state.analysts.forEach(function(a) {
         state.modules.forEach(function(m) {
           if (!(m in a.scores)) a.scores[m] = 1;
@@ -388,6 +391,7 @@ var App = (function() {
       analyst.zendesk = newScore;
       ZendeskSync.saveTickets(analystId, updatedData);
       persist();
+      if (window.Cloud && Cloud.isReady() && Cloud.pushZendesk) Cloud.pushZendesk();
       render();
     });
   }
@@ -461,6 +465,7 @@ var App = (function() {
           return;
         }
         if (progEl) progEl.style.color = '#4ADE80';
+        if (window.Cloud && Cloud.isReady() && Cloud.pushZendesk) Cloud.pushZendesk();
         if (count > 0) {
           render();
           persist(); // Salva fotos e dados no localStorage
