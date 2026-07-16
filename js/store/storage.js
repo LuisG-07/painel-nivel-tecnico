@@ -109,14 +109,21 @@ var Storage = (function() {
     // Feed de comentários: [{ text, author, at }]. Mantém compat com o campo
     // antigo `comment` (texto único) migrando-o para o 1º post.
     var comments = Array.isArray(raw.comments)
-      ? raw.comments.filter(function(c) { return c && typeof c.text === 'string' && c.text.trim(); })
+      ? raw.comments.filter(function(c) {
+          if (!c) return false;
+          var hasText = typeof c.text === 'string' && c.text.trim();
+          var hasImg  = typeof c.image === 'string' && c.image.indexOf('data:image/') === 0;
+          return hasText || hasImg;
+        })
           .map(function(c) {
-            return {
-              text:     c.text.slice(0, 1000),
+            var o = {
+              text:     typeof c.text === 'string' ? c.text.slice(0, 1000) : '',
               author:   typeof c.author === 'string' ? c.author.slice(0, 120) : '',
               at:       typeof c.at === 'string' ? c.at : null,
               editedAt: typeof c.editedAt === 'string' ? c.editedAt : null
             };
+            if (typeof c.image === 'string' && c.image.indexOf('data:image/') === 0) o.image = c.image;
+            return o;
           })
       : [];
     var legacyComment = typeof raw.comment === 'string' ? raw.comment.slice(0, 500) : '';

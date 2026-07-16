@@ -29,6 +29,9 @@ var UIModals = (function() {
     document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
     var newBox = document.getElementById('editCommentNew');
     if (newBox) newBox.value = '';
+    _pendingCommentImg = null;
+    _editImgRemove = false;
+    _renderCommentImgPreview();
     _commentCount();
     renderCommentsFeed(analyst);
 
@@ -155,6 +158,30 @@ var UIModals = (function() {
 
   // Índice do post em edição inline (-1 = nenhum).
   var _editingComment = -1;
+  var _pendingCommentImg = null; // imagem anexada ao novo comentário (base64)
+  var _editImgRemove = false;    // marcar p/ remover a imagem ao salvar edição
+
+  // Lê uma imagem e reduz o tamanho (canvas) p/ não estourar o doc do analista.
+  function readImageDownscaled(file, maxDim, quality, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var cw = Math.max(1, Math.round(img.width * scale));
+        var ch = Math.max(1, Math.round(img.height * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        try {
+          canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+          callback(canvas.toDataURL('image/jpeg', quality || 0.8));
+        } catch (err) { callback(e.target.result); }
+      };
+      img.onerror = function() { callback(e.target.result); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
 
   // Quem pode mexer no post: o próprio autor ou um admin.
   function _canModifyComment(c) {
@@ -179,11 +206,18 @@ var UIModals = (function() {
       var edited = c.editedAt ? '<span class="comment-when">(editado)</span>' : '';
 
       if (i === _editingComment) {
+        var editImg = (c.image && !_editImgRemove)
+          ? '<div class="comment-img-preview" style="margin-top:6px"><img src="' + esc(c.image) + '" alt="">' +
+              '<button type="button" class="comment-img-x" title="Remover imagem" onclick="UIModals._toggleRemoveEditImg()">×</button></div>'
+          : (c.image && _editImgRemove
+              ? '<div style="font-size:11px;color:var(--red);margin-top:6px">Imagem será removida ao salvar. <button type="button" class="linklike" onclick="UIModals._toggleRemoveEditImg()">desfazer</button></div>'
+              : '');
         return '<div class="comment-item">' +
           '<div class="comment-avatar">' + esc(D.nameInitials(author)) + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div class="comment-head"><b>' + esc(author) + '</b>' + (when ? '<span class="comment-when">' + when + '</span>' : '') + '</div>' +
             '<textarea id="commentEditBox" class="form-textarea" maxlength="1000" rows="2" style="margin-top:4px">' + esc(c.text) + '</textarea>' +
+            editImg +
             '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">' +
               '<button type="button" class="btn-secondary" style="font-size:12px;padding:5px 10px" onclick="UIModals._cancelEditComment()">Cancelar</button>' +
               '<button type="button" class="btn-primary" style="font-size:12px;padding:5px 10px" onclick="UIModals._saveEditComment(' + i + ')">Salvar</button>' +
@@ -198,13 +232,17 @@ var UIModals = (function() {
           '<button type="button" class="comment-act" title="Editar" onclick="UIModals._startEditComment(' + i + ')"><i class="ti ti-pencil"></i></button>' +
           '<button type="button" class="comment-act comment-del" title="Excluir comentário" onclick="UIModals._deleteComment(' + i + ')"><i class="ti ti-x"></i></button>';
       }
+      var imgHtml = c.image
+        ? '<img class="comment-img" src="' + esc(c.image) + '" alt="imagem do comentário" onclick="UIModals._viewCommentImage(' + i + ')">'
+        : '';
       return '<div class="comment-item">' +
         '<div class="comment-avatar">' + esc(D.nameInitials(author)) + '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div class="comment-head"><b>' + esc(author) + '</b>' +
             (when ? '<span class="comment-when">' + when + '</span>' : '') + edited +
             '<span style="margin-left:auto;display:inline-flex;gap:2px">' + actions + '</span></div>' +
-          '<div class="comment-text">' + esc(c.text).replace(/\n/g, '<br>') + '</div>' +
+          (c.text ? '<div class="comment-text">' + esc(c.text).replace(/\n/g, '<br>') + '</div>' : '') +
+          imgHtml +
         '</div>' +
       '</div>';
     }).reverse().join('');
@@ -220,20 +258,63 @@ var UIModals = (function() {
     counter.className = 'comment-counter' + (len > 950 ? ' char-warn' : '') + (len >= 1000 ? ' char-over' : '');
   }
 
+  // Anexar imagem ao novo comentário (redimensiona e mostra preview).
+  function _pickCommentImage(event) {
+    var file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type || file.type.indexOf('image/') !== 0) { alert('Selecione uma imagem válida.'); return; }
+    readImageDownscaled(file, 1200, 0.8, function(b64) {
+      _pendingCommentImg = b64;
+      _renderCommentImgPreview();
+    });
+  }
+
+  function _renderCommentImgPreview() {
+    var el = document.getElementById('editCommentImgPreview');
+    if (!el) return;
+    if (!_pendingCommentImg) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+    el.innerHTML = '<div class="comment-img-preview"><img src="' + esc(_pendingCommentImg) + '" alt="">' +
+      '<button type="button" class="comment-img-x" title="Remover imagem" onclick="UIModals._clearCommentImage()">×</button></div>';
+  }
+
+  function _clearCommentImage() {
+    _pendingCommentImg = null;
+    _renderCommentImgPreview();
+  }
+
+  // Visualizar a imagem de um comentário em tela cheia.
+  function _viewCommentImage(i) {
+    var c = _editAnalyst && _editAnalyst.comments && _editAnalyst.comments[i];
+    if (!c || !c.image) return;
+    var ov = document.createElement('div');
+    ov.className = 'img-lightbox';
+    ov.onclick = function() { document.body.removeChild(ov); };
+    var img = document.createElement('img');
+    img.src = c.image;
+    ov.appendChild(img);
+    document.body.appendChild(ov);
+  }
+
   function _postComment() {
     if (!_editAnalyst) return;
     var box = document.getElementById('editCommentNew');
     if (!box) return;
     var text = (box.value || '').trim();
-    if (!text) { box.focus(); return; }
+    if (!text && !_pendingCommentImg) { box.focus(); return; } // precisa de texto OU imagem
     if (!Array.isArray(_editAnalyst.comments)) _editAnalyst.comments = [];
     _editingComment = -1;
-    _editAnalyst.comments.push({
+    var post = {
       text:   text.slice(0, 1000),
       author: _commentAuthor(),
       at:     new Date().toISOString()
-    });
+    };
+    if (_pendingCommentImg) post.image = _pendingCommentImg;
+    _editAnalyst.comments.push(post);
     box.value = '';
+    _pendingCommentImg = null;
+    _renderCommentImgPreview();
     _commentCount();
     renderCommentsFeed(_editAnalyst);
     if (_editOnPost) _editOnPost(); // persiste + sincroniza na nuvem na hora
@@ -241,13 +322,20 @@ var UIModals = (function() {
 
   function _startEditComment(i) {
     _editingComment = i;
+    _editImgRemove = false;
     renderCommentsFeed(_editAnalyst);
     var box = document.getElementById('commentEditBox');
     if (box) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
   }
 
+  function _toggleRemoveEditImg() {
+    _editImgRemove = !_editImgRemove;
+    renderCommentsFeed(_editAnalyst);
+  }
+
   function _cancelEditComment() {
     _editingComment = -1;
+    _editImgRemove = false;
     renderCommentsFeed(_editAnalyst);
   }
 
@@ -257,10 +345,13 @@ var UIModals = (function() {
     if (!c) { _cancelEditComment(); return; }
     var box = document.getElementById('commentEditBox');
     var text = box ? (box.value || '').trim() : '';
-    if (!text) { if (box) box.focus(); return; }
+    var willRemoveImg = _editImgRemove && c.image;
+    if (!text && !(c.image && !willRemoveImg)) { if (box) box.focus(); return; } // não deixa vazio
     c.text = text.slice(0, 1000);
+    if (willRemoveImg) delete c.image;
     c.editedAt = new Date().toISOString();
     _editingComment = -1;
+    _editImgRemove = false;
     renderCommentsFeed(_editAnalyst);
     if (_editOnPost) _editOnPost();
   }
@@ -1315,6 +1406,10 @@ var UIModals = (function() {
     _cancelEditComment:  _cancelEditComment,
     _saveEditComment:    _saveEditComment,
     _commentCount:       _commentCount,
+    _pickCommentImage:   _pickCommentImage,
+    _clearCommentImage:  _clearCommentImage,
+    _viewCommentImage:   _viewCommentImage,
+    _toggleRemoveEditImg: _toggleRemoveEditImg,
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
