@@ -101,6 +101,12 @@ var App = (function() {
       persist(); // captureSnapshots() registra o snapshot de hoje
       audit('Editou analista', updated.name);
       render();
+    }, function() {
+      // onPost: publica um comentário no feed — persiste e sincroniza na hora,
+      // sem depender do botão Salvar (o objeto analyst é o mesmo do state).
+      persist();
+      audit('Comentou em analista', analyst.name);
+      render();
     });
   }
 

@@ -131,9 +131,18 @@ var UIOverview = (function() {
       return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--white)"><span>' + esc(m) + '</span><span class="tag-r">Recomendado</span></div>';
     }).join('');
 
-    var commentHtml = analyst.comment
-      ? '<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">' + esc(analyst.comment) + '</div>'
-      : '';
+    // Último comentário do feed (autor + texto); cai pro campo antigo se preciso.
+    var comments = analyst.comments || [];
+    var lastC = comments.length ? comments[comments.length - 1] : null;
+    var commentHtml = '';
+    if (lastC) {
+      var more = comments.length > 1 ? ' <span style="font-style:normal;color:var(--white)">+' + (comments.length - 1) + '</span>' : '';
+      commentHtml = '<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">' +
+        (lastC.author ? '<b style="color:var(--white)">' + esc(lastC.author) + ':</b> ' : '') +
+        esc(lastC.text) + more + '</div>';
+    } else if (analyst.comment) {
+      commentHtml = '<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">' + esc(analyst.comment) + '</div>';
+    }
 
     var attachmentHtml = '';
     if (analyst.anexos && analyst.anexos.length) {

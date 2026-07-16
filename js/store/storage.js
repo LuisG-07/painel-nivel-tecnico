@@ -106,6 +106,22 @@ var Storage = (function() {
     var anexos = Array.isArray(raw.anexos)
       ? raw.anexos.filter(function(s) { return typeof s === 'string' && s.startsWith('data:image/'); })
       : [];
+    // Feed de comentários: [{ text, author, at }]. Mantém compat com o campo
+    // antigo `comment` (texto único) migrando-o para o 1º post.
+    var comments = Array.isArray(raw.comments)
+      ? raw.comments.filter(function(c) { return c && typeof c.text === 'string' && c.text.trim(); })
+          .map(function(c) {
+            return {
+              text:   c.text.slice(0, 1000),
+              author: typeof c.author === 'string' ? c.author.slice(0, 120) : '',
+              at:     typeof c.at === 'string' ? c.at : null
+            };
+          })
+      : [];
+    var legacyComment = typeof raw.comment === 'string' ? raw.comment.slice(0, 500) : '';
+    if (legacyComment && !comments.length) {
+      comments.push({ text: legacyComment, author: '', at: null });
+    }
     return {
       id:       raw.id,
       name:     (raw.name || '').trim().slice(0, 80),
@@ -116,7 +132,8 @@ var Storage = (function() {
       zendesk:  zendesk,
       provaAvg: provaAvg,
       photo:    photo,
-      comment:  typeof raw.comment === 'string' ? raw.comment.slice(0, 500) : '',
+      comment:  legacyComment,
+      comments: comments,
       anexos:   anexos,
       scores:   sanitizeScores(raw.scores)
     };

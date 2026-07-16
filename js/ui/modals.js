@@ -4,10 +4,17 @@ var UIModals = (function() {
 
   // --- Edit Analyst Modal ---
 
-  function openEdit(analyst, modules, sectors, onSave) {
+  // Analista/callback em edição — usados pelo feed de comentários (_postComment).
+  var _editAnalyst = null;
+  var _editOnPost  = null;
+
+  function openEdit(analyst, modules, sectors, onSave, onPost) {
     var modal = document.getElementById('editModal');
     var pendingPhoto = analyst.photo || null;
     var pendingAnexos = (analyst.anexos || []).slice();
+    if (!Array.isArray(analyst.comments)) analyst.comments = [];
+    _editAnalyst = analyst;
+    _editOnPost  = onPost || null;
 
     // Populate Dados tab
     document.getElementById('editName').value = analyst.name;
@@ -19,8 +26,9 @@ var UIModals = (function() {
     document.getElementById('editLevel').value = analyst.level || 'Júnior';
     document.getElementById('editStep').value = String(analyst.step || 1);
     document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
-    document.getElementById('editComment').value = analyst.comment || '';
-    updateCommentCounter();
+    var newBox = document.getElementById('editCommentNew');
+    if (newBox) newBox.value = '';
+    renderCommentsFeed(analyst);
 
     // Photo preview
     var preview = document.getElementById('editPhotoPreview');
@@ -98,7 +106,6 @@ var UIModals = (function() {
       var level = document.getElementById('editLevel').value;
       var step = parseInt(document.getElementById('editStep').value, 10) || 1;
       var zv = parseFloat(document.getElementById('editZendesk').value);
-      var comment = document.getElementById('editComment').value.slice(0, 500);
 
       var scores = {};
       modules.forEach(function(m) { scores[m] = analyst.scores[m] || 1; });
@@ -119,13 +126,82 @@ var UIModals = (function() {
         level:    level,
         step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
-        comment:  comment,
+        comment:  analyst.comment || '',
+        comments: analyst.comments || [],
         photo:    pendingPhoto,
         anexos:   pendingAnexos,
         scores:   scores
       });
       modal.style.display = 'none';
     };
+  }
+
+  // --- Feed de comentários da equipe (no modal de edição) -------------------
+  function _commentAuthor() {
+    try {
+      var u = window.Auth && Auth.getUser && Auth.getUser();
+      return (u && (u.displayName || u.email)) || 'Anônimo';
+    } catch (e) { return 'Anônimo'; }
+  }
+
+  function _fmtWhen(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderCommentsFeed(analyst) {
+    var box = document.getElementById('editCommentsFeed');
+    if (!box) return;
+    var list = analyst.comments || [];
+    if (!list.length) {
+      box.innerHTML = '<div class="comments-empty">Nenhum comentário ainda. Seja o primeiro a publicar.</div>';
+      return;
+    }
+    var isAdmin = false;
+    try { isAdmin = !!(window.Auth && Auth.isAdmin && Auth.isAdmin()); } catch (e) {}
+    // Mais recentes primeiro.
+    box.innerHTML = list.map(function(c, i) {
+      var author = c.author || 'Equipe';
+      var when = _fmtWhen(c.at);
+      var del = isAdmin
+        ? '<button type="button" class="comment-del" title="Excluir comentário" onclick="UIModals._deleteComment(' + i + ')"><i class="ti ti-x"></i></button>'
+        : '';
+      return '<div class="comment-item">' +
+        '<div class="comment-avatar">' + esc(D.nameInitials(author)) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="comment-head"><b>' + esc(author) + '</b>' +
+            (when ? '<span class="comment-when">' + when + '</span>' : '') + del + '</div>' +
+          '<div class="comment-text">' + esc(c.text).replace(/\n/g, '<br>') + '</div>' +
+        '</div>' +
+      '</div>';
+    }).reverse().join('');
+  }
+
+  function _postComment() {
+    if (!_editAnalyst) return;
+    var box = document.getElementById('editCommentNew');
+    if (!box) return;
+    var text = (box.value || '').trim();
+    if (!text) { box.focus(); return; }
+    if (!Array.isArray(_editAnalyst.comments)) _editAnalyst.comments = [];
+    _editAnalyst.comments.push({
+      text:   text.slice(0, 1000),
+      author: _commentAuthor(),
+      at:     new Date().toISOString()
+    });
+    box.value = '';
+    renderCommentsFeed(_editAnalyst);
+    if (_editOnPost) _editOnPost(); // persiste + sincroniza na nuvem na hora
+  }
+
+  function _deleteComment(i) {
+    if (!_editAnalyst || !Array.isArray(_editAnalyst.comments)) return;
+    if (!confirm('Excluir este comentário?')) return;
+    _editAnalyst.comments.splice(i, 1);
+    renderCommentsFeed(_editAnalyst);
+    if (_editOnPost) _editOnPost();
   }
 
   // Preenche o e-mail a partir do Zendesk (casado pelo nome do analista).
@@ -236,7 +312,8 @@ var UIModals = (function() {
         step:     step,
         zendesk:  isNaN(zv) ? null : Math.min(10, Math.max(0, zv)),
         provaAvg: null,
-        comment:  comment,
+        comment:  '',
+        comments: comment ? [{ text: comment, author: _commentAuthor(), at: new Date().toISOString() }] : [],
         photo:    pendingPhoto,
         anexos:   pendingAnexos,
         scores:   scores
@@ -1162,6 +1239,8 @@ var UIModals = (function() {
     init:                init,
     switchModalTab:      switchModalTab,
     _fillEmailFromZendesk: _fillEmailFromZendesk,
+    _postComment:        _postComment,
+    _deleteComment:      _deleteComment,
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},
