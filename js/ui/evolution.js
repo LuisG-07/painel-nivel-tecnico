@@ -13,12 +13,15 @@ var UIEvolution = (function() {
   // Modo de visualização por módulo: 'bars' (barras horizontais) ou 'line'
   // (gráfico de linha original). Preferência salva no navegador.
   var MODE_KEY = 'skm6_evomode';
+  var MODES = { placar: 1, tabela: 1, bars: 1 };
   function getMode() {
-    try { return localStorage.getItem(MODE_KEY) === 'line' ? 'line' : 'bars'; }
-    catch (e) { return 'bars'; }
+    try {
+      var m = localStorage.getItem(MODE_KEY);
+      return MODES[m] ? m : 'placar'; // 'line' (antigo) e vazio -> placar
+    } catch (e) { return 'placar'; }
   }
   function setMode(m) {
-    try { localStorage.setItem(MODE_KEY, m === 'line' ? 'line' : 'bars'); } catch (e) {}
+    try { localStorage.setItem(MODE_KEY, MODES[m] ? m : 'placar'); } catch (e) {}
     if (_state) render(_state);
   }
 
@@ -139,6 +142,132 @@ var UIEvolution = (function() {
     '</div>';
   }
 
+  // Dados de comparação de um analista: nota unificada agora vs baseline.
+  function compare(analyst, hist, cmp) {
+    var base = baselineSnap(hist, cmp);
+    var cur  = hist.length ? hist[hist.length - 1] : null;
+    var now  = D.unifiedScore(analyst);
+    var was  = base ? ov(base) : null;
+    var delta = (now != null && was != null) ? Math.round((now - was) * 10) / 10 : null;
+    return { base: base, cur: cur, now: now, was: was, delta: delta };
+  }
+
+  // Etiqueta ▲/▼ +X colorida da variação.
+  function deltaTag(d, size) {
+    var fs = size || 12;
+    if (d == null) return '<span style="font-size:' + fs + 'px;color:var(--muted)">—</span>';
+    var color = d > 0 ? '#15803D' : d < 0 ? '#CC0000' : '#64748B';
+    var arrow = d > 0 ? '▲' : d < 0 ? '▼' : '▬';
+    var sign  = d > 0 ? '+' : '';
+    return '<span style="font-size:' + fs + 'px;font-weight:700;color:' + color + '">' + arrow + ' ' + sign + d.toFixed(1) + '</span>';
+  }
+
+  // "O que mudou" por módulo (agora vs baseline), do maior movimento p/ o menor.
+  function moduleChanges(analyst, base, modules, limit) {
+    if (!base || !base.mods) return '<span style="color:var(--muted)">—</span>';
+    var chg = [];
+    modules.forEach(function(m) {
+      var now = analyst.scores[m] || 0;
+      var was = typeof base.mods[m] === 'number' ? base.mods[m] : null;
+      if (was != null && now !== was) chg.push({ m: m, now: now, was: was, d: now - was });
+    });
+    if (!chg.length) return '<span style="color:var(--muted)">sem mudança</span>';
+    chg.sort(function(a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+    var shown = chg.slice(0, limit || 3);
+    var html = shown.map(function(c) {
+      var up = c.d > 0;
+      var color = up ? '#15803D' : '#CC0000';
+      return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:' + color + ';white-space:nowrap">' +
+        (up ? '↑' : '↓') + ' ' + esc(c.m) + ' <b>' + c.was + '→' + c.now + '</b></span>';
+    }).join('<span style="color:var(--border);margin:0 6px">·</span>');
+    if (chg.length > shown.length) html += '<span style="color:var(--muted);font-size:11px;margin-left:6px">+' + (chg.length - shown.length) + '</span>';
+    return html;
+  }
+
+  // --- Placar: quem mais evoluiu × quem caiu -------------------------------
+  function placarHtml(list, state, cmp) {
+    var rows = list.map(function(a) {
+      var hist = (state.history && state.history[a.id]) || [];
+      return { a: a, cmp: compare(a, hist, cmp) };
+    }).filter(function(r) { return r.cmp.delta != null; });
+
+    var ups = rows.filter(function(r) { return r.cmp.delta > 0; }).sort(function(x, y) { return y.cmp.delta - x.cmp.delta; });
+    var downs = rows.filter(function(r) { return r.cmp.delta < 0; }).sort(function(x, y) { return x.cmp.delta - y.cmp.delta; });
+    var stable = rows.length - ups.length - downs.length;
+
+    if (!rows.length) {
+      return '<div class="evo-card" style="color:var(--muted);font-size:13px">Ainda não há histórico suficiente para comparar. Assim que houver registros em duas datas diferentes, o placar aparece aqui.</div>';
+    }
+
+    function line(r) {
+      var a = r.a;
+      var av = a.photo
+        ? '<div class="avatar avatar-sm"><img src="' + esc(a.photo) + '" alt=""></div>'
+        : '<div class="avatar avatar-sm">' + esc(D.nameInitials(a.name)) + '</div>';
+      return '<div style="display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid var(--border)">' +
+        av +
+        '<span style="flex:1;min-width:0;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(a.name) + '</span>' +
+        '<span style="font-size:12px;color:var(--muted)">' + (r.cmp.was != null ? r.cmp.was.toFixed(1) : '—') + ' → ' + r.cmp.now.toFixed(1) + '</span>' +
+        deltaTag(r.cmp.delta, 13) +
+      '</div>';
+    }
+
+    function col(title, arr, empty) {
+      return '<div class="evo-card" style="flex:1;min-width:260px">' +
+        '<div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px">' + title + '</div>' +
+        (arr.length ? arr.map(line).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px 0">' + empty + '</div>') +
+      '</div>';
+    }
+
+    var note = stable > 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:4px">' + stable + ' analista(s) sem variação no período.</div>' : '';
+    return '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">' +
+      col('📈 Mais evoluíram', ups, 'Ninguém subiu no período.') +
+      col('📉 Precisam de atenção', downs, 'Ninguém caiu no período. 👏') +
+    '</div>' + note;
+  }
+
+  // --- Tabela comparativa: Antes → Agora, por analista ---------------------
+  function tableHtml(list, state, cmp) {
+    var rows = list.map(function(a) {
+      var hist = (state.history && state.history[a.id]) || [];
+      return { a: a, hist: hist, cmp: compare(a, hist, cmp) };
+    }).sort(function(x, y) {
+      var dx = x.cmp.delta, dy = y.cmp.delta;
+      if (dx == null && dy == null) return x.a.name.localeCompare(y.a.name);
+      if (dx == null) return 1;
+      if (dy == null) return -1;
+      return dy - dx; // maior evolução no topo
+    });
+
+    var body = rows.map(function(r) {
+      var a = r.a, c = r.cmp;
+      var lvl = a.level === 'Sênior' ? 'lvl-sr' : a.level === 'Pleno' ? 'lvl-pl' : 'lvl-jr';
+      return '<tr>' +
+        '<td style="text-align:left"><div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-weight:600;color:var(--ink)">' + esc(a.name) + '</span>' +
+          '<span class="lvl ' + lvl + '">' + esc(a.level || 'Júnior') + '</span></div></td>' +
+        '<td>' + (c.was != null ? c.was.toFixed(1) : '—') + '</td>' +
+        '<td><b style="color:' + D.scoreColor(c.now) + '">' + c.now.toFixed(1) + '</b></td>' +
+        '<td>' + deltaTag(c.delta) + '</td>' +
+        '<td style="text-align:left">' + moduleChanges(a, c.base, state.modules, 3) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var baseLabel = cmp === 'first' ? 'primeiro registro' : cmp === 'prev' ? 'registro anterior' : fmtIso(cmp);
+    return '<div class="evo-card" style="overflow-x:auto;padding:0">' +
+      '<table class="tbl" style="width:100%;min-width:640px">' +
+        '<thead><tr>' +
+          '<th style="text-align:left">Analista</th>' +
+          '<th>Antes<div style="font-weight:400;font-size:10px;color:var(--muted)">' + esc(baseLabel) + '</div></th>' +
+          '<th>Agora</th>' +
+          '<th>Variação</th>' +
+          '<th style="text-align:left">O que mudou (módulos)</th>' +
+        '</tr></thead>' +
+        '<tbody>' + (body || '<tr><td colspan="5" style="color:var(--muted)">Sem analistas.</td></tr>') + '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+
   function render(state) {
     destroyAll();
     _state = state;
@@ -189,11 +318,22 @@ var UIEvolution = (function() {
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
         cmpSelect +
         '<div style="display:inline-flex;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px var(--border)">' +
-          tabBtn('bars', 'Barras', 'ti-chart-bar') + tabBtn('line', 'Linha', 'ti-chart-line') +
+          tabBtn('placar', 'Placar', 'ti-trophy') + tabBtn('tabela', 'Tabela', 'ti-table') + tabBtn('bars', 'Barras', 'ti-chart-bar') +
         '</div>' +
       '</div>' +
     '</div>';
 
+    // Placar (B) e Tabela (A): visões de "antes → depois" sem gráfico.
+    if (mode === 'placar') {
+      document.getElementById('page-evolucao').innerHTML = h + placarHtml(list, state, cmp);
+      return;
+    }
+    if (mode === 'tabela') {
+      document.getElementById('page-evolucao').innerHTML = h + tableHtml(list, state, cmp);
+      return;
+    }
+
+    // Barras (por analista, com marcador da nota anterior)
     list.forEach(function(analyst) {
       var u = D.unifiedScore(analyst);
       var tech = D.techScore(analyst.scores);
@@ -207,14 +347,7 @@ var UIEvolution = (function() {
       var base = baselineSnap(hist, cmp);
       var cur  = hist.length ? hist[hist.length - 1] : null;
 
-      var body;
-      if (mode === 'bars') {
-        body = barsHtml(analyst, state.modules, base ? base.mods : null);
-      } else if (hist.length >= 2) {
-        body = '<div style="position:relative;height:200px"><canvas id="evo-' + analyst.id + '"></canvas></div>';
-      } else {
-        body = '<div style="font-size:12px;color:var(--muted);padding:16px 4px">Ainda não há registros suficientes para o gráfico de evolução (é preciso pelo menos 2 datas). O histórico é criado conforme o painel é atualizado ao longo dos dias.</div>';
-      }
+      var body = barsHtml(analyst, state.modules, base ? base.mods : null);
 
       h += '<div class="evo-card">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
@@ -237,65 +370,6 @@ var UIEvolution = (function() {
     });
 
     document.getElementById('page-evolucao').innerHTML = h;
-
-    // Gráficos de linha só quando o modo é 'line'
-    if (mode !== 'line') return;
-    Chart.defaults.color = '#64748B';
-
-    list.forEach(function(analyst) {
-      var ctx = document.getElementById('evo-' + analyst.id);
-      if (!ctx) return;
-
-      // Trajetória no tempo: eixo X = datas dos registros; linhas para
-      // Unificada, Técnica e Zendesk (escala 0–10).
-      var hist = (state.history && state.history[analyst.id]) || [];
-      if (hist.length < 2) return;
-
-      var labels = hist.map(function(s) { return fmtIso(snapIso(s)); });
-      var uni  = hist.map(function(s) { return ov(s); });
-      var tech = hist.map(function(s) { return s.tech != null ? s.tech : (s.avg != null ? s.avg : null); });
-      var zen  = hist.map(function(s) { return s.zendesk != null ? s.zendesk : null; });
-
-      function ds(label, data, color, width) {
-        return {
-          label: label, data: data,
-          borderColor: color, backgroundColor: 'transparent',
-          pointBackgroundColor: color, pointRadius: 3,
-          tension: 0.3, borderWidth: width || 2, spanGaps: true
-        };
-      }
-
-      chartInstances['e' + analyst.id] = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            ds('Unificada', uni, '#0268CD', 2.6),
-            ds('Técnica', tech, '#22C55E', 2),
-            ds('Zendesk', zen, '#F59E0B', 2)
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true } }
-          },
-          scales: {
-            x: {
-              ticks: { color: '#64748B', font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
-              grid: { color: 'rgba(2,104,205,.08)' }
-            },
-            y: {
-              min: 0, max: 10,
-              ticks: { stepSize: 2, color: '#64748B', font: { size: 10 } },
-              grid: { color: 'rgba(2,104,205,.08)' }
-            }
-          }
-        }
-      });
-    });
   }
 
   return { render: render, destroyAll: destroyAll, setMode: setMode, setCmp: setCmp };
