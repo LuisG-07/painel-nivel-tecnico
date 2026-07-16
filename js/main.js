@@ -390,7 +390,11 @@ var App = (function() {
       } else if (status === 'error') {
         updateZendeskBadge('error', err);
       } else {
-        updateZendeskBadge('off');
+        // Sem credenciais/URL nesta maquina: ainda assim mostra a data da
+        // ultima importacao (o status vem da nuvem), em vez de esconder.
+        var st = ZendeskSync.getStatus();
+        if (st && st.at) updateZendeskBadge('ok');
+        else updateZendeskBadge('off');
       }
     });
   }
@@ -407,8 +411,14 @@ var App = (function() {
     if (lbl) lbl.textContent = syncState === 'loading' ? 'Sincronizando…' : 'Zendesk';
     if (syncState === 'ok') {
       var st = ZendeskSync.getStatus();
+      var when = st.at ? new Date(st.at) : null;
+      if (lbl && when) {
+        var d = when.toLocaleDateString('pt-BR');
+        var h = when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        lbl.textContent = 'Zendesk · ' + d + ' ' + h;
+      }
       el.title = (st.updated || 0) + ' analistas atualizados — ' +
-        (st.at ? new Date(st.at).toLocaleString('pt-BR') : '');
+        (when ? when.toLocaleString('pt-BR') : '');
     } else if (msg) {
       el.title = 'Erro: ' + msg;
     }
