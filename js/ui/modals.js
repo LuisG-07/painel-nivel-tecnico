@@ -284,6 +284,24 @@ var UIModals = (function() {
     _renderCommentImgPreview();
   }
 
+  // Colar imagem direto na caixa (Ctrl+V de um print).
+  function _pasteCommentImage(event) {
+    var items = (event.clipboardData && event.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.indexOf('image/') === 0) {
+        var file = items[i].getAsFile();
+        if (file) {
+          event.preventDefault();
+          readImageDownscaled(file, 1200, 0.8, function(b64) {
+            _pendingCommentImg = b64;
+            _renderCommentImgPreview();
+          });
+        }
+        return;
+      }
+    }
+  }
+
   // Visualizar a imagem de um comentário em tela cheia.
   function _viewCommentImage(i) {
     var c = _editAnalyst && _editAnalyst.comments && _editAnalyst.comments[i];
@@ -1407,6 +1425,7 @@ var UIModals = (function() {
     _saveEditComment:    _saveEditComment,
     _commentCount:       _commentCount,
     _pickCommentImage:   _pickCommentImage,
+    _pasteCommentImage:  _pasteCommentImage,
     _clearCommentImage:  _clearCommentImage,
     _viewCommentImage:   _viewCommentImage,
     _toggleRemoveEditImg: _toggleRemoveEditImg,

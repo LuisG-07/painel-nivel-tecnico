@@ -118,7 +118,7 @@
       <div id="editCommentsFeed" class="comments-feed"></div>
       <div id="editCommentImgPreview" style="display:none"></div>
       <div class="comment-compose">
-        <textarea id="editCommentNew" class="form-textarea" maxlength="1000" rows="2" placeholder="Escreva um comentário para a equipe…" oninput="UIModals._commentCount()"></textarea>
+        <textarea id="editCommentNew" class="form-textarea" maxlength="1000" rows="2" placeholder="Escreva um comentário… (pode colar imagem com Ctrl+V)" oninput="UIModals._commentCount()" onpaste="UIModals._pasteCommentImage(event)"></textarea>
         <div class="comment-compose-actions">
           <label class="comment-attach-btn" title="Anexar imagem">
             <i class="ti ti-photo-plus" aria-hidden="true"></i>
