@@ -415,7 +415,7 @@ var App = (function() {
       if (lbl && when) {
         var d = when.toLocaleDateString('pt-BR');
         var h = when.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        lbl.textContent = 'Zendesk · ' + d + ' ' + h;
+        lbl.textContent = 'Zendesk · Atualizado em ' + d + ' ' + h;
       }
       el.title = (st.updated || 0) + ' analistas atualizados — ' +
         (when ? when.toLocaleString('pt-BR') : '');
