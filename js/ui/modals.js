@@ -15,6 +15,7 @@ var UIModals = (function() {
     if (!Array.isArray(analyst.comments)) analyst.comments = [];
     _editAnalyst = analyst;
     _editOnPost  = onPost || null;
+    _editingComment = -1;
 
     // Populate Dados tab
     document.getElementById('editName').value = analyst.name;
@@ -28,6 +29,7 @@ var UIModals = (function() {
     document.getElementById('editZendesk').value = analyst.zendesk != null ? analyst.zendesk : '';
     var newBox = document.getElementById('editCommentNew');
     if (newBox) newBox.value = '';
+    _commentCount();
     renderCommentsFeed(analyst);
 
     // Photo preview
@@ -151,32 +153,71 @@ var UIModals = (function() {
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   }
 
+  // Índice do post em edição inline (-1 = nenhum).
+  var _editingComment = -1;
+
+  // Quem pode mexer no post: o próprio autor ou um admin.
+  function _canModifyComment(c) {
+    var isAdmin = false;
+    try { isAdmin = !!(window.Auth && Auth.isAdmin && Auth.isAdmin()); } catch (e) {}
+    return isAdmin || (c && c.author && c.author === _commentAuthor());
+  }
+
   function renderCommentsFeed(analyst) {
     var box = document.getElementById('editCommentsFeed');
     if (!box) return;
     var list = analyst.comments || [];
     if (!list.length) {
+      _editingComment = -1;
       box.innerHTML = '<div class="comments-empty">Nenhum comentário ainda. Seja o primeiro a publicar.</div>';
       return;
     }
-    var isAdmin = false;
-    try { isAdmin = !!(window.Auth && Auth.isAdmin && Auth.isAdmin()); } catch (e) {}
     // Mais recentes primeiro.
     box.innerHTML = list.map(function(c, i) {
       var author = c.author || 'Equipe';
       var when = _fmtWhen(c.at);
-      var del = isAdmin
-        ? '<button type="button" class="comment-del" title="Excluir comentário" onclick="UIModals._deleteComment(' + i + ')"><i class="ti ti-x"></i></button>'
-        : '';
+      var edited = c.editedAt ? '<span class="comment-when">(editado)</span>' : '';
+
+      if (i === _editingComment) {
+        return '<div class="comment-item">' +
+          '<div class="comment-avatar">' + esc(D.nameInitials(author)) + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div class="comment-head"><b>' + esc(author) + '</b>' + (when ? '<span class="comment-when">' + when + '</span>' : '') + '</div>' +
+            '<textarea id="commentEditBox" class="form-textarea" maxlength="1000" rows="2" style="margin-top:4px">' + esc(c.text) + '</textarea>' +
+            '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">' +
+              '<button type="button" class="btn-secondary" style="font-size:12px;padding:5px 10px" onclick="UIModals._cancelEditComment()">Cancelar</button>' +
+              '<button type="button" class="btn-primary" style="font-size:12px;padding:5px 10px" onclick="UIModals._saveEditComment(' + i + ')">Salvar</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      var actions = '';
+      if (_canModifyComment(c)) {
+        actions =
+          '<button type="button" class="comment-act" title="Editar" onclick="UIModals._startEditComment(' + i + ')"><i class="ti ti-pencil"></i></button>' +
+          '<button type="button" class="comment-act comment-del" title="Excluir comentário" onclick="UIModals._deleteComment(' + i + ')"><i class="ti ti-x"></i></button>';
+      }
       return '<div class="comment-item">' +
         '<div class="comment-avatar">' + esc(D.nameInitials(author)) + '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div class="comment-head"><b>' + esc(author) + '</b>' +
-            (when ? '<span class="comment-when">' + when + '</span>' : '') + del + '</div>' +
+            (when ? '<span class="comment-when">' + when + '</span>' : '') + edited +
+            '<span style="margin-left:auto;display:inline-flex;gap:2px">' + actions + '</span></div>' +
           '<div class="comment-text">' + esc(c.text).replace(/\n/g, '<br>') + '</div>' +
         '</div>' +
       '</div>';
     }).reverse().join('');
+  }
+
+  // Contador de caracteres da caixa de novo comentário.
+  function _commentCount() {
+    var box = document.getElementById('editCommentNew');
+    var counter = document.getElementById('editCommentNewCounter');
+    if (!box || !counter) return;
+    var len = box.value.length;
+    counter.textContent = len + '/1000';
+    counter.className = 'comment-counter' + (len > 950 ? ' char-warn' : '') + (len >= 1000 ? ' char-over' : '');
   }
 
   function _postComment() {
@@ -186,20 +227,49 @@ var UIModals = (function() {
     var text = (box.value || '').trim();
     if (!text) { box.focus(); return; }
     if (!Array.isArray(_editAnalyst.comments)) _editAnalyst.comments = [];
+    _editingComment = -1;
     _editAnalyst.comments.push({
       text:   text.slice(0, 1000),
       author: _commentAuthor(),
       at:     new Date().toISOString()
     });
     box.value = '';
+    _commentCount();
     renderCommentsFeed(_editAnalyst);
     if (_editOnPost) _editOnPost(); // persiste + sincroniza na nuvem na hora
+  }
+
+  function _startEditComment(i) {
+    _editingComment = i;
+    renderCommentsFeed(_editAnalyst);
+    var box = document.getElementById('commentEditBox');
+    if (box) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+  }
+
+  function _cancelEditComment() {
+    _editingComment = -1;
+    renderCommentsFeed(_editAnalyst);
+  }
+
+  function _saveEditComment(i) {
+    if (!_editAnalyst || !Array.isArray(_editAnalyst.comments)) return;
+    var c = _editAnalyst.comments[i];
+    if (!c) { _cancelEditComment(); return; }
+    var box = document.getElementById('commentEditBox');
+    var text = box ? (box.value || '').trim() : '';
+    if (!text) { if (box) box.focus(); return; }
+    c.text = text.slice(0, 1000);
+    c.editedAt = new Date().toISOString();
+    _editingComment = -1;
+    renderCommentsFeed(_editAnalyst);
+    if (_editOnPost) _editOnPost();
   }
 
   function _deleteComment(i) {
     if (!_editAnalyst || !Array.isArray(_editAnalyst.comments)) return;
     if (!confirm('Excluir este comentário?')) return;
     _editAnalyst.comments.splice(i, 1);
+    if (_editingComment === i) _editingComment = -1;
     renderCommentsFeed(_editAnalyst);
     if (_editOnPost) _editOnPost();
   }
@@ -1241,6 +1311,10 @@ var UIModals = (function() {
     _fillEmailFromZendesk: _fillEmailFromZendesk,
     _postComment:        _postComment,
     _deleteComment:      _deleteComment,
+    _startEditComment:   _startEditComment,
+    _cancelEditComment:  _cancelEditComment,
+    _saveEditComment:    _saveEditComment,
+    _commentCount:       _commentCount,
     _setScore:           setScore,
     _removeAnexo:        removeAnexo,
     _removeListItem:     function() {},

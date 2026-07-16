@@ -117,9 +117,10 @@
       <span class="input-label">Comentários da equipe</span>
       <div id="editCommentsFeed" class="comments-feed"></div>
       <div class="comment-compose">
-        <textarea id="editCommentNew" class="form-textarea" maxlength="1000" rows="2" placeholder="Escreva um comentário para a equipe…"></textarea>
+        <textarea id="editCommentNew" class="form-textarea" maxlength="1000" rows="2" placeholder="Escreva um comentário para a equipe…" oninput="UIModals._commentCount()"></textarea>
         <button type="button" class="btn-primary comment-post-btn" onclick="UIModals._postComment()"><i class="ti ti-send" aria-hidden="true"></i> Publicar</button>
       </div>
+      <div id="editCommentNewCounter" class="comment-counter">0/1000</div>
       <span class="input-label">Foto</span>
       <img id="editPhotoPreview" class="photo-preview" src="" alt="Foto do analista" style="display:none">
       <div style="display:flex;gap:8px;margin-top:4px">

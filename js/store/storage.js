@@ -112,9 +112,10 @@ var Storage = (function() {
       ? raw.comments.filter(function(c) { return c && typeof c.text === 'string' && c.text.trim(); })
           .map(function(c) {
             return {
-              text:   c.text.slice(0, 1000),
-              author: typeof c.author === 'string' ? c.author.slice(0, 120) : '',
-              at:     typeof c.at === 'string' ? c.at : null
+              text:     c.text.slice(0, 1000),
+              author:   typeof c.author === 'string' ? c.author.slice(0, 120) : '',
+              at:       typeof c.at === 'string' ? c.at : null,
+              editedAt: typeof c.editedAt === 'string' ? c.editedAt : null
             };
           })
       : [];
