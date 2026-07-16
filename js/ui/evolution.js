@@ -41,7 +41,13 @@ var UIEvolution = (function() {
 
   // --- Comparativo por data (melhorou / piorou) ----------------------------
   var CMP_KEY = 'skm6_evocmp';
-  function getCmp() { try { return localStorage.getItem(CMP_KEY) || '30'; } catch (e) { return '30'; } }
+  function getCmp() {
+    try {
+      var v = localStorage.getItem(CMP_KEY) || 'prev';
+      if (/^\d+$/.test(v)) return 'prev'; // migra valores antigos (30/60/90 dias)
+      return v;
+    } catch (e) { return 'prev'; }
+  }
   function setCmp(v) { try { localStorage.setItem(CMP_KEY, v); } catch (e) {} if (_state) render(_state); }
 
   function snapIso(s) {
@@ -52,20 +58,24 @@ var UIEvolution = (function() {
   function fmtIso(iso) { return iso.length >= 10 ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : iso; }
   function ov(s) { return s && s.unified != null ? s.unified : (s && s.avg != null ? s.avg : null); }
 
-  // Snapshot de referência para comparar: 'first' = 1º registro; número = N dias atrás.
+  // Snapshot de referência para comparar. cmp pode ser:
+  //   'prev'  = registro imediatamente anterior
+  //   'first' = 1º registro
+  //   'YYYY-MM-DD' = data específica (usa o registro daquela data ou o anterior a ela)
   function baselineSnap(hist, cmp) {
     if (!Array.isArray(hist) || hist.length < 2) return null;
     var cur = hist[hist.length - 1];
     var base;
     if (cmp === 'first') {
       base = hist[0];
-    } else {
-      var cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - (parseInt(cmp, 10) || 30));
-      var cutIso = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0') + '-' + String(cutoff.getDate()).padStart(2, '0');
+    } else if (cmp === 'prev') {
+      base = hist[hist.length - 2];
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(cmp)) {
       base = null;
-      for (var i = 0; i < hist.length; i++) { if (snapIso(hist[i]) <= cutIso) base = hist[i]; }
-      if (!base) base = hist[0]; // janela cobre todo o histórico → compara com o começo
+      for (var i = 0; i < hist.length; i++) { if (snapIso(hist[i]) <= cmp) base = hist[i]; }
+      if (!base) base = hist[0]; // a data escolhida é anterior a todo o histórico
+    } else {
+      base = hist[0];
     }
     return snapIso(base) === snapIso(cur) ? null : base;
   }
@@ -107,11 +117,21 @@ var UIEvolution = (function() {
       rows.map(function(r) {
         var color = modColor(r.score);
         var pct = Math.max(0, Math.min(100, (r.score / 5) * 100));
-        var delta = (baseMods && typeof baseMods[r.name] === 'number') ? modDelta(r.score, baseMods[r.name]) : '';
+        var hasBase = baseMods && typeof baseMods[r.name] === 'number';
+        var baseVal = hasBase ? baseMods[r.name] : null;
+        var delta = hasBase ? modDelta(r.score, baseVal) : '';
+        // Marcador "antes": linha vertical na posição da nota anterior, para
+        // enxergar de imediato se a barra cresceu (passou do marcador) ou caiu.
+        var marker = '';
+        if (hasBase && baseVal !== r.score) {
+          var basePct = Math.max(0, Math.min(100, (baseVal / 5) * 100));
+          marker = '<div title="Antes: ' + baseVal + '" style="position:absolute;top:-2px;bottom:-2px;left:' + basePct + '%;width:2px;background:#0F172A;opacity:.55"></div>';
+        }
         return '<div style="display:flex;align-items:center;gap:8px">' +
           '<span style="font-size:11px;color:var(--muted);width:130px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(r.name) + '">' + esc(r.name) + '</span>' +
-          '<div style="flex:1;height:14px;background:#EEF2F7;border-radius:7px;overflow:hidden">' +
+          '<div style="position:relative;flex:1;height:14px;background:#EEF2F7;border-radius:7px">' +
             '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:7px"></div>' +
+            marker +
           '</div>' +
           '<span style="width:44px;text-align:right;flex-shrink:0"><b style="font-size:12px;color:' + color + '">' + (r.score || '—') + '</b>' + delta + '</span>' +
         '</div>';
@@ -145,7 +165,20 @@ var UIEvolution = (function() {
         '<i class="ti ' + icon + '"></i> ' + label + '</button>';
     }
 
-    var cmpOpts = [['30', '30 dias'], ['60', '60 dias'], ['90', '90 dias'], ['first', 'Primeiro registro']];
+    // Datas reais em que há registro (união de todos os analistas), para o
+    // usuário comparar "agora" com uma data específica do histórico.
+    var dateSet = {};
+    (state.analysts || []).forEach(function(a) {
+      var hh = (state.history && state.history[a.id]) || [];
+      hh.forEach(function(s) { dateSet[snapIso(s)] = true; });
+    });
+    var allDates = Object.keys(dateSet).filter(function(d) { return d; }).sort(); // ascendente
+    var cmpOpts = [['prev', 'Registro anterior'], ['first', 'Primeiro registro']];
+    // datas mais recentes primeiro, pulando a última (que é o "agora")
+    allDates.slice().reverse().forEach(function(iso, idx) {
+      if (idx === 0) return;
+      cmpOpts.push([iso, fmtIso(iso)]);
+    });
     var cmpSelect = '<label style="font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px">Comparar com:' +
       '<select onchange="UIEvolution.setCmp(this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink);font-family:inherit;cursor:pointer">' +
       cmpOpts.map(function(o) { return '<option value="' + o[0] + '"' + (cmp === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
@@ -174,9 +207,14 @@ var UIEvolution = (function() {
       var base = baselineSnap(hist, cmp);
       var cur  = hist.length ? hist[hist.length - 1] : null;
 
-      var body = mode === 'bars'
-        ? barsHtml(analyst, state.modules, base ? base.mods : null)
-        : '<div style="position:relative;height:180px"><canvas id="evo-' + analyst.id + '"></canvas></div>';
+      var body;
+      if (mode === 'bars') {
+        body = barsHtml(analyst, state.modules, base ? base.mods : null);
+      } else if (hist.length >= 2) {
+        body = '<div style="position:relative;height:200px"><canvas id="evo-' + analyst.id + '"></canvas></div>';
+      } else {
+        body = '<div style="font-size:12px;color:var(--muted);padding:16px 4px">Ainda não há registros suficientes para o gráfico de evolução (é preciso pelo menos 2 datas). O histórico é criado conforme o painel é atualizado ao longo dos dias.</div>';
+      }
 
       h += '<div class="evo-card">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
@@ -208,40 +246,50 @@ var UIEvolution = (function() {
       var ctx = document.getElementById('evo-' + analyst.id);
       if (!ctx) return;
 
-      var colorIdx = state.analysts.indexOf(analyst) % CHART_COLORS.length;
-      var color = CHART_COLORS[colorIdx];
-      var scores = state.modules.map(function(m) { return analyst.scores[m] || 0; });
-      var pointColors = scores.map(function(s) {
-        return s <= 2 ? '#CC0000' : s === 3 ? '#F59E0B' : '#22C55E';
-      });
+      // Trajetória no tempo: eixo X = datas dos registros; linhas para
+      // Unificada, Técnica e Zendesk (escala 0–10).
+      var hist = (state.history && state.history[analyst.id]) || [];
+      if (hist.length < 2) return;
+
+      var labels = hist.map(function(s) { return fmtIso(snapIso(s)); });
+      var uni  = hist.map(function(s) { return ov(s); });
+      var tech = hist.map(function(s) { return s.tech != null ? s.tech : (s.avg != null ? s.avg : null); });
+      var zen  = hist.map(function(s) { return s.zendesk != null ? s.zendesk : null; });
+
+      function ds(label, data, color, width) {
+        return {
+          label: label, data: data,
+          borderColor: color, backgroundColor: 'transparent',
+          pointBackgroundColor: color, pointRadius: 3,
+          tension: 0.3, borderWidth: width || 2, spanGaps: true
+        };
+      }
 
       chartInstances['e' + analyst.id] = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: state.modules,
-          datasets: [{
-            label: 'Técnica',
-            data: scores,
-            borderColor: color,
-            backgroundColor: 'transparent',
-            pointBackgroundColor: pointColors,
-            pointRadius: 3,
-            tension: 0.3,
-            borderWidth: 2
-          }]
+          labels: labels,
+          datasets: [
+            ds('Unificada', uni, '#0268CD', 2.6),
+            ds('Técnica', tech, '#22C55E', 2),
+            ds('Zendesk', zen, '#F59E0B', 2)
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, usePointStyle: true } }
+          },
           scales: {
             x: {
-              ticks: { color: '#64748B', font: { size: 9 }, maxRotation: 55, autoSkip: true, maxTicksLimit: 14 },
+              ticks: { color: '#64748B', font: { size: 10 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
               grid: { color: 'rgba(2,104,205,.08)' }
             },
             y: {
-              min: 0, max: 5,
-              ticks: { stepSize: 1, color: '#64748B', font: { size: 10 } },
+              min: 0, max: 10,
+              ticks: { stepSize: 2, color: '#64748B', font: { size: 10 } },
               grid: { color: 'rgba(2,104,205,.08)' }
             }
           }
